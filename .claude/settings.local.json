@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3000/api/admin/stats)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:3000/api/admin/jobs/16855623-8689-42bd-ac1d-5cd8fabc6d56/broadcast)",
+      "Bash(curl -s http://localhost:3000/api/messages/__TRACKED_VAR__)",
+      "Bash(python3 -c ':*)"
+    ]
+  }
+}
