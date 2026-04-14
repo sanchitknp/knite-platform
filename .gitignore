@@ -59,3 +59,4 @@ build/
 .claude/
 backend/.embedded-pg-data/
 backend/start-local.js
+uploads/

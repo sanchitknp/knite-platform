@@ -23,6 +23,18 @@ app.use(morgan('dev'));
 const frontendPath = process.env.FRONTEND_PATH || path.join(__dirname, 'frontend');
 app.use(express.static(frontendPath));
 
+// Serve uploaded media files (KYC docs, proof photos, issue photos)
+const fs = require('fs');
+const uploadDir = process.env.UPLOAD_DIR || '/app/uploads';
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+app.use('/uploads', express.static(uploadDir));
+
+// Dev only: directory listing so admins can browse uploaded files
+if (process.env.NODE_ENV !== 'production') {
+  const serveIndex = require('serve-index');
+  app.use('/uploads', serveIndex(uploadDir, { icons: true, view: 'details' }));
+}
+
 // ─────────────────────────────────────────────
 // META WHATSAPP CLOUD API WEBHOOK
 // ─────────────────────────────────────────────

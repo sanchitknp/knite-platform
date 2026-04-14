@@ -173,8 +173,12 @@ async function handleMessage(phone, text, mediaUrl = null) {
 async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech) {
   // ── INSTALLATION FLOW ──
   if (flow === 'installation') {
-    if (step === 'awaiting_address') {
-      await installFlow.handleAddress(phone, text, ctx);
+    if (step === 'awaiting_state') {
+      await installFlow.handleInstallState(phone, text, ctx);
+    } else if (step === 'awaiting_district') {
+      await installFlow.handleInstallDistrict(phone, text, ctx);
+    } else if (step === 'awaiting_area') {
+      await installFlow.handleInstallArea(phone, text, ctx);
     } else if (step === 'awaiting_slot') {
       await installFlow.handleSlot(phone, text, ctx);
     }
@@ -266,10 +270,10 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
       await techFlow.handleName(phone, text, ctx);
     } else if (step === 'awaiting_state') {
       await techFlow.handleState(phone, text, ctx);
-    } else if (step === 'awaiting_district') {
-      await techFlow.handleDistrict(phone, text, ctx);
     } else if (step === 'awaiting_areas') {
       await techFlow.handleAreaSelection(phone, text, ctx);
+    } else if (step === 'awaiting_more_states') {
+      await techFlow.handleMoreStates(phone, text, ctx);
     } else if (step === 'awaiting_kyc') {
       await techFlow.handleKYC(phone, mediaUrl, ctx);
     }
@@ -282,7 +286,7 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
       if (/^\d{6}$/.test(text.trim())) {
         await techFlow.handleOTPVerification(phone, text.trim(), ctx);
       } else {
-        await wa.sendText(phone, `Please enter the 6-digit OTP from the customer:`);
+        await wa.sendText(phone, `Please enter the 6-digit *Happiness Code* from the customer:`);
       }
     } else if (step === 'awaiting_completion_photos') {
       if (mediaUrl) {

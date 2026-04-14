@@ -2,15 +2,23 @@
  * Flow 4: Technician Onboarding + Daily Operations
  *
  * Onboarding steps:
- *   awaiting_name → awaiting_state → awaiting_district → awaiting_areas → awaiting_kyc
+ *   awaiting_name → awaiting_state → awaiting_areas
+ *     → awaiting_more_states (loop back to awaiting_state for more states)
+ *     → awaiting_kyc
  *
- * State / District / Area selection all use WhatsApp list messages (dropdown style).
- * District and Area both support multi-select (tap items, tap Done when finished).
+ * Context shape during onboarding:
+ *   {
+ *     name,
+ *     all_state_selections: [{ state, selected_areas }],
+ *     state,          // current state being configured
+ *     selected_areas  // for current state
+ *   }
  */
 const db = require('../../db');
 const wa = require('../whatsappService');
 const session = require('../sessionService');
 const otp = require('../otpService');
+const media = require('../mediaService');
 
 const AREA_MAX = 200; // numbered text has no WhatsApp API limit
 
@@ -69,173 +77,103 @@ async function handleName(phone, name, ctx) {
   await session.setSession(phone, {
     flow: 'tech_onboarding',
     step: 'awaiting_state',
-    context_data: { name: name.trim() }
+    context_data: { name: name.trim(), all_state_selections: [] }
   });
 
-  await sendStateList(phone);
+  await sendStateList(phone, []);
 }
 
-async function sendStateList(phone) {
+async function sendStateList(phone, excludeStates = []) {
   const result = await db.query(
     `SELECT DISTINCT state FROM india_pincodes WHERE state IS NOT NULL ORDER BY state`
   );
-  const states = result.rows.map(r => r.state);
-  const lines = states.map((s, i) => `${i + 1}. ${s}`).join('\n');
-  await wa.sendText(phone, `📍 Which *state* do you work in?\n\n${lines}\n\nReply with the number.`);
+  const allStates = result.rows.map(r => r.state);
+  const available = allStates.filter(s => !excludeStates.includes(s));
+
+  const addedHeader = excludeStates.length > 0
+    ? `✅ *Added so far:* ${excludeStates.join(', ')}\n\n`
+    : '';
+
+  const lines = available.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  await wa.sendText(phone,
+    `${addedHeader}📍 Which *state* do you work in?\n\n${lines}\n\nReply with the number.`
+  );
 }
 
 // ─────────────────────────────────────────────
-// Step 2: State → show district multi-select list
+// Step 2: State → show area list directly
 // ─────────────────────────────────────────────
 
 async function handleState(phone, text, ctx) {
-  const num = parseInt(text.trim());
+  const excludeStates = (ctx.all_state_selections || []).map(s => s.state);
 
-  const countResult = await db.query(`SELECT COUNT(DISTINCT state) AS cnt FROM india_pincodes WHERE state IS NOT NULL`);
-  const total = parseInt(countResult.rows[0].cnt);
+  const allResult = await db.query(
+    `SELECT DISTINCT state FROM india_pincodes WHERE state IS NOT NULL ORDER BY state`
+  );
+  const available = allResult.rows.map(r => r.state).filter(s => !excludeStates.includes(s));
+  const total = available.length;
+  const num = parseInt(text.trim());
 
   if (isNaN(num) || num < 1 || num > total) {
     await wa.sendText(phone, `❌ Please enter a number between 1 and ${total}.`);
-    await sendStateList(phone);
+    await sendStateList(phone, excludeStates);
     return;
   }
 
-  const result = await db.query(
-    `SELECT DISTINCT state FROM india_pincodes WHERE state IS NOT NULL ORDER BY state LIMIT 1 OFFSET $1`,
-    [num - 1]
-  );
-  const selectedState = result.rows[0]?.state;
-  if (!selectedState) { await sendStateList(phone); return; }
+  const selectedState = available[num - 1];
+  if (!selectedState) { await sendStateList(phone, excludeStates); return; }
 
   await session.setSession(phone, {
     flow: 'tech_onboarding',
-    step: 'awaiting_district',
-    context_data: { state: selectedState, selected_districts: [] }
+    step: 'awaiting_areas',
+    context_data: { state: selectedState, selected_areas: [] }
   });
 
-  await sendDistrictList(phone, selectedState, []);
-}
-
-async function sendDistrictList(phone, state, selectedDistricts) {
-  const result = await db.query(
-    `SELECT DISTINCT district FROM india_pincodes WHERE state = $1 AND district IS NOT NULL ORDER BY district`,
-    [state]
-  );
-  const districts = result.rows.map(r => r.district);
-  const lines = districts.map((d, i) => `${i + 1}. ${d}`).join('\n');
-  const selectedStr = selectedDistricts.length > 0
-    ? `✅ *Selected (${selectedDistricts.length}):* ${selectedDistricts.join(', ')}\n\n`
-    : '';
-  await wa.sendText(phone,
-    `${selectedStr}🏙️ *${state}* — Select district(s):\n\n${lines}\n\nReply with a number to add. Type *DONE* when finished.`
-  );
+  await sendAreaList(phone, selectedState, []);
 }
 
 // ─────────────────────────────────────────────
-// Step 3: District multi-select
-// ─────────────────────────────────────────────
-
-async function handleDistrict(phone, text, ctx) {
-  const upper = text.trim().toUpperCase();
-
-  if (upper === 'DONE' || upper === 'DIST_DONE') {
-    if (!ctx.selected_districts || ctx.selected_districts.length === 0) {
-      await wa.sendText(phone, `Please select at least one district first.`);
-      await sendDistrictList(phone, ctx.state, []);
-      return;
-    }
-    await session.setSession(phone, {
-      flow: 'tech_onboarding',
-      step: 'awaiting_areas',
-      context_data: { selected_areas: [] }
-    });
-    await sendAreaList(phone, ctx.state, ctx.selected_districts, []);
-    return;
-  }
-
-  const num = parseInt(text.trim());
-  const distCountResult = await db.query(
-    `SELECT COUNT(DISTINCT district) AS cnt FROM india_pincodes WHERE state = $1 AND district IS NOT NULL`,
-    [ctx.state]
-  );
-  const distTotal = parseInt(distCountResult.rows[0].cnt);
-
-  if (isNaN(num) || num < 1 || num > distTotal) {
-    await wa.sendText(phone, `❌ Please enter a number between 1 and ${distTotal}.`);
-    await sendDistrictList(phone, ctx.state, ctx.selected_districts || []);
-    return;
-  }
-
-  const result = await db.query(
-    `SELECT DISTINCT district FROM india_pincodes WHERE state = $1 AND district IS NOT NULL ORDER BY district LIMIT 1 OFFSET $2`,
-    [ctx.state, num - 1]
-  );
-  const selectedDistrict = result.rows[0]?.district;
-  if (!selectedDistrict) { await sendDistrictList(phone, ctx.state, ctx.selected_districts || []); return; }
-
-  const existing = ctx.selected_districts || [];
-  const newDistricts = existing.includes(selectedDistrict) ? existing : [...existing, selectedDistrict];
-
-  await session.setSession(phone, {
-    flow: 'tech_onboarding',
-    step: 'awaiting_district',
-    context_data: { selected_districts: newDistricts }
-  });
-  await sendDistrictList(phone, ctx.state, newDistricts);
-}
-
-// ─────────────────────────────────────────────
-// Step 4: Area multi-select (across all selected districts)
+// Step 3: Area multi-select (all areas in the state)
 // ─────────────────────────────────────────────
 
 async function handleAreaSelection(phone, text, ctx) {
   const upper = text.trim().toUpperCase();
 
-  // Done
+  // Done with areas for current state
   if (upper === 'DONE' || upper === 'AREA_DONE') {
     if (!ctx.selected_areas || ctx.selected_areas.length === 0) {
       await wa.sendText(phone, `Please select at least one area first.`);
-      await sendAreaPage(phone, ctx.state, ctx.selected_districts, [], ctx.area_page || 0);
+      await sendAreaList(phone, ctx.state, []);
       return;
     }
 
-    // Group selected areas by district → create/upsert one zone per district
-    const byDistrict = {};
-    for (const area of ctx.selected_areas) {
-      if (!byDistrict[area.district]) byDistrict[area.district] = [];
-      byDistrict[area.district].push(area.pincode);
-    }
-
-    const zoneIds = [];
-    const zoneNames = [];
-    for (const [district, pincodes] of Object.entries(byDistrict)) {
-      const zoneId = await upsertZone(ctx.state, district, pincodes);
-      zoneIds.push(zoneId);
-      zoneNames.push(district);
-    }
-
-    const areasSummary = ctx.selected_areas.map(a =>
-      ctx.selected_districts.length > 1 ? `${a.area_name} (${a.district})` : a.area_name
-    ).join(', ');
+    const currentSelection = {
+      state: ctx.state,
+      selected_areas: ctx.selected_areas,
+    };
+    const allSelections = [...(ctx.all_state_selections || []), currentSelection];
 
     await session.setSession(phone, {
       flow: 'tech_onboarding',
-      step: 'awaiting_kyc',
+      step: 'awaiting_more_states',
       context_data: {
-        home_zone_id: zoneIds[0],
-        home_zone_name: zoneNames.join(', '),
-        all_zone_ids: zoneIds,
-        areas_summary: areasSummary,
+        all_state_selections: allSelections,
+        // clear transient fields
+        state: null, selected_areas: null,
       }
     });
 
-    await wa.sendText(phone,
-      `✅ *Work zones registered!*\n\n` +
-      `📍 ${zoneNames.join(', ')}, ${ctx.state}\n` +
-      `🏘️ Areas (${ctx.selected_areas.length}): ${areasSummary}\n\n` +
-      `📄 *KYC Verification Required*\n\n` +
-      `Please send a clear photo of your *Aadhaar card (front side)*.\n\n` +
-      `_Your document is stored securely and only visible to Knite admin._`
+    const totalAreas = allSelections.reduce((sum, s) => sum + s.selected_areas.length, 0);
+    const statesSummary = allSelections.map(s => `📍 *${s.state}*: ${s.selected_areas.length} area(s)`).join('\n');
+
+    await wa.sendButtons(phone,
+      `✅ *${ctx.state} saved!* — ${ctx.selected_areas.length} area(s)\n\n` +
+      `*All states so far (${allSelections.length}):*\n${statesSummary}\n\n` +
+      `Total areas: ${totalAreas}\n\nWould you like to add another state?`,
+      [
+        { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
+        { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
+      ]
     );
     return;
   }
@@ -245,27 +183,27 @@ async function handleAreaSelection(phone, text, ctx) {
   const areaCountResult = await db.query(
     `SELECT COUNT(*) AS cnt FROM (
        SELECT DISTINCT area_name, district FROM india_pincodes
-       WHERE state = $1 AND district = ANY($2::text[]) AND area_name IS NOT NULL
+       WHERE state = $1 AND area_name IS NOT NULL
      ) t`,
-    [ctx.state, ctx.selected_districts]
+    [ctx.state]
   );
   const areaTotal = parseInt(areaCountResult.rows[0].cnt);
 
   if (isNaN(num) || num < 1 || num > areaTotal) {
     await wa.sendText(phone, `❌ Please enter a number between 1 and ${areaTotal}.`);
-    await sendAreaList(phone, ctx.state, ctx.selected_districts, ctx.selected_areas || []);
+    await sendAreaList(phone, ctx.state, ctx.selected_areas || []);
     return;
   }
 
   const areaResult = await db.query(
     `SELECT id, area_name, pincode, district FROM india_pincodes
-     WHERE state = $1 AND district = ANY($2::text[]) AND area_name IS NOT NULL
+     WHERE state = $1 AND area_name IS NOT NULL
      ORDER BY district, area_name
-     LIMIT 1 OFFSET $3`,
-    [ctx.state, ctx.selected_districts, num - 1]
+     LIMIT 1 OFFSET $2`,
+    [ctx.state, num - 1]
   );
   const area = areaResult.rows[0];
-  if (!area) { await sendAreaList(phone, ctx.state, ctx.selected_districts, ctx.selected_areas || []); return; }
+  if (!area) { await sendAreaList(phone, ctx.state, ctx.selected_areas || []); return; }
 
   const selectedAreas = ctx.selected_areas || [];
   const alreadySelected = selectedAreas.some(a => a.id === area.id);
@@ -276,28 +214,136 @@ async function handleAreaSelection(phone, text, ctx) {
     step: 'awaiting_areas',
     context_data: { selected_areas: newAreas }
   });
-  await sendAreaList(phone, ctx.state, ctx.selected_districts, newAreas);
+  await sendAreaList(phone, ctx.state, newAreas);
 }
 
-async function sendAreaList(phone, state, districts, selectedAreas) {
+async function sendAreaList(phone, state, selectedAreas) {
   const result = await db.query(
     `SELECT id, area_name, pincode, district FROM india_pincodes
-     WHERE state = $1 AND district = ANY($2::text[]) AND area_name IS NOT NULL
+     WHERE state = $1 AND area_name IS NOT NULL
      ORDER BY district, area_name
-     LIMIT $3`,
-    [state, districts, AREA_MAX]
+     LIMIT $2`,
+    [state, AREA_MAX]
   );
   const areas = result.rows;
   const selectedIds = new Set((selectedAreas || []).map(a => a.id));
 
-  const selectedStr = selectedAreas.length > 0
-    ? `✅ *Selected (${selectedAreas.length}):* ${selectedAreas.map(a => districts.length > 1 ? `${a.area_name} (${a.district})` : a.area_name).join(', ')}\n\n`
+  const selectedStr = selectedAreas && selectedAreas.length > 0
+    ? `✅ *Selected (${selectedAreas.length}):* ${selectedAreas.map(a => a.area_name).join(', ')}\n\n`
     : '';
 
-  const distLabel = districts.length > 1 ? districts.join(', ') : districts[0];
-  const lines = areas.map((a, i) => `${i + 1}. ${selectedIds.has(a.id) ? '✓ ' : ''}${districts.length > 1 ? `${a.area_name} (${a.district})` : a.area_name}`).join('\n');
+  const lines = areas.map((a, i) =>
+    `${i + 1}. ${selectedIds.has(a.id) ? '✓ ' : ''}${a.area_name}`
+  ).join('\n');
+
   await wa.sendText(phone,
-    `${selectedStr}📍 *${distLabel}, ${state}* — Select areas:\n\n${lines}\n\nReply with a number to add. Type *DONE* when finished.`
+    `${selectedStr}📍 *${state}* — Select your service areas:\n\n${lines}\n\nReply with a number to add/select. Type *DONE* when finished.`
+  );
+}
+
+// ─────────────────────────────────────────────
+// Step 4b: More states or proceed to KYC
+// ─────────────────────────────────────────────
+
+async function handleMoreStates(phone, text, ctx) {
+  const upper = text.trim().toUpperCase();
+  const allSelections = ctx.all_state_selections || [];
+
+  if (upper === 'ADD_MORE_STATES') {
+    const excludeStates = allSelections.map(s => s.state);
+
+    // Check if all states already added
+    const countResult = await db.query(
+      `SELECT COUNT(DISTINCT state) AS cnt FROM india_pincodes WHERE state IS NOT NULL`
+    );
+    const totalStates = parseInt(countResult.rows[0].cnt);
+
+    if (excludeStates.length >= totalStates) {
+      await wa.sendButtons(phone,
+        `✅ You've already added all available states! Please proceed to KYC.`,
+        [{ id: 'PROCEED_KYC', title: '✅ Proceed to KYC' }]
+      );
+      return;
+    }
+
+    await session.setSession(phone, {
+      flow: 'tech_onboarding',
+      step: 'awaiting_state',
+      context_data: {
+        name: ctx.name,
+        all_state_selections: allSelections,
+        // clear transient fields for fresh state selection
+        state: null, selected_areas: null,
+      }
+    });
+    await sendStateList(phone, excludeStates);
+    return;
+  }
+
+  if (upper === 'PROCEED_KYC') {
+    if (allSelections.length === 0) {
+      await wa.sendText(phone, `Please add at least one state first.`);
+      return;
+    }
+
+    // Create/upsert zones for every district in every state selection
+    const allZoneIds = [];
+    let homeZoneId = null;
+    const zoneSummaryLines = [];
+
+    for (const selection of allSelections) {
+      // Group pincodes by district
+      const districtPincodes = {};
+      for (const area of selection.selected_areas) {
+        if (!districtPincodes[area.district]) districtPincodes[area.district] = [];
+        districtPincodes[area.district].push(area.pincode);
+      }
+
+      for (const [district, pincodes] of Object.entries(districtPincodes)) {
+        const zoneId = await upsertZone(selection.state, district, pincodes);
+        allZoneIds.push(zoneId);
+        if (!homeZoneId) homeZoneId = zoneId;
+      }
+
+      zoneSummaryLines.push(
+        `📍 *${selection.state}*: ${selection.selected_areas.length} area(s)`
+      );
+    }
+
+    const totalAreas = allSelections.reduce((sum, s) => sum + s.selected_areas.length, 0);
+    const stateNames = allSelections.map(s => s.state).join(', ');
+
+    await session.setSession(phone, {
+      flow: 'tech_onboarding',
+      step: 'awaiting_kyc',
+      context_data: {
+        name: ctx.name,
+        all_state_selections: allSelections,
+        all_zone_ids: allZoneIds,
+        home_zone_id: homeZoneId,
+        home_zone_name: stateNames,
+        areas_summary: `${totalAreas} area(s) across ${allSelections.length} state(s)`,
+        zone_summary: zoneSummaryLines.join('\n'),
+      }
+    });
+
+    await wa.sendText(phone,
+      `✅ *Coverage registered!*\n\n` +
+      `*Your service zones:*\n${zoneSummaryLines.join('\n')}\n\n` +
+      `Total areas: ${totalAreas}\n\n` +
+      `Now please send a *photo of your Aadhaar card* (front side) for KYC verification:`
+    );
+    return;
+  }
+
+  // Unrecognised input — re-prompt
+  const stateNames = allSelections.map(s => s.state).join(', ');
+  await wa.sendButtons(phone,
+    `✅ *States added so far:* ${stateNames}\n\nWould you like to add another state or proceed to KYC?`,
+    [
+      { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
+      { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
+    ]
   );
 }
 
@@ -326,29 +372,38 @@ async function upsertZone(state, district, pincodes) {
 // Step 5: KYC
 // ─────────────────────────────────────────────
 
-async function handleKYC(phone, mediaUrl, ctx) {
-  if (!mediaUrl) {
+async function handleKYC(phone, mediaId, ctx) {
+  if (!mediaId) {
     await wa.sendText(phone, `Please send a *photo* of your Aadhaar card (front side):`);
     return;
   }
+
+  const kycUrl = await media.storeMedia(mediaId, 'kyc', phone.replace('+', ''));
 
   const techResult = await db.query(
     `INSERT INTO technicians (phone, name, home_zone_id, is_verified, is_active, kyc_doc_url)
      VALUES ($1, $2, $3, false, false, $4)
      ON CONFLICT (phone) DO UPDATE SET name = $2, home_zone_id = $3, kyc_doc_url = $4
      RETURNING *`,
-    [phone, ctx.name, ctx.home_zone_id, mediaUrl || 'simulator_upload']
+    [phone, ctx.name, ctx.home_zone_id, kycUrl || 'simulator_upload']
   );
   const tech = techResult.rows[0];
 
   // Link technician to all selected zones
-  for (const zoneId of (ctx.all_zone_ids || [ctx.home_zone_id])) {
+  const zoneIds = ctx.all_zone_ids && ctx.all_zone_ids.length > 0
+    ? ctx.all_zone_ids
+    : [ctx.home_zone_id].filter(Boolean);
+
+  for (const zoneId of zoneIds) {
     await db.query(
       `INSERT INTO technician_zones (technician_id, zone_id, is_home) VALUES ($1, $2, $3)
        ON CONFLICT (technician_id, zone_id) DO UPDATE SET is_home = $3`,
       [tech.id, zoneId, zoneId === ctx.home_zone_id]
     );
   }
+
+  const statesSummary = ctx.zone_summary || ctx.home_zone_name || 'N/A';
+  const areasSummary = ctx.areas_summary || 'N/A';
 
   // Notify admin
   const adminResult = await db.query(`SELECT phone FROM customers WHERE phone = '919999999999'`);
@@ -357,9 +412,9 @@ async function handleKYC(phone, mediaUrl, ctx) {
       `🆕 *New Technician Application*\n\n` +
       `👤 Name: ${ctx.name}\n` +
       `📱 Phone: ${phone}\n` +
-      `📍 Zones: ${ctx.home_zone_name}\n` +
-      `🏘️ Areas: ${ctx.areas_summary || 'N/A'}\n` +
-      `🪪 KYC: ${mediaUrl ? 'Photo uploaded' : 'Pending'}\n\n` +
+      `📍 Service zones:\n${statesSummary}\n` +
+      `🏘️ Coverage: ${areasSummary}\n` +
+      `🪪 KYC: ${kycUrl ? 'Photo uploaded' : 'Pending'}\n\n` +
       `Tech ID: ${tech.id}`,
       [
         { id: `APPROVE_TECH_${tech.id}`, title: '✅ Approve' },
@@ -373,8 +428,8 @@ async function handleKYC(phone, mediaUrl, ctx) {
     `✅ *Registration submitted successfully!*\n\n` +
     `📋 Details:\n` +
     `• Name: ${ctx.name}\n` +
-    `• Zones: ${ctx.home_zone_name}\n` +
-    `• Areas: ${ctx.areas_summary || 'N/A'}\n` +
+    `• Service zones:\n${statesSummary}\n` +
+    `• Coverage: ${areasSummary}\n` +
     `• KYC: Submitted\n\n` +
     `⏳ Our admin will review your application within 24 hours.\n` +
     `You'll receive a WhatsApp notification once approved! 🎉`
@@ -426,7 +481,7 @@ async function handleJobAccept(phone, jobId) {
     `🏠 Address: ${address.raw || 'See details'}\n` +
     `📞 Customer: ${job.customer_name || job.customer_phone}\n` +
     `💰 Payout: ₹${Math.round(job.payout_paise / 100)}\n\n` +
-    `🔐 Ask customer for OTP before starting work.\n\n` +
+    `🎉 Ask customer for the *Happiness Code* after completing the work.\n\n` +
     `_Head to the location now!_`,
     [
       { id: `ARRIVED_${jobId}`, title: '📍 I Have Arrived' },
@@ -439,7 +494,7 @@ async function handleJobAccept(phone, jobId) {
     `Name: ${tech.name}\n` +
     `Phone: ${tech.phone}\n` +
     `⭐ Rating: ${tech.rating}\n\n` +
-    `They are on their way! Share the OTP *only when they arrive.*`
+    `They are on their way! Share the *Happiness Code only after the work is completed.*`
   );
 }
 
@@ -466,7 +521,7 @@ async function handleArrived(phone, jobId) {
     context_data: { job_id: jobId, tech_id: techResult.rows[0].id }
   });
 
-  await wa.sendText(phone, `📍 *Arrival confirmed!*\n\nPlease ask the customer for the *6-digit OTP* and enter it here:`);
+  await wa.sendText(phone, `📍 *Arrival confirmed!*\n\nComplete the work, then ask the customer for the *Happiness Code* and enter it here:`);
 }
 
 async function handleOTPVerification(phone, otpInput, ctx) {
@@ -476,7 +531,7 @@ async function handleOTPVerification(phone, otpInput, ctx) {
 
   const isValid = await otp.verifyOTP(otpInput.trim(), job.otp_hash);
   if (!isValid) {
-    await wa.sendText(phone, `❌ *Invalid OTP!* Please ask the customer to check and share again.`);
+    await wa.sendText(phone, `❌ *Invalid Happiness Code!* Please ask the customer to check and share again.`);
     return;
   }
 
@@ -503,8 +558,9 @@ async function handleOTPVerification(phone, otpInput, ctx) {
   );
 }
 
-async function handleCompletionPhoto(phone, mediaUrl, ctx) {
-  const photos = [...(ctx.photos || []), mediaUrl];
+async function handleCompletionPhoto(phone, mediaId, ctx) {
+  const photoUrl = await media.storeMedia(mediaId, 'proof', `${phone}_${ctx.job_id}`);
+  const photos = [...(ctx.photos || []), photoUrl];
 
   if (photos.length < 2) {
     await session.updateContext(phone, { photos });
@@ -578,8 +634,8 @@ module.exports = {
   startOnboarding,
   handleName,
   handleState,
-  handleDistrict,
   handleAreaSelection,
+  handleMoreStates,
   handleKYC,
   handleJobAccept,
   handleJobDecline,

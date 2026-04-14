@@ -65,14 +65,164 @@ async function start(phone, unitId) {
 
   await session.setSession(phone, {
     flow: 'installation',
-    step: 'awaiting_address',
+    step: 'awaiting_state',
     context_data: { unit_id: unit.id, unit_code: unitId, customer_id: customer.id }
   });
 
-  await wa.sendText(phone,
-    `🎉 Welcome to *Knite*! Unit *${unitId}* registered successfully.\n\n` +
-    `Please share your *installation address* including the 6-digit pincode.\n\n` +
-    `_Example: Flat 402, Tower B, Supertech Capetown, Sector 74, Noida 201301_`
+  await wa.sendText(phone, `🎉 Welcome to *Knite*! Unit *${unitId}* registered successfully.\n\nLet's find a technician near you.`);
+  await sendInstallStateList(phone);
+}
+
+// ─────────────────────────────────────────────
+// Location selection: State → District → Area (single-select)
+// ─────────────────────────────────────────────
+
+async function sendInstallStateList(phone) {
+  const result = await db.query(
+    `SELECT DISTINCT state FROM india_pincodes WHERE state IS NOT NULL ORDER BY state`
+  );
+  const states = result.rows.map(r => r.state);
+  const lines = states.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  await wa.sendText(phone, `📍 Which *state* is your installation address in?\n\n${lines}\n\nReply with the number.`);
+}
+
+async function handleInstallState(phone, text, ctx) {
+  const countResult = await db.query(`SELECT COUNT(DISTINCT state) AS cnt FROM india_pincodes WHERE state IS NOT NULL`);
+  const total = parseInt(countResult.rows[0].cnt);
+  const num = parseInt(text.trim());
+
+  if (isNaN(num) || num < 1 || num > total) {
+    await wa.sendText(phone, `❌ Please enter a number between 1 and ${total}.`);
+    await sendInstallStateList(phone);
+    return;
+  }
+
+  const result = await db.query(
+    `SELECT DISTINCT state FROM india_pincodes WHERE state IS NOT NULL ORDER BY state LIMIT 1 OFFSET $1`,
+    [num - 1]
+  );
+  const selectedState = result.rows[0]?.state;
+  if (!selectedState) { await sendInstallStateList(phone); return; }
+
+  await session.setSession(phone, {
+    flow: 'installation',
+    step: 'awaiting_district',
+    context_data: { ...ctx, state: selectedState }
+  });
+  await sendInstallDistrictList(phone, selectedState);
+}
+
+async function sendInstallDistrictList(phone, state) {
+  const result = await db.query(
+    `SELECT DISTINCT district FROM india_pincodes WHERE state = $1 AND district IS NOT NULL ORDER BY district`,
+    [state]
+  );
+  const districts = result.rows.map(r => r.district);
+  const lines = districts.map((d, i) => `${i + 1}. ${d}`).join('\n');
+  await wa.sendText(phone, `🏙️ *${state}* — Which *district*?\n\n${lines}\n\nReply with the number.`);
+}
+
+async function handleInstallDistrict(phone, text, ctx) {
+  const countResult = await db.query(
+    `SELECT COUNT(DISTINCT district) AS cnt FROM india_pincodes WHERE state = $1 AND district IS NOT NULL`,
+    [ctx.state]
+  );
+  const total = parseInt(countResult.rows[0].cnt);
+  const num = parseInt(text.trim());
+
+  if (isNaN(num) || num < 1 || num > total) {
+    await wa.sendText(phone, `❌ Please enter a number between 1 and ${total}.`);
+    await sendInstallDistrictList(phone, ctx.state);
+    return;
+  }
+
+  const result = await db.query(
+    `SELECT DISTINCT district FROM india_pincodes WHERE state = $1 AND district IS NOT NULL ORDER BY district LIMIT 1 OFFSET $2`,
+    [ctx.state, num - 1]
+  );
+  const selectedDistrict = result.rows[0]?.district;
+  if (!selectedDistrict) { await sendInstallDistrictList(phone, ctx.state); return; }
+
+  await session.setSession(phone, {
+    flow: 'installation',
+    step: 'awaiting_area',
+    context_data: { ...ctx, district: selectedDistrict }
+  });
+  await sendInstallAreaList(phone, ctx.state, selectedDistrict);
+}
+
+async function sendInstallAreaList(phone, state, district) {
+  const result = await db.query(
+    `SELECT DISTINCT area_name FROM india_pincodes WHERE state = $1 AND district = $2 AND area_name IS NOT NULL ORDER BY area_name`,
+    [state, district]
+  );
+  const areas = result.rows.map(r => r.area_name);
+  const lines = areas.map((a, i) => `${i + 1}. ${a}`).join('\n');
+  await wa.sendText(phone, `📍 *${district}, ${state}* — Select your area:\n\n${lines}\n\nReply with the number.`);
+}
+
+async function handleInstallArea(phone, text, ctx) {
+  const countResult = await db.query(
+    `SELECT COUNT(DISTINCT area_name) AS cnt FROM india_pincodes WHERE state = $1 AND district = $2 AND area_name IS NOT NULL`,
+    [ctx.state, ctx.district]
+  );
+  const total = parseInt(countResult.rows[0].cnt);
+  const num = parseInt(text.trim());
+
+  if (isNaN(num) || num < 1 || num > total) {
+    await wa.sendText(phone, `❌ Please enter a number between 1 and ${total}.`);
+    await sendInstallAreaList(phone, ctx.state, ctx.district);
+    return;
+  }
+
+  const result = await db.query(
+    `SELECT DISTINCT area_name, pincode FROM india_pincodes WHERE state = $1 AND district = $2 AND area_name IS NOT NULL ORDER BY area_name LIMIT 1 OFFSET $3`,
+    [ctx.state, ctx.district, num - 1]
+  );
+  const selectedArea = result.rows[0];
+  if (!selectedArea) { await sendInstallAreaList(phone, ctx.state, ctx.district); return; }
+
+  const { area_name, pincode } = selectedArea;
+
+  // Find zone by pincode
+  const zoneResult = await zone.findZoneByPincode(pincode);
+  const addressData = { raw: `${area_name}, ${ctx.district}, ${ctx.state}`, pincode, area: area_name };
+
+  if (!zoneResult) {
+    await db.query(
+      `UPDATE units SET install_address = $1, status = 'pending_manual_action', updated_at = now() WHERE id = $2`,
+      [JSON.stringify({ ...addressData, serviced: false }), ctx.unit_id]
+    );
+    await session.clearSession(phone);
+    await wa.sendText(phone,
+      `✅ *Address saved!*\n\n📍 ${area_name}, ${ctx.district}, ${ctx.state}\n\n` +
+      `🔧 We're working on expanding to your area. You'll receive an update within a few hours. Thank you for your patience! 🙏`
+    );
+    return;
+  }
+
+  await db.query(
+    `UPDATE units SET install_address = $1, zone_id = $2, status = 'install_pending', updated_at = now() WHERE id = $3`,
+    [JSON.stringify({ ...addressData, zone_id: zoneResult.id, zone_name: zoneResult.name }), zoneResult.id, ctx.unit_id]
+  );
+
+  await session.setSession(phone, {
+    flow: 'installation',
+    step: 'awaiting_slot',
+    context_data: { ...ctx, zone_id: zoneResult.id, zone_name: zoneResult.name, address: `${area_name}, ${ctx.district}, ${ctx.state}`, pincode }
+  });
+
+  const hour = new Date().getHours();
+  const buttons = [];
+  if (hour < 16) buttons.push({ id: 'ASAP', title: '⚡ ASAP (1-2 hours)' });
+  buttons.push(
+    { id: 'TOMORROW_MORNING', title: '🌅 Tomorrow 9-11 AM' },
+    { id: 'TOMORROW_MIDDAY', title: '☀️ Tomorrow 12-2 PM' },
+    { id: 'TOMORROW_EVENING', title: '🌆 Tomorrow 4-6 PM' }
+  );
+  await wa.sendButtons(phone,
+    `✅ Great! We service *${area_name}, ${ctx.district}*.\n\n📅 When would you like the installation?`,
+    buttons
   );
 }
 
@@ -183,6 +333,10 @@ async function handleSlot(phone, text, ctx) {
     else if (text.includes('Evening') || text.includes('evening') || text === '4') slotKey = 'TOMORROW_EVENING';
   }
 
+  // Normalize numeric shortcuts to canonical keys
+  const numericKeyMap = { '1': 'ASAP', '2': 'TOMORROW_MORNING', '3': 'TOMORROW_MIDDAY', '4': 'TOMORROW_EVENING' };
+  if (numericKeyMap[slotKey]) slotKey = numericKeyMap[slotKey];
+
   if (!slotKey || !slotMap[slotKey]) {
     await wa.sendButtons(phone,
       `Please select a time slot:`,
@@ -264,7 +418,7 @@ async function handleSlot(phone, text, ctx) {
       `✅ *Installation Request Confirmed!*\n\n` +
       `📍 Zone: ${ctx.zone_name}\n` +
       `⏰ Slot: ASAP (within 1-2 hours)\n` +
-      `🔐 Technician OTP: *${otpCode}* _(share only when tech arrives)_\n\n` +
+      `🎉 Your *Happiness Code: ${otpCode}* _(share with technician only after work is done)_\n\n` +
       `We're finding a technician near you. You'll be notified once assigned! 🔧`
     );
   } else {
@@ -272,7 +426,7 @@ async function handleSlot(phone, text, ctx) {
       `✅ *Installation Scheduled!*\n\n` +
       `📍 Zone: ${ctx.zone_name}\n` +
       `📅 Slot: ${slot.label}\n` +
-      `🔐 Technician OTP: *${otpCode}* _(share only when tech arrives)_\n\n` +
+      `🎉 Your *Happiness Code: ${otpCode}* _(share with technician only after work is done)_\n\n` +
       `We'll assign a technician 30 minutes before your slot. You'll receive a confirmation! 🔧`
     );
   }
@@ -333,4 +487,4 @@ async function broadcastJob(job, zoneId) {
   console.log(`[BROADCAST] Sent job ${job.id} to ${techs.length} technicians`);
 }
 
-module.exports = { start, handleAddress, handleSlot, broadcastJob };
+module.exports = { start, handleInstallState, handleInstallDistrict, handleInstallArea, handleSlot, broadcastJob };

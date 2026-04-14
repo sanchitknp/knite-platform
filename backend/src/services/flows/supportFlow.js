@@ -7,6 +7,7 @@ const wa = require('../whatsappService');
 const session = require('../sessionService');
 const zone = require('../zoneService');
 const otp = require('../otpService');
+const media = require('../mediaService');
 const { broadcastJob } = require('./installationFlow');
 
 const SUPPORT_KEYWORDS = [
@@ -145,8 +146,10 @@ async function handleIssueType(phone, text, ctx) {
 /**
  * Handle media or skip, then check warranty and dispatch
  */
-async function handleMediaAndDispatch(phone, text, mediaUrl, ctx) {
-  const issueMediaUrl = mediaUrl || null;
+async function handleMediaAndDispatch(phone, text, mediaId, ctx) {
+  const issueMediaUrl = mediaId
+    ? await media.storeMedia(mediaId, 'issue', `${phone}_${ctx.unit_id}`)
+    : null;
 
   // Check warranty
   const unitResult = await db.query(`SELECT * FROM units WHERE id = $1`, [ctx.unit_id]);
