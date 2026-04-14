@@ -91,10 +91,10 @@ async function sendInstallAddressFlow(phone) {
 
 /**
  * Handle WhatsApp Flow response for installation address
- * flowPayload = { selected_state: "uttar_pradesh", pincode: "201301" }
+ * flowPayload = { selected_state: "uttar_pradesh", full_address: "Flat 4B, Sector 74", pincode: "201301" }
  */
 async function handleInstallFlowResponse(phone, flowPayload, ctx) {
-  const { selected_state, pincode } = flowPayload;
+  const { selected_state, full_address, pincode } = flowPayload;
 
   if (!selected_state || !pincode) {
     await wa.sendText(phone, `❌ Address details are missing. Please try again.`);
@@ -110,7 +110,7 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
     return;
   }
 
-  // Look up area by pincode
+  // Look up area/district/state by pincode from DB
   const areaResult = await db.query(
     `SELECT area_name, district, state FROM india_pincodes WHERE pincode = $1 LIMIT 1`,
     [pin]
@@ -120,13 +120,26 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
   if (areaResult.rows[0]) {
     ({ area_name: areaName, district, state } = areaResult.rows[0]);
   } else {
-    // Pincode not in DB — use the state from the flow
+    // Pincode not in DB — derive state from flow selection
     areaName = 'Unknown Area';
     district = 'Unknown District';
     state = selected_state.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
-  const addressData = { raw: `${areaName}, ${district}, ${state}`, pincode: pin, area: areaName, state, district };
+  // Build full address string: user's text + DB area + state
+  const userLine = full_address ? full_address.trim() : '';
+  const addressLine = userLine
+    ? `${userLine}, ${areaName}, ${district}, ${state} — ${pin}`
+    : `${areaName}, ${district}, ${state} — ${pin}`;
+
+  const addressData = {
+    full_address: userLine,
+    area: areaName,
+    district,
+    state,
+    pincode: pin,
+    raw: addressLine
+  };
 
   // Find zone by pincode
   const zoneResult = await zone.findZoneByPincode(pin);
@@ -138,7 +151,7 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
     );
     await session.clearSession(phone);
     await wa.sendText(phone,
-      `✅ *Address saved!*\n\n📍 ${areaName}, ${district}, ${state} — *${pin}*\n\n` +
+      `✅ *Address saved!*\n\n📍 ${addressLine}\n\n` +
       `🔧 We're working on expanding to your area. You'll receive an update within a few hours. Thank you for your patience! 🙏`
     );
     return;
@@ -152,7 +165,7 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
   await session.setSession(phone, {
     flow: 'installation',
     step: 'awaiting_slot',
-    context_data: { ...ctx, zone_id: zoneResult.id, zone_name: zoneResult.name, address: `${areaName}, ${district}, ${state}`, pincode: pin }
+    context_data: { ...ctx, zone_id: zoneResult.id, zone_name: zoneResult.name, address: addressLine, pincode: pin }
   });
 
   const hour = new Date().getHours();
@@ -164,7 +177,7 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
     { id: 'TOMORROW_EVENING', title: '🌆 Tomorrow 4-6 PM' }
   );
   await wa.sendButtons(phone,
-    `✅ Great! We service *${areaName}, ${district}* (${pin}).\n\n📅 When would you like the installation?`,
+    `✅ Great! We service *${areaName}, ${district}*.\n\n📍 *${addressLine}*\n\n📅 When would you like the installation?`,
     buttons
   );
 }

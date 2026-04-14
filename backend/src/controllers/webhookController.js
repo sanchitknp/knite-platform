@@ -118,8 +118,8 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null) {
 
   // ─── Intent detection for new flows ───
 
-  // Install command: "Install KN-XXXX"
-  const installMatch = trimmed.match(/^install\s+(KN-\w+)$/i);
+  // Install command: "Install KN-XXXX" or just "KN-XXXX"
+  const installMatch = trimmed.match(/^(?:install\s+)?(KN-\w+)$/i);
   if (installMatch) {
     await installFlow.start(phone, installMatch[1].toUpperCase());
     return;
