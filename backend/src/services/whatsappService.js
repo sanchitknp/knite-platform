@@ -229,6 +229,24 @@ async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Fo
 }
 
 /**
+ * Send a location message (pin on map) to a phone number
+ */
+async function sendLocation(toPhone, latitude, longitude, name = '', address = '') {
+  console.log(`[WA→${toPhone}] LOCATION: lat=${latitude} lng=${longitude}`);
+  if (MODE === 'production') {
+    await callMetaAPI({
+      to: toPhone,
+      type: 'location',
+      location: { latitude, longitude, name, address },
+    });
+  } else {
+    await queueSimulator(toPhone, 'text',
+      `[LOCATION PIN] ${name || 'Installation Location'}\n📍 ${address || ''}\nhttps://maps.google.com/?q=${latitude},${longitude}`
+    );
+  }
+}
+
+/**
  * Send a location request message.
  * Renders a tappable button in WhatsApp that opens the location picker directly.
  */
@@ -257,6 +275,7 @@ module.exports = {
   sendButtons,
   sendList,
   sendFlow,
+  sendLocation,
   sendLocationRequest,
   sendTemplate,
   getPendingMessages,

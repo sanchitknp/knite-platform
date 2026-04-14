@@ -605,6 +605,17 @@ async function handleJobAccept(phone, jobId) {
     ]
   );
 
+  // Send location pin if customer shared their location
+  if (address.location?.latitude && address.location?.longitude) {
+    await wa.sendLocation(
+      phone,
+      address.location.latitude,
+      address.location.longitude,
+      address.raw || 'Installation Location',
+      address.full_address || address.raw || ''
+    );
+  }
+
   await wa.sendText(job.customer_phone,
     `👨‍🔧 *Technician Assigned!*\n\n` +
     `Name: ${tech.name}\n` +
