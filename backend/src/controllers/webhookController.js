@@ -11,6 +11,7 @@ const techFlow = require('../services/flows/techFlow');
 const maintenanceFlow = require('../services/flows/maintenanceFlow');
 const ownershipFlow = require('../services/flows/ownershipFlow');
 const maintenanceService = require('../services/flows/maintenanceFlow');
+const referralFlow = require('../services/flows/referralFlow');
 
 /**
  * Main message handler - routes to appropriate flow
@@ -115,9 +116,16 @@ async function handleMessage(phone, text, mediaUrl = null) {
     return;
   }
 
-  // Tech registration
+  // Tech registration — optionally with referral code: "REGISTER TECH REF_XXXXXXXX"
   if (upper.includes('REGISTER TECH') || upper === 'TECH' || upper === 'JOIN' || upper === 'TECH_JOIN') {
-    await techFlow.startOnboarding(phone);
+    const refMatch = trimmed.match(/REF[_\s]([A-Z0-9]{6,10})/i);
+    await techFlow.startOnboarding(phone, refMatch ? refMatch[1].toUpperCase() : null);
+    return;
+  }
+
+  // Technician referral
+  if (upper === 'REFER' || upper === 'REFER_TECH') {
+    await referralFlow.handleRefer(phone);
     return;
   }
 
@@ -368,6 +376,11 @@ async function handleJobVerification(phone, jobId, approved) {
       [job.technician_id]
     );
 
+    // Trigger referral reward check (non-blocking)
+    referralFlow.onJobCompleted(job.technician_id).catch(err =>
+      console.error('[REFERRAL] onJobCompleted error:', err.message)
+    );
+
     await db.query(
       `SELECT log_job_event($1, 'verified_complete', 'pending_verification', 'completed', 'customer', $2, '{}')`,
       [jobId, job.customer_id]
@@ -446,6 +459,7 @@ async function sendMainMenu(phone, isTech) {
       `👋 *Knite Technician Portal*\n\nYou'll receive job notifications automatically.\n\nWhat do you need?`,
       [
         { id: 'TECH_STATUS', title: '📊 My Stats' },
+        { id: 'REFER_TECH', title: '🤝 Refer a Technician' },
         { id: 'HELP', title: '❓ Help' },
       ]
     );

@@ -19,6 +19,7 @@ const wa = require('../whatsappService');
 const session = require('../sessionService');
 const otp = require('../otpService');
 const media = require('../mediaService');
+const referral = require('./referralFlow');
 
 const AREA_MAX = 200; // numbered text has no WhatsApp API limit
 
@@ -26,7 +27,7 @@ const AREA_MAX = 200; // numbered text has no WhatsApp API limit
 // ONBOARDING
 // ─────────────────────────────────────────────
 
-async function startOnboarding(phone) {
+async function startOnboarding(phone, referralCode = null) {
   const existingResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [phone]);
   const existing = existingResult.rows[0];
 
@@ -52,14 +53,16 @@ async function startOnboarding(phone) {
     flow: 'tech_onboarding',
     step: 'awaiting_name',
     actor_type: 'technician',
-    context_data: {}
+    context_data: { referral_code: referralCode }
   });
 
+  const referralNote = referralCode ? `\n🤝 _Referred by a Knite technician_\n` : '';
   await wa.sendText(phone,
     `👋 *Welcome to the Knite Technician Network!*\n\n` +
     `💰 Earn ₹300-500 per job\n` +
     `🕐 No fixed hours - work when you want\n` +
-    `📱 100% WhatsApp - no app needed\n\n` +
+    `📱 100% WhatsApp - no app needed\n` +
+    `${referralNote}\n` +
     `Let's get you registered. What is your *full name*?`
   );
 }
@@ -401,6 +404,14 @@ async function handleKYC(phone, mediaId, ctx) {
        ON CONFLICT (technician_id, zone_id) DO UPDATE SET is_home = $3`,
       [tech.id, zoneId, zoneId === ctx.home_zone_id]
     );
+  }
+
+  // Generate referral code for this new technician
+  await referral.ensureReferralCode(tech.id);
+
+  // Save referral mapping if they registered via a referral link
+  if (ctx.referral_code) {
+    await referral.saveReferral(tech.id, ctx.referral_code);
   }
 
   const statesSummary = ctx.zone_summary || ctx.home_zone_name || 'N/A';

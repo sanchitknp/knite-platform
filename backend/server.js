@@ -206,6 +206,55 @@ app.post('/api/admin/trigger/broadcast', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// REFERRAL REDIRECT
+// ─────────────────────────────────────────────
+
+/**
+ * GET /ref/:code — Referral link clicked by prospective technician.
+ * Redirects to WhatsApp with pre-filled registration message.
+ */
+app.get('/ref/:code', (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const waPhone = process.env.WA_BUSINESS_PHONE || '918888888888'; // your WhatsApp business number
+  const text = encodeURIComponent(`REGISTER TECH REF_${code}`);
+  res.redirect(`https://wa.me/${waPhone}?text=${text}`);
+});
+
+// Admin: view referral scheme
+app.get('/api/admin/referral/scheme', async (req, res) => {
+  const referralFlow = require('./src/services/flows/referralFlow');
+  const scheme = await referralFlow.getActiveScheme();
+  res.json(scheme);
+});
+
+// Admin: update referral scheme
+app.post('/api/admin/referral/scheme', async (req, res) => {
+  const { jobs_threshold, reward_rs, notes } = req.body;
+  if (!jobs_threshold || !reward_rs) {
+    return res.status(400).json({ error: 'jobs_threshold and reward_rs required' });
+  }
+  const referralFlow = require('./src/services/flows/referralFlow');
+  const scheme = await referralFlow.updateScheme(parseInt(jobs_threshold), parseFloat(reward_rs), notes);
+  res.json({ message: 'Scheme updated', scheme });
+});
+
+// Admin: view all referrals
+app.get('/api/admin/referrals', async (req, res) => {
+  const result = await db.query(`
+    SELECT r.*,
+           t1.name AS referrer_name, t1.phone AS referrer_phone,
+           t2.name AS referred_name, t2.phone AS referred_phone,
+           rs.jobs_threshold, rs.reward_paise
+    FROM referrals r
+    JOIN technicians t1 ON t1.id = r.referrer_id
+    LEFT JOIN technicians t2 ON t2.id = r.referred_id
+    JOIN referral_schemes rs ON rs.id = r.scheme_id
+    ORDER BY r.created_at DESC
+  `);
+  res.json(result.rows);
+});
+
+// ─────────────────────────────────────────────
 // HEALTH CHECK
 // ─────────────────────────────────────────────
 app.get('/api/health', async (req, res) => {
