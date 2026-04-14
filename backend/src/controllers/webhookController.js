@@ -183,12 +183,15 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null) {
 async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech, flowData = null) {
   // ── INSTALLATION FLOW ──
   if (flow === 'installation') {
-    if (step === 'awaiting_state') {
-      await installFlow.handleInstallState(phone, text, ctx);
-    } else if (step === 'awaiting_district') {
-      await installFlow.handleInstallDistrict(phone, text, ctx);
-    } else if (step === 'awaiting_area') {
-      await installFlow.handleInstallArea(phone, text, ctx);
+    if (step === 'awaiting_flow') {
+      // WhatsApp Flow completion response
+      if (flowData) {
+        await installFlow.handleInstallFlowResponse(phone, flowData, ctx);
+      } else {
+        // User sent text while waiting for flow — re-send
+        await wa.sendText(phone, `Please complete the address form to continue. 👇`);
+        await installFlow.sendInstallAddressFlow(phone);
+      }
     } else if (step === 'awaiting_slot') {
       await installFlow.handleSlot(phone, text, ctx);
     }
