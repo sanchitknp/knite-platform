@@ -55,13 +55,35 @@ async function ensureReferralCode(techId) {
 
 async function handleRefer(phone) {
   const techResult = await db.query(
-    `SELECT * FROM technicians WHERE phone = $1 AND is_verified = true AND is_active = true`,
-    [phone]
+    `SELECT * FROM technicians WHERE phone = $1`, [phone]
   );
   const tech = techResult.rows[0];
 
   if (!tech) {
-    await wa.sendText(phone, `❌ You need to be a verified technician to refer others.`);
+    // Not registered at all
+    await wa.sendText(phone,
+      `🤝 *Refer a Technician & Earn!*\n\n` +
+      `To refer others and earn rewards, you first need to be a registered Knite technician.\n\n` +
+      `👨‍🔧 Type *Join as Technician* or reply *JOIN* to register — it's free and takes just a few minutes!\n\n` +
+      `💰 Once approved, you'll earn *₹50 for every 5 jobs* completed by each technician you refer.`
+    );
+    return;
+  }
+
+  if (!tech.is_verified) {
+    await wa.sendText(phone,
+      `⏳ *Your registration is still pending approval.*\n\n` +
+      `Once our admin verifies your account, you'll be able to refer other technicians and earn rewards.\n\n` +
+      `We'll notify you on WhatsApp as soon as you're approved!`
+    );
+    return;
+  }
+
+  if (!tech.is_active) {
+    await wa.sendText(phone,
+      `❌ *Your technician account is currently inactive.*\n\n` +
+      `Please contact support to reactivate your account before referring others.`
+    );
     return;
   }
 

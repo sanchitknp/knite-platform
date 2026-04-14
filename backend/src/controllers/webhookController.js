@@ -101,6 +101,15 @@ async function handleMessage(phone, text, mediaUrl = null) {
     return;
   }
 
+  // ─── Tech registration — checked BEFORE session continuation so referral links
+  //     like "REGISTER TECH REF_XXX" always start fresh and don't get swallowed
+  //     by an existing awaiting_name session ───
+  if (upper.includes('REGISTER TECH') || upper === 'TECH' || upper === 'JOIN' || upper === 'TECH_JOIN') {
+    const refMatch = trimmed.match(/REF[_\s]([A-Z0-9]{6,10})/i);
+    await techFlow.startOnboarding(phone, refMatch ? refMatch[1].toUpperCase() : null);
+    return;
+  }
+
   // ─── Continue active session flow ───
   if (flow && step) {
     await continueFlow(phone, flow, step, ctx, trimmed, upper, mediaUrl, isTech);
@@ -113,13 +122,6 @@ async function handleMessage(phone, text, mediaUrl = null) {
   const installMatch = trimmed.match(/^install\s+(KN-\w+)$/i);
   if (installMatch) {
     await installFlow.start(phone, installMatch[1].toUpperCase());
-    return;
-  }
-
-  // Tech registration — optionally with referral code: "REGISTER TECH REF_XXXXXXXX"
-  if (upper.includes('REGISTER TECH') || upper === 'TECH' || upper === 'JOIN' || upper === 'TECH_JOIN') {
-    const refMatch = trimmed.match(/REF[_\s]([A-Z0-9]{6,10})/i);
-    await techFlow.startOnboarding(phone, refMatch ? refMatch[1].toUpperCase() : null);
     return;
   }
 
@@ -470,6 +472,7 @@ async function sendMainMenu(phone, isTech) {
         { id: 'SCAN_HELP', title: '📦 New Installation' },
         { id: 'SUPPORT_HELP', title: '🔧 Support / Repair' },
         { id: 'TECH_JOIN', title: '👨‍🔧 Join as Technician' },
+        { id: 'REFER_TECH', title: '🤝 Refer a Technician' },
       ]
     );
   }

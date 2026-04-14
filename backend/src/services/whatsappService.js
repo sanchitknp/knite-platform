@@ -99,8 +99,27 @@ async function sendButtons(toPhone, body, buttons) {
           },
         },
       });
+    } else if (buttons.length <= 10) {
+      // 4–10 buttons: use WhatsApp interactive list message (dropdown)
+      await callMetaAPI({
+        to: toPhone,
+        type: 'interactive',
+        interactive: {
+          type: 'list',
+          body: { text: body },
+          action: {
+            button: 'Choose an option',
+            sections: [{
+              rows: buttons.map(b => ({
+                id: b.id.substring(0, 200),
+                title: b.title.substring(0, 24),
+              })),
+            }],
+          },
+        },
+      });
     } else {
-      // > 3 buttons: numbered text list (WhatsApp list messages have a hard 10-row limit)
+      // > 10 buttons: plain numbered text (last resort)
       const lines = buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
       await callMetaAPI({
         to: toPhone,
