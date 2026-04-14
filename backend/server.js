@@ -89,6 +89,7 @@ app.post('/webhook', async (req, res) => {
       // Extract text from various message types
       let text = '';
       let mediaId = null;
+      let handled = false;
 
       if (msg.type === 'text') {
         text = msg.text?.body || '';
@@ -97,6 +98,22 @@ app.post('/webhook', async (req, res) => {
         text = msg.interactive?.button_reply?.id || msg.interactive?.button_reply?.title || '';
         // List reply
         if (!text) text = msg.interactive?.list_reply?.id || msg.interactive?.list_reply?.title || '';
+        // Flow completion (nfm_reply)
+        if (msg.interactive?.type === 'nfm_reply') {
+          const responseJson = msg.interactive?.nfm_reply?.response_json;
+          if (responseJson) {
+            try {
+              const flowData = JSON.parse(responseJson);
+              console.log(`[WEBHOOK] From=${phone} Type=flow_response`);
+              webhook.handleMessage(phone, '[FLOW_RESPONSE]', null, flowData).catch(err =>
+                console.error(`[WEBHOOK] Flow handler error for ${phone}:`, err.message)
+              );
+              handled = true;
+            } catch (e) {
+              console.error('[WEBHOOK] Failed to parse flow response JSON:', e.message);
+            }
+          }
+        }
       } else if (msg.type === 'image') {
         text = '[MEDIA]';
         mediaId = msg.image?.id;
@@ -110,12 +127,13 @@ app.post('/webhook', async (req, res) => {
         text = msg.button?.text || msg.button?.payload || '';
       }
 
-      console.log(`[WEBHOOK] From=${phone} Type=${msg.type} Text="${text}" MediaId=${mediaId}`);
-
-      // Process asynchronously
-      webhook.handleMessage(phone, text, mediaId).catch(err =>
-        console.error(`[WEBHOOK] Handler error for ${phone}:`, err.message)
-      );
+      if (!handled) {
+        console.log(`[WEBHOOK] From=${phone} Type=${msg.type} Text="${text}" MediaId=${mediaId}`);
+        // Process asynchronously
+        webhook.handleMessage(phone, text, mediaId).catch(err =>
+          console.error(`[WEBHOOK] Handler error for ${phone}:`, err.message)
+        );
+      }
     }
 
     // Handle message status updates (delivered, read, failed)

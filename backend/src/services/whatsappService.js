@@ -192,10 +192,47 @@ async function getAllRecentMessages(limit = 50) {
   return result.rows;
 }
 
+/**
+ * Send a WhatsApp Flow message
+ */
+async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Form') {
+  console.log(`[WA→${toPhone}] FLOW: ${bodyText.substring(0, 60)}`);
+  if (MODE === 'production') {
+    await callMetaAPI({
+      to: toPhone,
+      type: 'interactive',
+      interactive: {
+        type: 'flow',
+        body: { text: bodyText },
+        action: {
+          name: 'flow',
+          parameters: {
+            flow_message_version: '3',
+            flow_token: flowToken,
+            flow_id: flowId,
+            flow_cta: ctaText,
+            flow_action: 'navigate',
+            flow_action_payload: {
+              screen: 'STATE_SCREEN',
+            },
+          },
+        },
+      },
+    });
+  } else {
+    // Simulator fallback: show as text prompt
+    await queueSimulator(toPhone, 'text',
+      `[FLOW] ${bodyText}\n\n_(WhatsApp Flow — use production mode to see the native form)_`,
+      []
+    );
+  }
+}
+
 module.exports = {
   sendText,
   sendButtons,
   sendList,
+  sendFlow,
   sendTemplate,
   getPendingMessages,
   getAllRecentMessages,

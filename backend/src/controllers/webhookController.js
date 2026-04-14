@@ -16,7 +16,7 @@ const referralFlow = require('../services/flows/referralFlow');
 /**
  * Main message handler - routes to appropriate flow
  */
-async function handleMessage(phone, text, mediaUrl = null) {
+async function handleMessage(phone, text, mediaUrl = null, flowData = null) {
   const trimmed = text.trim();
   const upper = trimmed.toUpperCase();
 
@@ -112,7 +112,7 @@ async function handleMessage(phone, text, mediaUrl = null) {
 
   // ─── Continue active session flow ───
   if (flow && step) {
-    await continueFlow(phone, flow, step, ctx, trimmed, upper, mediaUrl, isTech);
+    await continueFlow(phone, flow, step, ctx, trimmed, upper, mediaUrl, isTech, flowData);
     return;
   }
 
@@ -180,7 +180,7 @@ async function handleMessage(phone, text, mediaUrl = null) {
 /**
  * Continue an active flow session
  */
-async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech) {
+async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech, flowData = null) {
   // ── INSTALLATION FLOW ──
   if (flow === 'installation') {
     if (step === 'awaiting_state') {
@@ -278,10 +278,15 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
   if (flow === 'tech_onboarding') {
     if (step === 'awaiting_name') {
       await techFlow.handleName(phone, text, ctx);
-    } else if (step === 'awaiting_state') {
-      await techFlow.handleState(phone, text, ctx);
-    } else if (step === 'awaiting_areas') {
-      await techFlow.handleAreaSelection(phone, text, ctx);
+    } else if (step === 'awaiting_flow') {
+      // WhatsApp Flow completion response
+      if (flowData) {
+        await techFlow.handleFlowResponse(phone, flowData, ctx);
+      } else {
+        // User sent a text message while waiting for flow — re-send the flow
+        await wa.sendText(phone, `Please complete the form to continue. 👇`);
+        await techFlow.sendAreaSelectionFlow(phone);
+      }
     } else if (step === 'awaiting_more_states') {
       await techFlow.handleMoreStates(phone, text, ctx);
     } else if (step === 'awaiting_kyc') {

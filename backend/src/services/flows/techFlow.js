@@ -79,11 +79,22 @@ async function handleName(phone, name, ctx) {
 
   await session.setSession(phone, {
     flow: 'tech_onboarding',
-    step: 'awaiting_state',
+    step: 'awaiting_flow',
     context_data: { name: name.trim(), all_state_selections: [] }
   });
 
-  await sendStateList(phone, []);  // no prior selections yet
+  await sendAreaSelectionFlow(phone);
+}
+
+async function sendAreaSelectionFlow(phone) {
+  const flowId = process.env.WA_FLOW_AREA_SELECTION;
+  const flowToken = `tech_area_${phone}_${Date.now()}`;
+  await wa.sendFlow(phone,
+    `📍 *Select your service area*\n\nChoose your state and enter the pincodes you cover.`,
+    flowId,
+    flowToken,
+    '📍 Select State & Pincodes'
+  );
 }
 
 async function sendStateList(phone, allSelections = []) {
@@ -259,6 +270,100 @@ async function sendAreaList(phone, state, selectedAreas) {
 }
 
 // ─────────────────────────────────────────────
+// Flow response handler (WhatsApp Flow completion)
+// ─────────────────────────────────────────────
+
+async function handleFlowResponse(phone, flowPayload, ctx) {
+  const { selected_state, pincodes } = flowPayload;
+
+  if (!selected_state || !pincodes) {
+    await wa.sendText(phone, `❌ Something went wrong with the form. Please try again.`);
+    await sendAreaSelectionFlow(phone);
+    return;
+  }
+
+  // Parse pincodes from comma-separated input
+  const rawPincodes = pincodes.split(/[,\s]+/).map(p => p.trim()).filter(p => /^\d{6}$/.test(p));
+
+  if (rawPincodes.length === 0) {
+    await wa.sendText(phone, `❌ No valid 6-digit pincodes found. Please try again.`);
+    await sendAreaSelectionFlow(phone);
+    return;
+  }
+
+  // Look up areas from DB
+  const result = await db.query(
+    `SELECT id, area_name, pincode, district, state FROM india_pincodes
+     WHERE pincode = ANY($1::text[]) AND area_name IS NOT NULL`,
+    [rawPincodes]
+  );
+
+  const found = result.rows;
+  const notFound = rawPincodes.filter(p => !found.some(r => r.pincode === p));
+
+  if (found.length === 0) {
+    await wa.sendText(phone,
+      `❌ None of the pincodes matched our database. Please check and try again.\n\n` +
+      `Invalid: ${rawPincodes.join(', ')}`
+    );
+    await sendAreaSelectionFlow(phone);
+    return;
+  }
+
+  // Build selection entry for this state
+  const stateNameMap = {
+    andaman_nicobar: 'Andaman Nicobar', andhra_pradesh: 'Andhra Pradesh',
+    arunachal_pradesh: 'Arunachal Pradesh', assam: 'Assam', bihar: 'Bihar',
+    chandigarh: 'Chandigarh', chhattisgarh: 'Chhattisgarh',
+    dadra_and_nagar_haveli: 'Dadra & Nagar Haveli', daman_and_diu: 'Daman & Diu',
+    delhi: 'Delhi', goa: 'Goa', gujarat: 'Gujarat', haryana: 'Haryana',
+    himachal_pradesh: 'Himachal Pradesh', jammu_and_kashmir: 'Jammu & Kashmir',
+    jharkhand: 'Jharkhand', karnataka: 'Karnataka', kerala: 'Kerala',
+    lakshdweep: 'Lakshdweep', madhya_pradesh: 'Madhya Pradesh',
+    maharashtra: 'Maharashtra', manipur: 'Manipur', meghalaya: 'Meghalaya',
+    mizoram: 'Mizoram', nagaland: 'Nagaland', orissa: 'Orissa',
+    pondicherry: 'Pondicherry', punjab: 'Punjab', rajasthan: 'Rajasthan',
+    sikkim: 'Sikkim', tamil_nadu: 'Tamil Nadu', tripura: 'Tripura',
+    uttar_pradesh: 'Uttar Pradesh', uttaranchal: 'Uttaranchal', west_bengal: 'West Bengal',
+  };
+  const stateName = stateNameMap[selected_state] || found[0]?.state || selected_state;
+
+  const currentSelection = {
+    state: stateName,
+    selected_areas: found,
+  };
+
+  const allSelections = [...(ctx.all_state_selections || []), currentSelection];
+  const totalAreas = allSelections.reduce((sum, s) => sum + s.selected_areas.length, 0);
+  const statesSummary = allSelections.map(s => `📍 *${s.state}*: ${s.selected_areas.length} area(s)`).join('\n');
+
+  // Confirmation message
+  let confirmMsg = `✅ *${stateName} saved!*\n\n` +
+    `Areas found:\n${found.map(a => `• ${a.area_name} (${a.pincode})`).join('\n')}`;
+
+  if (notFound.length > 0) {
+    confirmMsg += `\n\n⚠️ Not found in DB: ${notFound.join(', ')} (skipped)`;
+  }
+
+  confirmMsg += `\n\n*All states so far (${allSelections.length}):*\n${statesSummary}\nTotal areas: ${totalAreas}`;
+
+  await session.setSession(phone, {
+    flow: 'tech_onboarding',
+    step: 'awaiting_more_states',
+    context_data: {
+      ...ctx,
+      all_state_selections: allSelections,
+      state: null, selected_areas: null,
+    }
+  });
+
+  await wa.sendButtons(phone, confirmMsg, [
+    { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
+    { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
+  ]);
+}
+
+// ─────────────────────────────────────────────
 // Step 4b: More states or proceed to KYC
 // ─────────────────────────────────────────────
 
@@ -269,15 +374,14 @@ async function handleMoreStates(phone, text, ctx) {
   if (upper === 'ADD_MORE_STATES') {
     await session.setSession(phone, {
       flow: 'tech_onboarding',
-      step: 'awaiting_state',
+      step: 'awaiting_flow',
       context_data: {
         name: ctx.name,
         all_state_selections: allSelections,
         state: null, selected_areas: null,
       }
     });
-    // Show all states — already-added ones are allowed (to add more districts)
-    await sendStateList(phone, allSelections);
+    await sendAreaSelectionFlow(phone);
     return;
   }
 
@@ -645,8 +749,8 @@ async function handleAdminApproval(phone, techId, approved) {
 module.exports = {
   startOnboarding,
   handleName,
-  handleState,
-  handleAreaSelection,
+  sendAreaSelectionFlow,
+  handleFlowResponse,
   handleMoreStates,
   handleKYC,
   handleJobAccept,
