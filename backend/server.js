@@ -125,6 +125,18 @@ app.post('/webhook', async (req, res) => {
         mediaId = msg.document?.id;
       } else if (msg.type === 'button') {
         text = msg.button?.text || msg.button?.payload || '';
+      } else if (msg.type === 'location') {
+        const loc = {
+          latitude: msg.location?.latitude,
+          longitude: msg.location?.longitude,
+          name: msg.location?.name || null,
+          address: msg.location?.address || null,
+        };
+        console.log(`[WEBHOOK] From=${phone} Type=location lat=${loc.latitude} lng=${loc.longitude}`);
+        webhook.handleMessage(phone, '[LOCATION]', null, null, loc).catch(err =>
+          console.error(`[WEBHOOK] Location handler error for ${phone}:`, err.message)
+        );
+        handled = true;
       }
 
       if (!handled) {

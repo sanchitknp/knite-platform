@@ -16,8 +16,8 @@ const referralFlow = require('../services/flows/referralFlow');
 /**
  * Main message handler - routes to appropriate flow
  */
-async function handleMessage(phone, text, mediaUrl = null, flowData = null) {
-  const trimmed = text.trim();
+async function handleMessage(phone, text, mediaUrl = null, flowData = null, location = null) {
+  const trimmed = text ? text.trim() : '';
   const upper = trimmed.toUpperCase();
 
   // ─── Dedup check (by message ID not needed in simulator, but phone+time) ───
@@ -112,7 +112,7 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null) {
 
   // ─── Continue active session flow ───
   if (flow && step) {
-    await continueFlow(phone, flow, step, ctx, trimmed, upper, mediaUrl, isTech, flowData);
+    await continueFlow(phone, flow, step, ctx, trimmed, upper, mediaUrl, isTech, flowData, location);
     return;
   }
 
@@ -180,7 +180,7 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null) {
 /**
  * Continue an active flow session
  */
-async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech, flowData = null) {
+async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech, flowData = null, location = null) {
   // ── INSTALLATION FLOW ──
   if (flow === 'installation') {
     if (step === 'awaiting_flow') {
@@ -191,6 +191,22 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
         // User sent text while waiting for flow — re-send
         await wa.sendText(phone, `Please complete the address form to continue. 👇`);
         await installFlow.sendInstallAddressFlow(phone);
+      }
+    } else if (step === 'awaiting_location') {
+      if (location) {
+        // User shared their WhatsApp location
+        await installFlow.handleInstallLocation(phone, location, ctx);
+      } else if (upper === 'SKIP') {
+        // User chose to skip location sharing
+        const areaName = ctx.address ? ctx.address.split(',')[0].trim() : 'your area';
+        const district = ctx.address ? ctx.address.split(',')[1]?.trim() : '';
+        await session.setSession(phone, { flow: 'installation', step: 'awaiting_slot', context_data: ctx });
+        await installFlow.sendSlotButtons(phone, areaName, district, ctx.address || '');
+      } else {
+        // Remind them
+        await wa.sendText(phone,
+          `📌 Please *share your location* using the 📎 attachment icon → Location → Send Your Current Location\n\n_(Or type *SKIP* to continue without sharing)_`
+        );
       }
     } else if (step === 'awaiting_slot') {
       await installFlow.handleSlot(phone, text, ctx);

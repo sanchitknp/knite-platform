@@ -91,10 +91,10 @@ async function sendInstallAddressFlow(phone) {
 
 /**
  * Handle WhatsApp Flow response for installation address
- * flowPayload = { selected_state: "uttar_pradesh", full_address: "Flat 4B, Sector 74", pincode: "201301" }
+ * flowPayload = { selected_state, full_address, pincode, share_location: "yes"|"skip" }
  */
 async function handleInstallFlowResponse(phone, flowPayload, ctx) {
-  const { selected_state, full_address, pincode } = flowPayload;
+  const { selected_state, full_address, pincode, share_location } = flowPayload;
 
   if (!selected_state || !pincode) {
     await wa.sendText(phone, `❌ Address details are missing. Please try again.`);
@@ -162,12 +162,63 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
     [JSON.stringify({ ...addressData, zone_id: zoneResult.id, zone_name: zoneResult.name }), zoneResult.id, ctx.unit_id]
   );
 
+  const newCtx = { ...ctx, zone_id: zoneResult.id, zone_name: zoneResult.name, address: addressLine, pincode: pin };
+
+  // If user opted to share location, ask for it before slot selection
+  if (share_location === 'yes') {
+    await session.setSession(phone, {
+      flow: 'installation',
+      step: 'awaiting_location',
+      context_data: newCtx
+    });
+    await wa.sendText(phone,
+      `✅ *Address saved!*\n\n📍 ${addressLine}\n\n` +
+      `📌 *Please share your live location* so the technician can find you easily.\n\n` +
+      `_Tap the 📎 attachment icon → Location → Send Your Current Location_\n\n` +
+      `_(Or type *SKIP* to continue without sharing location)_`
+    );
+    return;
+  }
+
+  // No location sharing — go straight to slot selection
   await session.setSession(phone, {
     flow: 'installation',
     step: 'awaiting_slot',
-    context_data: { ...ctx, zone_id: zoneResult.id, zone_name: zoneResult.name, address: addressLine, pincode: pin }
+    context_data: newCtx
+  });
+  await sendSlotButtons(phone, areaName, district, addressLine);
+}
+
+/**
+ * Handle WhatsApp location message during installation
+ */
+async function handleInstallLocation(phone, location, ctx) {
+  const { latitude, longitude, name, address } = location;
+
+  // Save location to unit
+  const locationData = { latitude, longitude, name: name || null, address: address || null };
+  await db.query(
+    `UPDATE units SET install_address = install_address || $1::jsonb, updated_at = now() WHERE id = $2`,
+    [JSON.stringify({ location: locationData }), ctx.unit_id]
+  );
+
+  const areaName = ctx.address ? ctx.address.split(',')[0].trim() : 'your area';
+  const district = ctx.address ? ctx.address.split(',')[1]?.trim() : '';
+
+  await session.setSession(phone, {
+    flow: 'installation',
+    step: 'awaiting_slot',
+    context_data: ctx
   });
 
+  await wa.sendText(phone, `✅ *Location saved!* 📍`);
+  await sendSlotButtons(phone, areaName, district, ctx.address);
+}
+
+/**
+ * Send slot selection buttons
+ */
+async function sendSlotButtons(phone, areaName, district, addressLine) {
   const hour = new Date().getHours();
   const buttons = [];
   if (hour < 16) buttons.push({ id: 'ASAP', title: '⚡ ASAP (1-2 hours)' });
@@ -177,7 +228,7 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
     { id: 'TOMORROW_EVENING', title: '🌆 Tomorrow 4-6 PM' }
   );
   await wa.sendButtons(phone,
-    `✅ Great! We service *${areaName}, ${district}*.\n\n📍 *${addressLine}*\n\n📅 When would you like the installation?`,
+    `✅ Great! We service *${areaName}${district ? ', ' + district : ''}*.\n\n📍 *${addressLine}*\n\n📅 When would you like the installation?`,
     buttons
   );
 }
@@ -443,4 +494,4 @@ async function broadcastJob(job, zoneId) {
   console.log(`[BROADCAST] Sent job ${job.id} to ${techs.length} technicians`);
 }
 
-module.exports = { start, sendInstallAddressFlow, handleInstallFlowResponse, handleSlot, broadcastJob };
+module.exports = { start, sendInstallAddressFlow, handleInstallFlowResponse, handleInstallLocation, sendSlotButtons, handleSlot, broadcastJob };
