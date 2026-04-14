@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knite – Admin Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a1628;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+  /* Sidebar */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
+    background: #0f2035;
+    border-right: 1px solid #1e3a55;
+    display: flex; flex-direction: column;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px;
+    font-size: 22px; font-weight: 800;
+    color: #00d4aa;
+    border-bottom: 1px solid #1e3a55;
+  }
+  .sidebar-logo span { color: #fff; }
+  .sidebar-logo .badge { font-size: 11px; color: #64b5f6; display: block; font-weight: 400; margin-top: 2px; }
+  .nav-item {
+    padding: 12px 20px;
+    cursor: pointer; display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: #90a4ae;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-item:hover { background: #1a3a5c; color: #e0e0e0; }
+  .nav-item.active { background: #1a3a5c; color: #00d4aa; border-left-color: #00d4aa; }
+  .nav-item .icon { font-size: 16px; }
+  .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid #1e3a55; }
+  .sidebar-footer a {
+    display: block; color: #64b5f6; text-decoration: none;
+    font-size: 13px; padding: 6px 0;
+  }
+
+  /* Main */
+  .main { margin-left: 220px; padding: 24px; }
+  .page-title {
+    font-size: 24px; font-weight: 700; color: #fff;
+    margin-bottom: 4px;
+  }
+  .page-subtitle { font-size: 14px; color: #64b5f6; margin-bottom: 24px; }
+
+  /* Stats Cards */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: #0f2035;
+    border: 1px solid #1e3a55;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .stat-card .label { font-size: 12px; color: #64b5f6; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 32px; font-weight: 800; color: #fff; margin: 8px 0; }
+  .stat-card .sub { font-size: 13px; color: #4caf50; }
+  .stat-card .sub.warn { color: #ff9800; }
+  .stat-card .sub.danger { color: #f44336; }
+
+  /* Tables */
+  .card {
+    background: #0f2035;
+    border: 1px solid #1e3a55;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #1e3a55;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-header .title { font-size: 16px; font-weight: 700; color: #fff; }
+  .card-header .count { font-size: 12px; color: #64b5f6; background: #1a3a5c; padding: 3px 10px; border-radius: 20px; }
+  .card-body { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 12px 16px; text-align: left; font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 0.5px; background: #0a1e30; font-weight: 600; }
+  td { padding: 12px 16px; font-size: 13px; border-top: 1px solid #1e3a55; vertical-align: middle; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .badge-green { background: rgba(76,175,80,0.15); color: #4caf50; }
+  .badge-blue { background: rgba(33,150,243,0.15); color: #42a5f5; }
+  .badge-orange { background: rgba(255,152,0,0.15); color: #ff9800; }
+  .badge-red { background: rgba(244,67,54,0.15); color: #f44336; }
+  .badge-purple { background: rgba(156,39,176,0.15); color: #ab47bc; }
+  .badge-gray { background: rgba(144,164,174,0.15); color: #90a4ae; }
+  .badge-teal { background: rgba(0,212,170,0.15); color: #00d4aa; }
+
+  /* Buttons */
+  .btn {
+    padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.8; }
+  .btn-primary { background: #00d4aa; color: #0a1628; }
+  .btn-danger { background: #f44336; color: #fff; }
+  .btn-warning { background: #ff9800; color: #0a1628; }
+  .btn-secondary { background: #1a3a5c; color: #e0e0e0; border: 1px solid #2a4a6c; }
+
+  /* Refresh bar */
+  .refresh-bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+  }
+  .refresh-bar .last-update { font-size: 12px; color: #4a6a8c; }
+  .auto-refresh { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #64b5f6; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 40px; color: #4a6a8c; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #0f2035; border: 1px solid #1e3a55; border-radius: 16px;
+    width: 640px; max-height: 80vh; overflow-y: auto;
+  }
+  .modal-header {
+    padding: 20px; border-bottom: 1px solid #1e3a55;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header .title { font-size: 18px; font-weight: 700; color: #fff; }
+  .modal-close { background: none; border: none; color: #90a4ae; font-size: 20px; cursor: pointer; }
+  .modal-body { padding: 20px; }
+  .modal-body pre {
+    background: #0a1e30; border-radius: 8px; padding: 12px;
+    font-size: 12px; color: #b0bec5; overflow-x: auto; white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Section toggle */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Form */
+  .form-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+  .form-group label { font-size: 12px; color: #64b5f6; text-transform: uppercase; }
+  .form-group input, .form-group select {
+    padding: 10px 12px; background: #1a3a5c; border: 1px solid #2a4a6c;
+    border-radius: 8px; color: #fff; font-size: 14px;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #00d4aa; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: #1e3a55; }
+  .timeline-item { position: relative; margin-bottom: 16px; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -17px; top: 4px;
+    width: 10px; height: 10px; border-radius: 50%; background: #00d4aa; border: 2px solid #0f2035;
+  }
+  .timeline-item .time { font-size: 11px; color: #4a6a8c; }
+  .timeline-item .event { font-size: 13px; color: #e0e0e0; margin-top: 2px; }
+  .timeline-item .meta { font-size: 12px; color: #64b5f6; margin-top: 2px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1e3a55; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    KNITE <span>Admin</span>
+    <span class="badge">Operations Dashboard</span>
+  </div>
+  <nav>
+    <div class="nav-item active" onclick="showSection('overview')"><span class="icon">📊</span> Overview</div>
+    <div class="nav-item" onclick="showSection('units')"><span class="icon">📦</span> Units</div>
+    <div class="nav-item" onclick="showSection('jobs')"><span class="icon">🔧</span> Jobs</div>
+    <div class="nav-item" onclick="showSection('technicians')"><span class="icon">👨‍🔧</span> Technicians</div>
+    <div class="nav-item" onclick="showSection('customers')"><span class="icon">👤</span> Customers</div>
+    <div class="nav-item" onclick="showSection('maintenance')"><span class="icon">🔄</span> Maintenance</div>
+    <div class="nav-item" onclick="showSection('ledger')"><span class="icon">💰</span> Ledger</div>
+    <div class="nav-item" onclick="showSection('zones')"><span class="icon">🗺️</span> Zones</div>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="/simulator.html">📱 WhatsApp Simulator</a>
+    <a href="/api/health" target="_blank">❤️ Health Check</a>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- OVERVIEW -->
+  <div class="section active" id="section-overview">
+    <div class="page-title">Operations Dashboard</div>
+    <div class="page-subtitle">Real-time overview of the Knite platform</div>
+    <div class="refresh-bar">
+      <button class="btn btn-secondary" onclick="loadAll()">🔄 Refresh</button>
+      <span class="last-update" id="lastUpdate">Loading...</span>
+      <label class="auto-refresh">
+        <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()" checked> Auto-refresh (5s)
+      </label>
+    </div>
+    <div class="stats-grid" id="statsGrid"><div class="loading">Loading stats...</div></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div class="card">
+          <div class="card-header"><span class="title">Recent Jobs</span></div>
+          <div class="card-body" id="recentJobs"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header"><span class="title">Pending Approvals</span></div>
+          <div class="card-body" id="pendingApprovals"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UNITS -->
+  <div class="section" id="section-units">
+    <div class="page-title">Units</div>
+    <div class="page-subtitle">Track every RO unit lifecycle</div>
+    <div class="refresh-bar">
+      <button class="btn btn-primary" onclick="showSeedUnitModal()">+ Seed Unit</button>
+      <button class="btn btn-secondary" onclick="loadUnits()">🔄 Refresh</button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="title">All Units</span>
+        <span class="count" id="unitCount">...</span>
+      </div>
+      <div class="card-body" id="unitsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- JOBS -->
+  <div class="section" id="section-jobs">
+    <div class="page-title">Jobs</div>
+    <div class="page-subtitle">Installation, repair & maintenance dispatches</div>
+    <div class="refresh-bar">
+      <button class="btn btn-secondary" onclick="loadJobs()">🔄 Refresh</button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="title">All Jobs</span>
+        <span class="count" id="jobCount">...</span>
+      </div>
+      <div class="card-body" id="jobsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- TECHNICIANS -->
+  <div class="section" id="section-technicians">
+    <div class="page-title">Technicians</div>
+    <div class="page-subtitle">Manage field technician network</div>
+    <div class="refresh-bar">
+      <button class="btn btn-secondary" onclick="loadTechnicians()">🔄 Refresh</button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="title">All Technicians</span>
+        <span class="count" id="techCount">...</span>
+      </div>
+      <div class="card-body" id="techsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="section" id="section-customers">
+    <div class="page-title">Customers</div>
+    <div class="page-subtitle">All registered customers</div>
+    <div class="refresh-bar">
+      <button class="btn btn-secondary" onclick="loadCustomers()">🔄 Refresh</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title">All Customers</span></div>
+      <div class="card-body" id="customersTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- MAINTENANCE -->
+  <div class="section" id="section-maintenance">
+    <div class="page-title">Maintenance Schedules</div>
+    <div class="page-subtitle">Recurring filter replacement pipeline</div>
+    <div class="refresh-bar">
+      <button class="btn btn-primary" onclick="triggerMaintenance()">▶️ Trigger Check Now</button>
+      <button class="btn btn-secondary" onclick="loadMaintenance()">🔄 Refresh</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title">Schedules</span></div>
+      <div class="card-body" id="maintenanceTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- LEDGER -->
+  <div class="section" id="section-ledger">
+    <div class="page-title">Ledger & Settlements</div>
+    <div class="page-subtitle">Technician payouts and financial tracking</div>
+    <div class="refresh-bar">
+      <button class="btn btn-secondary" onclick="loadLedger()">🔄 Refresh</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title">Unsettled Payouts (Summary)</span></div>
+      <div class="card-body" id="ledgerSummary"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title">All Ledger Entries</span></div>
+      <div class="card-body" id="ledgerTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- ZONES -->
+  <div class="section" id="section-zones">
+    <div class="page-title">Service Zones</div>
+    <div class="page-subtitle">Delhi NCR coverage map</div>
+    <div class="card">
+      <div class="card-header"><span class="title">Active Zones</span></div>
+      <div class="card-body" id="zonesTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="title" id="modalTitle">Details</div>
+      <button class="modal-close" onclick="hideModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let autoRefreshInterval = null;
+
+// ── Navigation ──
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(name)) n.classList.add('active');
+  });
+
+  // Load data for section
+  const loaders = {
+    overview: loadAll,
+    units: loadUnits,
+    jobs: loadJobs,
+    technicians: loadTechnicians,
+    customers: loadCustomers,
+    maintenance: loadMaintenance,
+    ledger: loadLedger,
+    zones: loadZones,
+  };
+  if (loaders[name]) loaders[name]();
+}
+
+// ── Stats ──
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/api/admin/stats`);
+    const data = await r.json();
+
+    const unitMap = {}; data.units.forEach(u => unitMap[u.status] = parseInt(u.cnt));
+    const jobMap = {}; data.jobs.forEach(j => jobMap[j.status] = parseInt(j.cnt));
+    const totalUnits = Object.values(unitMap).reduce((a,b) => a+b, 0);
+    const totalJobs = Object.values(jobMap).reduce((a,b) => a+b, 0);
+    const activeTechs = data.technicians.filter(t => t.is_active && t.is_verified).reduce((a,t) => a + parseInt(t.cnt), 0);
+    const pendingMaint = parseInt(data.pending_maintenance || 0);
+
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card">
+        <div class="label">Total Units</div>
+        <div class="value">${totalUnits}</div>
+        <div class="sub">${unitMap['active'] || 0} active · ${unitMap['install_dispatched'] || 0} in progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Jobs</div>
+        <div class="value">${totalJobs}</div>
+        <div class="sub ${(jobMap['broadcasting'] || 0) > 0 ? 'warn' : ''}">${jobMap['broadcasting'] || 0} broadcasting · ${jobMap['completed'] || 0} completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Active Technicians</div>
+        <div class="value">${activeTechs}</div>
+        <div class="sub">${data.technicians.filter(t => !t.is_verified).reduce((a,t)=>a+parseInt(t.cnt),0)} pending approval</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Maintenance Due</div>
+        <div class="value">${pendingMaint}</div>
+        <div class="sub ${pendingMaint > 0 ? 'warn' : ''}">Filter replacements due</div>
+      </div>
+    `;
+    document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch (err) {
+    document.getElementById('statsGrid').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+// ── Units ──
+async function loadUnits() {
+  try {
+    const r = await fetch(`${API}/api/admin/units`);
+    const units = await r.json();
+    document.getElementById('unitCount').textContent = units.length + ' units';
+    document.getElementById('unitsTable').innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Unit ID</th><th>Status</th><th>Customer</th><th>Zone</th><th>Install Date</th><th>Warranty</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${units.map(u => `
+          <tr>
+            <td><strong>${u.unit_id}</strong><br><small style="color:#4a6a8c">${u.model || ''}</small></td>
+            <td>${statusBadge(u.status)}</td>
+            <td>${u.customer_phone || '<span style="color:#4a6a8c">–</span>'}<br><small>${u.customer_name || ''}</small></td>
+            <td>${u.zone_name || '<span style="color:#4a6a8c">–</span>'}</td>
+            <td>${u.install_date ? new Date(u.install_date).toLocaleDateString() : '<span style="color:#4a6a8c">–</span>'}</td>
+            <td>${u.warranty_expires_at ? `<span class="${new Date(u.warranty_expires_at) > new Date() ? 'badge badge-green' : 'badge badge-red'}">${new Date(u.warranty_expires_at) > new Date() ? 'Active' : 'Expired'}</span>` : '<span style="color:#4a6a8c">–</span>'}</td>
+            <td><button class="btn btn-secondary" onclick="showUnitDetail('${u.id}')">View</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    document.getElementById('unitsTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+async function showUnitDetail(id) {
+  const r = await fetch(`${API}/api/admin/units/${id}`);
+  const u = await r.json();
+  showModal('Unit: ' + u.unit_id, `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Status</label><div style="margin-top:4px">${statusBadge(u.status)}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Customer</label><div style="margin-top:4px;color:#e0e0e0">${u.customer_phone || '–'}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Zone</label><div style="margin-top:4px;color:#e0e0e0">${u.zone_name || '–'}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Maintenance Cycle</label><div style="margin-top:4px;color:#e0e0e0">${u.maintenance_cycle || 0}</div></div>
+    </div>
+    <div style="margin-bottom:16px"><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Install Address</label><pre style="margin-top:8px">${JSON.stringify(u.install_address, null, 2) || 'None'}</pre></div>
+    <div><label style="font-size:12px;color:#64b5f6;font-weight:600">Event History</label>
+    <div class="timeline" style="margin-top:12px">
+      ${(u.events || []).map(e => `
+        <div class="timeline-item">
+          <div class="time">${new Date(e.created_at).toLocaleString()}</div>
+          <div class="event">${e.type} · ${e.from_status || '–'} → ${e.to_status || '–'}</div>
+          <div class="meta">Actor: ${e.actor_type}</div>
+        </div>`).join('') || '<div style="color:#4a6a8c;font-size:13px">No events</div>'}
+    </div></div>
+  `);
+}
+
+// ── Jobs ──
+async function loadJobs() {
+  try {
+    const r = await fetch(`${API}/api/admin/jobs`);
+    const jobs = await r.json();
+    document.getElementById('jobCount').textContent = jobs.length + ' jobs';
+    document.getElementById('jobsTable').innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Type</th><th>Unit</th><th>Status</th><th>Customer</th><th>Technician</th><th>Payout</th><th>Scheduled</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${jobs.map(j => `
+          <tr>
+            <td>${typeIcon(j.type)} <strong>${j.type}</strong></td>
+            <td>${j.unit_code || '–'}</td>
+            <td>${statusBadge(j.status)}</td>
+            <td>${j.customer_phone || '–'}</td>
+            <td>${j.tech_name || '<span style="color:#4a6a8c">Unassigned</span>'}</td>
+            <td>₹${Math.round((j.payout_paise || 0) / 100)}</td>
+            <td>${j.scheduled_start ? new Date(j.scheduled_start).toLocaleString() : 'ASAP'}</td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-secondary" onclick="showJobDetail('${j.id}')">View</button>
+              ${j.status === 'scheduled' || j.status === 'created' ? `<button class="btn btn-primary" onclick="forceBroadcast('${j.id}')">📣 Broadcast</button>` : ''}
+              ${j.status === 'disputed' ? `<button class="btn btn-warning" onclick="resolveDispute('${j.id}')">⚖️ Resolve</button>` : ''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    document.getElementById('jobsTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+async function showJobDetail(id) {
+  const r = await fetch(`${API}/api/admin/jobs/${id}`);
+  const j = await r.json();
+  showModal('Job: ' + j.type + ' · ' + j.unit_code, `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Status</label><div style="margin-top:4px">${statusBadge(j.status)}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Customer</label><div style="margin-top:4px;color:#e0e0e0">${j.customer_phone || '–'}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Technician</label><div style="margin-top:4px;color:#e0e0e0">${j.tech_name || '–'}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Payout</label><div style="margin-top:4px;color:#4caf50">₹${Math.round((j.payout_paise||0)/100)}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Customer Charge</label><div style="margin-top:4px;color:#e0e0e0">₹${Math.round((j.customer_charge_paise||0)/100)}</div></div>
+      <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Warranty</label><div style="margin-top:4px">${j.is_warranty ? '<span class="badge badge-green">Yes</span>' : '<span class="badge badge-red">No</span>'}</div></div>
+    </div>
+    <div style="margin-bottom:16px"><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Proof Photos</label><pre style="margin-top:8px">${JSON.stringify(j.proof_photos, null, 2)}</pre></div>
+    <div style="margin-bottom:16px"><label style="font-size:12px;color:#64b5f6;font-weight:600">Broadcasts (${(j.broadcasts||[]).length})</label>
+    <table style="margin-top:8px"><thead><tr><th>Tech</th><th>Phone</th><th>Status</th><th>Sent At</th></tr></thead>
+    <tbody>${(j.broadcasts||[]).map(b => `<tr><td>${b.name}</td><td>${b.phone}</td><td>${statusBadge(b.status)}</td><td>${new Date(b.sent_at).toLocaleTimeString()}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#4a6a8c;text-align:center">None</td></tr>'}</tbody></table></div>
+    <div><label style="font-size:12px;color:#64b5f6;font-weight:600">Event History</label>
+    <div class="timeline" style="margin-top:12px">
+      ${(j.events||[]).map(e => `<div class="timeline-item"><div class="time">${new Date(e.created_at).toLocaleString()}</div><div class="event">${e.type} · ${e.from_status||'–'} → ${e.to_status||'–'}</div><div class="meta">Actor: ${e.actor_type}</div></div>`).join('')||'<div style="color:#4a6a8c;font-size:13px">No events</div>'}
+    </div></div>
+  `);
+}
+
+async function forceBroadcast(jobId) {
+  if (!confirm('Broadcast this job to technicians now?')) return;
+  await fetch(`${API}/api/admin/jobs/${jobId}/broadcast`, { method: 'POST' });
+  showToast('Broadcast sent!');
+  loadJobs();
+}
+
+async function resolveDispute(jobId) {
+  const decision = confirm('Click OK to PAY TECH (work done), Cancel to SIDE WITH CUSTOMER');
+  const d = decision ? 'pay_tech' : 'side_customer';
+  await fetch(`${API}/api/admin/jobs/${jobId}/dispute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision: d })
+  });
+  showToast('Dispute resolved!');
+  loadJobs();
+}
+
+// ── Technicians ──
+async function loadTechnicians() {
+  try {
+    const r = await fetch(`${API}/api/admin/technicians`);
+    const techs = await r.json();
+    document.getElementById('techCount').textContent = techs.length + ' technicians';
+    document.getElementById('techsTable').innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Phone</th><th>Home Zone</th><th>Status</th><th>Rating</th><th>Jobs</th><th>Disputes</th><th>UPI</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${techs.map(t => `
+          <tr>
+            <td><strong>${t.name || 'Unknown'}</strong></td>
+            <td>${t.phone}</td>
+            <td>${t.home_zone_name || '–'}</td>
+            <td>
+              ${t.is_active && t.is_verified ? '<span class="badge badge-green">Active</span>' :
+                !t.is_verified ? '<span class="badge badge-orange">Pending KYC</span>' :
+                '<span class="badge badge-red">Inactive</span>'}
+            </td>
+            <td>⭐ ${t.rating}</td>
+            <td>${t.jobs_completed}</td>
+            <td>${t.dispute_count > 0 ? `<span class="badge badge-red">${t.dispute_count}</span>` : '0'}</td>
+            <td>${t.bank_upi || '–'}</td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap">
+              ${!t.is_verified ? `<button class="btn btn-primary" onclick="approveTech('${t.id}', true)">✅ Approve</button><button class="btn btn-danger" onclick="approveTech('${t.id}', false)">❌ Reject</button>` : ''}
+              ${t.is_active ? `<button class="btn btn-secondary" onclick="toggleTech('${t.id}', false)">Deactivate</button>` : `<button class="btn btn-primary" onclick="toggleTech('${t.id}', true)">Activate</button>`}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    // Also update pending approvals in overview
+    const pending = techs.filter(t => !t.is_verified);
+    document.getElementById('pendingApprovals').innerHTML = pending.length > 0 ?
+      `<table><thead><tr><th>Name</th><th>Phone</th><th>Zone</th><th>Actions</th></tr></thead><tbody>
+        ${pending.map(t => `<tr><td>${t.name || '?'}</td><td>${t.phone}</td><td>${t.home_zone_name||'–'}</td>
+          <td><button class="btn btn-primary" onclick="approveTech('${t.id}', true)">✅ Approve</button>
+              <button class="btn btn-danger" onclick="approveTech('${t.id}', false)">❌ Reject</button></td></tr>`).join('')}
+      </tbody></table>` :
+      `<div style="padding:20px;text-align:center;color:#4a6a8c">No pending approvals ✅</div>`;
+  } catch (err) {
+    document.getElementById('techsTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+async function approveTech(id, approved) {
+  await fetch(`${API}/api/admin/technicians/${id}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approved })
+  });
+  showToast(approved ? 'Technician approved!' : 'Application rejected');
+  loadTechnicians();
+}
+
+async function toggleTech(id, active) {
+  await fetch(`${API}/api/admin/technicians/${id}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approved: active })
+  });
+  loadTechnicians();
+}
+
+// ── Customers ──
+async function loadCustomers() {
+  try {
+    const r = await fetch(`${API}/api/admin/customers`);
+    const customers = await r.json();
+    document.getElementById('customersTable').innerHTML = `
+      <table>
+        <thead><tr><th>Phone</th><th>Name</th><th>Units</th><th>Registered</th></tr></thead>
+        <tbody>${customers.map(c => `
+          <tr>
+            <td>${c.phone}</td>
+            <td>${c.name || '<span style="color:#4a6a8c">–</span>'}</td>
+            <td>${c.unit_count || 0} units</td>
+            <td>${new Date(c.created_at).toLocaleDateString()}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    document.getElementById('customersTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+// ── Maintenance ──
+async function loadMaintenance() {
+  try {
+    const r = await fetch(`${API}/api/admin/maintenance`);
+    const schedules = await r.json();
+    document.getElementById('maintenanceTable').innerHTML = `
+      <table>
+        <thead><tr><th>Unit</th><th>Customer</th><th>Cycle</th><th>Due Date</th><th>Status</th><th>Reminders</th></tr></thead>
+        <tbody>${schedules.map(s => `
+          <tr>
+            <td><strong>${s.unit_code}</strong></td>
+            <td>${s.customer_phone}</td>
+            <td>#${s.cycle_number}</td>
+            <td>${new Date(s.due_at).toLocaleDateString()}</td>
+            <td>${statusBadge(s.status)}</td>
+            <td>${s.reminder_count}/3</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    document.getElementById('maintenanceTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+async function triggerMaintenance() {
+  await fetch(`${API}/api/admin/trigger/maintenance`, { method: 'POST' });
+  showToast('Maintenance check triggered!');
+  loadMaintenance();
+}
+
+// ── Ledger ──
+async function loadLedger() {
+  try {
+    const r = await fetch(`${API}/api/admin/ledger`);
+    const data = await r.json();
+    const { entries, unsettled_summary } = data;
+
+    document.getElementById('ledgerSummary').innerHTML = `
+      <table>
+        <thead><tr><th>Technician</th><th>Phone</th><th>Unsettled Amount</th><th>Entries</th><th>Action</th></tr></thead>
+        <tbody>${(unsettled_summary || []).map(s => `
+          <tr>
+            <td><strong>${s.tech_name}</strong></td>
+            <td>${s.phone}</td>
+            <td style="color:#4caf50;font-weight:700">₹${Math.round(s.total_paise / 100)}</td>
+            <td>${s.entries} jobs</td>
+            <td><button class="btn btn-primary" onclick="settle('${s.technician_id}')">💰 Mark Settled</button></td>
+          </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#4a6a8c;padding:20px">All settled ✅</td></tr>'}
+        </tbody>
+      </table>`;
+
+    document.getElementById('ledgerTable').innerHTML = `
+      <table>
+        <thead><tr><th>Type</th><th>Job</th><th>Tech</th><th>Amount</th><th>Settled</th><th>Date</th></tr></thead>
+        <tbody>${(entries || []).map(e => `
+          <tr>
+            <td>${e.type}</td>
+            <td>${e.job_id?.substring(0,8)}...</td>
+            <td>${e.tech_name || '–'}</td>
+            <td style="color:${e.type === 'tech_payout' ? '#4caf50' : '#ff9800'}">₹${Math.round(e.amount_paise / 100)}</td>
+            <td>${e.settled ? '<span class="badge badge-green">Yes</span>' : '<span class="badge badge-orange">No</span>'}</td>
+            <td>${new Date(e.created_at).toLocaleDateString()}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    document.getElementById('ledgerSummary').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+async function settle(techId) {
+  await fetch(`${API}/api/admin/ledger/${techId}/settle`, { method: 'POST' });
+  showToast('Marked as settled!');
+  loadLedger();
+}
+
+// ── Zones ──
+async function loadZones() {
+  try {
+    const r = await fetch(`${API}/api/admin/zones`);
+    const zones = await r.json();
+    document.getElementById('zonesTable').innerHTML = `
+      <table>
+        <thead><tr><th>Name</th><th>City</th><th>Pincodes</th></tr></thead>
+        <tbody>${zones.map(z => `
+          <tr>
+            <td><strong>${z.name}</strong></td>
+            <td>${z.city}</td>
+            <td style="font-size:12px;color:#64b5f6">${(z.pincodes || []).join(', ')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    document.getElementById('zonesTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+// ── Overview ──
+async function loadAll() {
+  await Promise.all([loadStats(), loadJobs(), loadTechnicians()]);
+
+  const jobs = await fetch(`${API}/api/admin/jobs`).then(r => r.json()).catch(() => []);
+  const recent = jobs.slice(0, 5);
+  document.getElementById('recentJobs').innerHTML = `
+    <table>
+      <thead><tr><th>Type</th><th>Unit</th><th>Status</th><th>Payout</th><th>Action</th></tr></thead>
+      <tbody>${recent.map(j => `
+        <tr>
+          <td>${typeIcon(j.type)} ${j.type}</td>
+          <td>${j.unit_code || '–'}</td>
+          <td>${statusBadge(j.status)}</td>
+          <td>₹${Math.round((j.payout_paise||0)/100)}</td>
+          <td><button class="btn btn-secondary" onclick="showSection('jobs')">View All</button></td>
+        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#4a6a8c">No jobs yet</td></tr>'}
+      </tbody>
+    </table>`;
+}
+
+// ── Seed Unit Modal ──
+function showSeedUnitModal() {
+  showModal('Seed New Unit', `
+    <div class="form-row">
+      <div class="form-group">
+        <label>Unit ID (e.g. KN-1234)</label>
+        <input type="text" id="seedUnitId" placeholder="KN-XXXX">
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <select id="seedModel">
+          <option>Knite RO Standard</option>
+          <option>Knite RO Plus</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="seedUnit()">+ Create Unit</button>
+  `);
+}
+
+async function seedUnit() {
+  const unit_id = document.getElementById('seedUnitId').value.trim().toUpperCase();
+  const model = document.getElementById('seedModel').value;
+  if (!unit_id) { showToast('Enter unit ID'); return; }
+
+  const r = await fetch(`${API}/api/admin/units`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ unit_id, model })
+  });
+  const u = await r.json();
+  if (u.error) { showToast('Error: ' + u.error); return; }
+  showToast('Unit ' + u.unit_id + ' created!');
+  hideModal();
+  loadUnits();
+}
+
+// ── Helpers ──
+function statusBadge(status) {
+  const map = {
+    manufactured: 'badge-gray', shipped: 'badge-gray', registered: 'badge-blue',
+    install_pending: 'badge-orange', install_dispatched: 'badge-orange',
+    active: 'badge-green', support_open: 'badge-orange',
+    maintenance_due: 'badge-orange', maintenance_dispatched: 'badge-purple',
+    deactivated: 'badge-red', returned: 'badge-red',
+    pending_manual_action: 'badge-purple',
+    created: 'badge-gray', scheduled: 'badge-blue', broadcasting: 'badge-orange',
+    assigned: 'badge-blue', en_route: 'badge-blue', in_progress: 'badge-purple',
+    pending_verification: 'badge-orange', completed: 'badge-green',
+    cancelled: 'badge-gray', failed: 'badge-red', disputed: 'badge-red',
+    pending: 'badge-orange', reminded: 'badge-blue', snoozed: 'badge-gray',
+    skipped: 'badge-gray',
+    sent: 'badge-blue', accepted: 'badge-green', declined: 'badge-red', expired: 'badge-gray',
+  };
+  return `<span class="badge ${map[status] || 'badge-gray'}">${status}</span>`;
+}
+
+function typeIcon(type) {
+  return { install: '🔧', repair: '🛠️', maintenance: '🔄' }[type] || '📋';
+}
+
+function showModal(title, body) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function hideModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) hideModal();
+}
+
+function showToast(msg) {
+  // Simple alert as toast
+  const existing = document.querySelector('.toast-elem');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast-elem';
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#00d4aa;color:#0a1628;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:999;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function toggleAutoRefresh() {
+  if (document.getElementById('autoRefresh').checked) {
+    autoRefreshInterval = setInterval(loadAll, 5000);
+  } else {
+    clearInterval(autoRefreshInterval);
+  }
+}
+
+// Init
+loadAll();
+autoRefreshInterval = setInterval(loadAll, 5000);
+</script>
+</body>
+</html>

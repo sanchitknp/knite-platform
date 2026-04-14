@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knite – WhatsApp Simulator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a1628;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    color: #fff;
+  }
+  .top-bar {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .logo { font-size: 24px; font-weight: 800; color: #00d4aa; letter-spacing: -1px; }
+  .logo span { color: #fff; }
+  .badge { background: #1a3a5c; padding: 4px 12px; border-radius: 20px; font-size: 12px; color: #64b5f6; }
+  .nav-links { margin-left: auto; display: flex; gap: 12px; }
+  .nav-links a {
+    color: #64b5f6; text-decoration: none; font-size: 14px;
+    padding: 6px 14px; border-radius: 8px; background: #1a3a5c;
+    transition: background 0.2s;
+  }
+  .nav-links a:hover { background: #2a4a6c; }
+
+  /* Layout */
+  .layout {
+    width: 100%;
+    max-width: 1200px;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    height: calc(100vh - 120px);
+  }
+
+  /* Left panel - phone selector */
+  .left-panel {
+    background: #0f2035;
+    border-radius: 16px;
+    border: 1px solid #1e3a55;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #1e3a55;
+    font-size: 13px;
+    color: #64b5f6;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .phone-list { flex: 1; overflow-y: auto; padding: 12px; }
+  .phone-card {
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .phone-card:hover { background: #1a3a5c; }
+  .phone-card.active { background: #1e4a70; border-color: #00d4aa; }
+  .phone-card .phone-num { font-size: 15px; font-weight: 600; color: #e0e0e0; }
+  .phone-card .phone-role { font-size: 12px; color: #64b5f6; margin-top: 2px; }
+  .phone-card .phone-status { font-size: 11px; color: #4caf50; margin-top: 4px; }
+  .add-phone-form { padding: 12px; border-top: 1px solid #1e3a55; }
+  .add-phone-form input {
+    width: 100%;
+    padding: 10px 12px;
+    background: #1a3a5c;
+    border: 1px solid #2a4a6c;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .add-phone-form input::placeholder { color: #4a6a8c; }
+  .add-phone-form select {
+    width: 100%;
+    padding: 10px 12px;
+    background: #1a3a5c;
+    border: 1px solid #2a4a6c;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .btn-add {
+    width: 100%;
+    padding: 10px;
+    background: #00d4aa;
+    border: none;
+    border-radius: 8px;
+    color: #0a1628;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-add:hover { opacity: 0.85; }
+
+  /* Right panel - chat */
+  .chat-panel {
+    background: #0f2035;
+    border-radius: 16px;
+    border: 1px solid #1e3a55;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .chat-header {
+    padding: 14px 20px;
+    background: #075e54;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .chat-avatar {
+    width: 40px; height: 40px;
+    background: #25d366;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .chat-header-info .name { font-weight: 700; font-size: 16px; }
+  .chat-header-info .subtitle { font-size: 12px; color: #b2dfdb; margin-top: 1px; }
+  .chat-header .pill {
+    margin-left: auto; padding: 4px 12px; border-radius: 20px;
+    background: rgba(255,255,255,0.15); font-size: 12px; cursor: pointer;
+  }
+  .chat-header .pill:hover { background: rgba(255,255,255,0.25); }
+
+  /* Messages area */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23132030' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .msg-wrap { display: flex; }
+  .msg-wrap.outbound { justify-content: flex-end; }
+  .msg-wrap.inbound { justify-content: flex-start; }
+  .bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+    word-wrap: break-word;
+  }
+  .bubble.inbound {
+    background: #1e3a55;
+    border-top-left-radius: 2px;
+    color: #e0e0e0;
+  }
+  .bubble.outbound {
+    background: #005c4b;
+    border-top-right-radius: 2px;
+    color: #d9fdd3;
+  }
+  .bubble .time {
+    font-size: 11px;
+    color: #8899aa;
+    margin-top: 4px;
+    text-align: right;
+  }
+  .bubble .sender {
+    font-size: 11px;
+    color: #00d4aa;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .buttons-container { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .wa-button {
+    padding: 8px 14px;
+    background: #00d4aa;
+    border: none;
+    border-radius: 8px;
+    color: #0a1628;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.2s;
+  }
+  .wa-button:hover { opacity: 0.8; }
+  .template-badge {
+    display: inline-block;
+    background: #1a4a6c;
+    color: #64b5f6;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .empty-chat {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #4a6a8c; gap: 12px;
+  }
+  .empty-chat .icon { font-size: 48px; }
+  .empty-chat .hint { font-size: 14px; text-align: center; max-width: 240px; line-height: 1.6; }
+
+  /* Quick actions */
+  .quick-actions {
+    padding: 10px 16px;
+    border-top: 1px solid #1e3a55;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    background: #0a1e30;
+  }
+  .quick-btn {
+    padding: 5px 10px;
+    background: #1a3a5c;
+    border: 1px solid #2a4a6c;
+    border-radius: 6px;
+    color: #64b5f6;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .quick-btn:hover { background: #2a4a6c; color: #90caf9; }
+
+  /* Input area */
+  .input-area {
+    padding: 12px 16px;
+    border-top: 1px solid #1e3a55;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: #0f2035;
+  }
+  .input-area textarea {
+    flex: 1;
+    padding: 10px 14px;
+    background: #1a3a5c;
+    border: 1px solid #2a4a6c;
+    border-radius: 24px;
+    color: #fff;
+    font-size: 14px;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    line-height: 1.5;
+    font-family: inherit;
+  }
+  .input-area textarea::placeholder { color: #4a6a8c; }
+  .input-area textarea:focus { outline: none; border-color: #00d4aa; }
+  .send-btn {
+    width: 44px; height: 44px;
+    background: #00d4aa;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+    transition: opacity 0.2s;
+  }
+  .send-btn:hover { opacity: 0.85; }
+
+  /* Media upload simulation */
+  .media-btn {
+    width: 44px; height: 44px;
+    background: #1a3a5c;
+    border: 1px solid #2a4a6c;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+    transition: background 0.2s;
+    color: #64b5f6;
+  }
+  .media-btn:hover { background: #2a4a6c; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1e3a55; border-radius: 3px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: #00d4aa; color: #0a1628;
+    padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Loading indicator */
+  .typing-indicator {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    background: #1e3a55;
+    border-radius: 12px;
+    width: fit-content;
+  }
+  .typing-indicator.show { display: flex; }
+  .dot {
+    width: 8px; height: 8px;
+    background: #00d4aa;
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">KNITE <span>Platform</span></div>
+  <div class="badge">WhatsApp Simulator</div>
+  <div class="nav-links">
+    <a href="/admin.html">🔧 Admin Dashboard</a>
+    <a href="/api/health" target="_blank">❤️ Health</a>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- LEFT: Phone selector -->
+  <div class="left-panel">
+    <div class="panel-header">📱 Participants</div>
+    <div class="phone-list" id="phoneList"></div>
+    <div class="add-phone-form">
+      <input type="text" id="newPhone" placeholder="Phone (e.g. 919876543210)" maxlength="15">
+      <select id="newRole">
+        <option value="customer">👤 Customer</option>
+        <option value="technician">🔧 Technician</option>
+        <option value="admin">👑 Admin</option>
+      </select>
+      <input type="text" id="newName" placeholder="Display name (optional)">
+      <button class="btn-add" onclick="addPhone()">+ Add Participant</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Chat -->
+  <div class="chat-panel">
+    <div class="chat-header" id="chatHeader">
+      <div class="chat-avatar">💬</div>
+      <div class="chat-header-info">
+        <div class="name">Select a participant</div>
+        <div class="subtitle">to start chatting</div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="empty-chat">
+        <div class="icon">📱</div>
+        <div class="hint">Select or add a participant on the left to simulate WhatsApp messages</div>
+      </div>
+    </div>
+
+    <div class="typing-indicator" id="typingIndicator">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+
+    <div class="quick-actions" id="quickActions">
+      <span style="font-size:12px;color:#4a6a8c;align-self:center">Quick:</span>
+      <button class="quick-btn" onclick="quickSend('Install KN-8492')">📦 Install KN-8492</button>
+      <button class="quick-btn" onclick="quickSend('leak')">💧 Report Leak</button>
+      <button class="quick-btn" onclick="quickSend('REGISTER TECH')">🔧 Register Tech</button>
+      <button class="quick-btn" onclick="quickSend('help')">❓ Help</button>
+    </div>
+
+    <div class="input-area">
+      <button class="media-btn" onclick="simulateMedia()" title="Send photo/video">📷</button>
+      <textarea id="msgInput" placeholder="Type a message..." rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let currentPhone = null;
+let pollInterval = null;
+let messageHistory = {}; // phone -> [{role, text, time, buttons}]
+const seenMessageIds = new Set(); // dedup: never render the same server message twice
+
+// Pre-seeded participants
+const participants = [
+  { phone: '919876543210', name: 'Priya Sharma', role: 'customer' },
+  { phone: '919988776655', name: 'Rajesh Gupta', role: 'customer' },
+  { phone: '918888888888', name: 'Ramesh Kumar (Demo Tech)', role: 'technician' },
+  { phone: '917777777777', name: 'Suresh Sharma (Demo Tech)', role: 'technician' },
+  { phone: '919999999999', name: 'Admin', role: 'admin' },
+];
+
+function init() {
+  renderPhoneList();
+}
+
+function renderPhoneList() {
+  const list = document.getElementById('phoneList');
+  list.innerHTML = participants.map((p, i) => `
+    <div class="phone-card ${currentPhone === p.phone ? 'active' : ''}" onclick="selectPhone('${p.phone}', ${i})">
+      <div class="phone-num">${p.name || p.phone}</div>
+      <div class="phone-role">${getRoleIcon(p.role)} ${p.role} · ${p.phone}</div>
+      <div class="phone-status">${(messageHistory[p.phone] || []).length} messages</div>
+    </div>
+  `).join('');
+}
+
+function getRoleIcon(role) {
+  return { customer: '👤', technician: '🔧', admin: '👑' }[role] || '👤';
+}
+
+function addPhone() {
+  const phone = document.getElementById('newPhone').value.trim();
+  const role = document.getElementById('newRole').value;
+  const name = document.getElementById('newName').value.trim();
+  if (!phone || phone.length < 10) { showToast('Enter valid phone number'); return; }
+  if (participants.find(p => p.phone === phone)) { showToast('Already added'); return; }
+  participants.push({ phone, role, name: name || phone });
+  messageHistory[phone] = [];
+  renderPhoneList();
+  document.getElementById('newPhone').value = '';
+  document.getElementById('newName').value = '';
+}
+
+function selectPhone(phone, idx) {
+  currentPhone = phone;
+  const p = participants.find(p => p.phone === phone);
+  renderPhoneList();
+  updateChatHeader(p);
+  renderMessages();
+  startPolling();
+
+  // Update quick actions based on role
+  updateQuickActions(p?.role);
+}
+
+function updateChatHeader(p) {
+  const header = document.getElementById('chatHeader');
+  header.innerHTML = `
+    <div class="chat-avatar">${getRoleIcon(p?.role || 'customer')}</div>
+    <div class="chat-header-info">
+      <div class="name">${p?.name || p?.phone}</div>
+      <div class="subtitle">${p?.role || 'customer'} · ${p?.phone}</div>
+    </div>
+    <button class="pill" onclick="clearHistory()">🗑️ Clear Chat</button>
+  `;
+}
+
+function updateQuickActions(role) {
+  const qa = document.getElementById('quickActions');
+  if (role === 'technician') {
+    qa.innerHTML = `
+      <span style="font-size:12px;color:#4a6a8c;align-self:center">Quick:</span>
+      <button class="quick-btn" onclick="quickSend('REGISTER TECH')">📋 Register</button>
+      <button class="quick-btn" onclick="quickSend('help')">❓ Help</button>
+    `;
+  } else if (role === 'admin') {
+    qa.innerHTML = `
+      <span style="font-size:12px;color:#4a6a8c;align-self:center">Admin:</span>
+      <button class="quick-btn" onclick="quickSend('help')">❓ Menu</button>
+    `;
+  } else {
+    qa.innerHTML = `
+      <span style="font-size:12px;color:#4a6a8c;align-self:center">Quick:</span>
+      <button class="quick-btn" onclick="quickSend('Install KN-8492')">📦 Install KN-8492</button>
+      <button class="quick-btn" onclick="quickSend('Install KN-7201')">📦 Install KN-7201</button>
+      <button class="quick-btn" onclick="quickSend('leak')">💧 Report Leak</button>
+      <button class="quick-btn" onclick="quickSend('help')">❓ Help</button>
+    `;
+  }
+}
+
+function renderMessages() {
+  const container = document.getElementById('messages');
+  const msgs = messageHistory[currentPhone] || [];
+
+  if (msgs.length === 0) {
+    container.innerHTML = `
+      <div class="empty-chat">
+        <div class="icon">💬</div>
+        <div class="hint">No messages yet. Type a message or use Quick Actions below.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = msgs.map(m => renderMessage(m)).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderMessage(m) {
+  const isOutbound = m.role === 'user';
+  const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  let bodyHtml = escapeHtml(m.text)
+    .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+
+  let buttonsHtml = '';
+  if (m.buttons && m.buttons.length > 0 && !isOutbound) {
+    buttonsHtml = `<div class="buttons-container">${
+      m.buttons.map(b => `
+        <button class="wa-button" onclick="quickSend('${escapeAttr(b.id || b.title)}')">${escapeHtml(b.title)}</button>
+      `).join('')
+    }</div>`;
+  }
+
+  const templateBadge = m.isTemplate ? `<div class="template-badge">TEMPLATE</div>` : '';
+
+  return `
+    <div class="msg-wrap ${isOutbound ? 'outbound' : 'inbound'}">
+      <div class="bubble ${isOutbound ? 'outbound' : 'inbound'}">
+        ${templateBadge}
+        <div>${bodyHtml}</div>
+        ${buttonsHtml}
+        <div class="time">${timeStr} ${isOutbound ? '✓✓' : ''}</div>
+      </div>
+    </div>`;
+}
+
+function escapeHtml(text) {
+  return (text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escapeAttr(text) {
+  return (text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+async function sendMessage(customMsg) {
+  if (!currentPhone) { showToast('Select a participant first'); return; }
+  const input = document.getElementById('msgInput');
+  const text = customMsg || input.value.trim();
+  if (!text) return;
+
+  // Add to history
+  addMessage(currentPhone, { role: 'user', text, time: new Date() });
+  if (!customMsg) input.value = '';
+  input.style.height = 'auto';
+
+  showTyping(true);
+
+  try {
+    await fetch(`${API}/api/simulate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentPhone, message: text })
+    });
+
+    // Poll for responses after a short delay
+    setTimeout(() => pollMessages(), 800);
+    setTimeout(() => pollMessages(), 2000);
+    setTimeout(() => { pollMessages(); showTyping(false); }, 3500);
+  } catch (err) {
+    showToast('Error: ' + err.message);
+    showTyping(false);
+  }
+}
+
+async function simulateMedia() {
+  if (!currentPhone) { showToast('Select a participant first'); return; }
+
+  const mediaUrl = `https://example.com/simulator-media/${Date.now()}.jpg`;
+  addMessage(currentPhone, { role: 'user', text: '📷 [Photo/Video uploaded]', time: new Date() });
+  showTyping(true);
+
+  try {
+    await fetch(`${API}/api/simulate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentPhone, message: '[MEDIA]', media_url: mediaUrl })
+    });
+    setTimeout(() => pollMessages(), 800);
+    setTimeout(() => { pollMessages(); showTyping(false); }, 2500);
+  } catch (err) {
+    showToast('Error: ' + err.message);
+    showTyping(false);
+  }
+}
+
+async function pollMessages() {
+  if (!currentPhone) return;
+  try {
+    const resp = await fetch(`${API}/api/messages/${currentPhone}`);
+    const msgs = await resp.json();
+    if (msgs.length > 0) {
+      msgs.forEach(m => {
+        // Deduplicate by message id — never show the same server message twice
+        if (seenMessageIds.has(m.id)) return;
+        seenMessageIds.add(m.id);
+
+        let buttons = null;
+        // JSONB comes back already parsed from pg driver; handle both cases
+        try {
+          buttons = m.buttons
+            ? (Array.isArray(m.buttons) ? m.buttons : JSON.parse(m.buttons))
+            : null;
+        } catch(e) { buttons = null; }
+        addMessage(currentPhone, {
+          id: m.id,
+          role: 'system',
+          text: m.body,
+          buttons,
+          time: m.created_at,
+          isTemplate: m.body.includes('[TEMPLATE:')
+        });
+      });
+      showTyping(false);
+    }
+  } catch (err) { /* silent */ }
+}
+
+function addMessage(phone, msg) {
+  if (!messageHistory[phone]) messageHistory[phone] = [];
+  messageHistory[phone].push(msg);
+  if (phone === currentPhone) renderMessages();
+  renderPhoneList();
+}
+
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(() => {
+    if (currentPhone) pollMessages();
+  }, 3000);
+}
+
+function quickSend(msg) {
+  const input = document.getElementById('msgInput');
+  input.value = msg;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function clearHistory() {
+  if (!currentPhone) return;
+  messageHistory[currentPhone] = [];
+  renderMessages();
+  renderPhoneList();
+}
+
+function showTyping(show) {
+  document.getElementById('typingIndicator').classList.toggle('show', show);
+  const container = document.getElementById('messages');
+  container.scrollTop = container.scrollHeight;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
