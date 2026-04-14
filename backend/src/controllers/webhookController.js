@@ -203,9 +203,9 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
         await session.setSession(phone, { flow: 'installation', step: 'awaiting_slot', context_data: ctx });
         await installFlow.sendSlotButtons(phone, areaName, district, ctx.address || '');
       } else {
-        // Remind them
-        await wa.sendText(phone,
-          `📌 Please *share your location* using the 📎 attachment icon → Location → Send Your Current Location\n\n_(Or type *SKIP* to continue without sharing)_`
+        // Remind them with a location request button
+        await wa.sendLocationRequest(phone,
+          `📌 Tap the button below to share your location, or type *SKIP* to continue without sharing.`
         );
       }
     } else if (step === 'awaiting_slot') {

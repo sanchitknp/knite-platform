@@ -228,11 +228,36 @@ async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Fo
   }
 }
 
+/**
+ * Send a location request message.
+ * Renders a tappable button in WhatsApp that opens the location picker directly.
+ */
+async function sendLocationRequest(toPhone, bodyText) {
+  console.log(`[WA→${toPhone}] LOCATION_REQUEST: ${bodyText.substring(0, 60)}`);
+  if (MODE === 'production') {
+    await callMetaAPI({
+      to: toPhone,
+      type: 'interactive',
+      interactive: {
+        type: 'location_request_message',
+        body: { text: bodyText },
+        action: { name: 'send_location' },
+      },
+    });
+  } else {
+    await queueSimulator(toPhone, 'text',
+      `[LOCATION REQUEST] ${bodyText}\n\n_(Tap to share location — production only)_`,
+      []
+    );
+  }
+}
+
 module.exports = {
   sendText,
   sendButtons,
   sendList,
   sendFlow,
+  sendLocationRequest,
   sendTemplate,
   getPendingMessages,
   getAllRecentMessages,

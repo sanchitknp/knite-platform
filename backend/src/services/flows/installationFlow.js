@@ -164,18 +164,16 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
 
   const newCtx = { ...ctx, zone_id: zoneResult.id, zone_name: zoneResult.name, address: addressLine, pincode: pin };
 
-  // If user opted to share location, ask for it before slot selection
+  // If user opted to share location, send a location request button
   if (share_location === 'yes') {
     await session.setSession(phone, {
       flow: 'installation',
       step: 'awaiting_location',
       context_data: newCtx
     });
-    await wa.sendText(phone,
-      `✅ *Address saved!*\n\n📍 ${addressLine}\n\n` +
-      `📌 *Please share your live location* so the technician can find you easily.\n\n` +
-      `_Tap the 📎 attachment icon → Location → Send Your Current Location_\n\n` +
-      `_(Or type *SKIP* to continue without sharing location)_`
+    await wa.sendText(phone, `✅ *Address saved!*\n\n📍 ${addressLine}`);
+    await wa.sendLocationRequest(phone,
+      `📌 Tap the button below to share your location — this helps the technician find you faster!\n\n_(Or type *SKIP* to continue without sharing)_`
     );
     return;
   }
