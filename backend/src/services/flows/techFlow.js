@@ -80,21 +80,25 @@ async function handleName(phone, name, ctx) {
     context_data: { name: name.trim(), all_state_selections: [] }
   });
 
-  await sendStateList(phone, []);
+  await sendStateList(phone, []);  // no prior selections yet
 }
 
-async function sendStateList(phone, excludeStates = []) {
+async function sendStateList(phone, allSelections = []) {
   const result = await db.query(
     `SELECT DISTINCT state FROM india_pincodes WHERE state IS NOT NULL ORDER BY state`
   );
   const allStates = result.rows.map(r => r.state);
-  const available = allStates.filter(s => !excludeStates.includes(s));
+  const addedStates = new Set(allSelections.map(s => s.state));
 
-  const addedHeader = excludeStates.length > 0
-    ? `✅ *Added so far:* ${excludeStates.join(', ')}\n\n`
+  const addedHeader = allSelections.length > 0
+    ? `✅ *Added so far:* ${allSelections.map(s => `${s.state} (${s.selected_areas.length})`).join(', ')}\n\n`
     : '';
 
-  const lines = available.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  // Show all states; mark already-added ones so tech knows they can add more districts
+  const lines = allStates.map((s, i) =>
+    `${i + 1}. ${s}${addedStates.has(s) ? ' *(add more districts)*' : ''}`
+  ).join('\n');
+
   await wa.sendText(phone,
     `${addedHeader}📍 Which *state* do you work in?\n\n${lines}\n\nReply with the number.`
   );
@@ -105,31 +109,41 @@ async function sendStateList(phone, excludeStates = []) {
 // ─────────────────────────────────────────────
 
 async function handleState(phone, text, ctx) {
-  const excludeStates = (ctx.all_state_selections || []).map(s => s.state);
+  const allSelections = ctx.all_state_selections || [];
 
   const allResult = await db.query(
     `SELECT DISTINCT state FROM india_pincodes WHERE state IS NOT NULL ORDER BY state`
   );
-  const available = allResult.rows.map(r => r.state).filter(s => !excludeStates.includes(s));
-  const total = available.length;
+  const allStates = allResult.rows.map(r => r.state);
+  const total = allStates.length;
   const num = parseInt(text.trim());
 
   if (isNaN(num) || num < 1 || num > total) {
     await wa.sendText(phone, `❌ Please enter a number between 1 and ${total}.`);
-    await sendStateList(phone, excludeStates);
+    await sendStateList(phone, allSelections);
     return;
   }
 
-  const selectedState = available[num - 1];
-  if (!selectedState) { await sendStateList(phone, excludeStates); return; }
+  const selectedState = allStates[num - 1];
+  if (!selectedState) { await sendStateList(phone, allSelections); return; }
+
+  // Pre-load previously saved areas if re-selecting an existing state
+  const existing = allSelections.find(s => s.state === selectedState);
+  const preloadedAreas = existing ? existing.selected_areas : [];
 
   await session.setSession(phone, {
     flow: 'tech_onboarding',
     step: 'awaiting_areas',
-    context_data: { state: selectedState, selected_areas: [] }
+    context_data: {
+      ...ctx,
+      state: selectedState,
+      selected_areas: preloadedAreas,
+      // Remove old entry for this state — will be re-added on DONE
+      all_state_selections: allSelections.filter(s => s.state !== selectedState),
+    }
   });
 
-  await sendAreaList(phone, selectedState, []);
+  await sendAreaList(phone, selectedState, preloadedAreas);
 }
 
 // ─────────────────────────────────────────────
@@ -250,33 +264,17 @@ async function handleMoreStates(phone, text, ctx) {
   const allSelections = ctx.all_state_selections || [];
 
   if (upper === 'ADD_MORE_STATES') {
-    const excludeStates = allSelections.map(s => s.state);
-
-    // Check if all states already added
-    const countResult = await db.query(
-      `SELECT COUNT(DISTINCT state) AS cnt FROM india_pincodes WHERE state IS NOT NULL`
-    );
-    const totalStates = parseInt(countResult.rows[0].cnt);
-
-    if (excludeStates.length >= totalStates) {
-      await wa.sendButtons(phone,
-        `✅ You've already added all available states! Please proceed to KYC.`,
-        [{ id: 'PROCEED_KYC', title: '✅ Proceed to KYC' }]
-      );
-      return;
-    }
-
     await session.setSession(phone, {
       flow: 'tech_onboarding',
       step: 'awaiting_state',
       context_data: {
         name: ctx.name,
         all_state_selections: allSelections,
-        // clear transient fields for fresh state selection
         state: null, selected_areas: null,
       }
     });
-    await sendStateList(phone, excludeStates);
+    // Show all states — already-added ones are allowed (to add more districts)
+    await sendStateList(phone, allSelections);
     return;
   }
 
@@ -377,6 +375,9 @@ async function handleKYC(phone, mediaId, ctx) {
     await wa.sendText(phone, `Please send a *photo* of your Aadhaar card (front side):`);
     return;
   }
+
+  // Clear session immediately to prevent duplicate submissions if user sends multiple photos
+  await session.clearSession(phone);
 
   const kycUrl = await media.storeMedia(mediaId, 'kyc', phone.replace('+', ''));
 
