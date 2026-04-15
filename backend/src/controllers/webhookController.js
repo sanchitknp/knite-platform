@@ -137,6 +137,13 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
     return;
   }
 
+  // Technician: view job detail
+  const jobDetailMatch = trimmed.match(/^JOB_DETAIL[_\s]([a-f0-9-]{36})$/i);
+  if (jobDetailMatch) {
+    await handleTechJobDetail(phone, jobDetailMatch[1]);
+    return;
+  }
+
   // Main menu button: New Installation
   if (upper === 'SCAN_HELP') {
     await wa.sendText(phone, `📦 *New Installation*\n\nPlease type: *Install <unit-code>*\n\n_Example: Install KN-8492_\n\n_The unit code is printed on the QR sticker on your RO purifier._`);
@@ -483,7 +490,7 @@ async function handleJobVerification(phone, jobId, approved) {
 }
 
 /**
- * Show pending jobs assigned to a technician
+ * Show pending jobs as a tappable list — tap any job to see full details
  */
 async function handleTechPendingJobs(phone) {
   const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [phone]);
@@ -495,11 +502,9 @@ async function handleTechPendingJobs(phone) {
 
   const jobsResult = await db.query(
     `SELECT j.id, j.type, j.status, j.scheduled_start, j.payout_paise,
-            u.unit_id as unit_code, u.install_address,
-            c.phone as customer_phone, c.name as customer_name
+            u.unit_id as unit_code
      FROM jobs j
      JOIN units u ON u.id = j.unit_id
-     JOIN customers c ON c.id = j.customer_id
      WHERE j.technician_id = $1
        AND j.status IN ('assigned', 'en_route', 'arrived', 'pending_verification')
      ORDER BY j.scheduled_start ASC NULLS LAST`,
@@ -513,34 +518,82 @@ async function handleTechPendingJobs(phone) {
     return;
   }
 
-  const typeLabel = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
-  const statusLabel = {
-    assigned: '📋 Assigned',
-    en_route: '🚗 En Route',
-    arrived: '📍 Arrived',
-    pending_verification: '⏳ Pending Verification',
-  };
+  const typeIcon = { install: '🔧', repair: '🛠️', maintenance: '🔄' };
+  const statusShort = { assigned: 'Assigned', en_route: 'En Route', arrived: 'Arrived', pending_verification: 'Pending OTP' };
 
-  const lines = jobs.map((j, i) => {
-    const address = j.install_address || {};
+  // Show as interactive list — each item is a tappable button to view details
+  const buttons = jobs.map(j => {
     const slot = j.scheduled_start
-      ? new Date(j.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
+      ? new Date(j.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : 'ASAP';
-    return (
-      `*${i + 1}. ${typeLabel[j.type] || j.type}*\n` +
-      `   📦 Unit: ${j.unit_code}\n` +
-      `   📍 ${address.raw || 'Address not set'}\n` +
-      `   👤 ${j.customer_name || j.customer_phone}\n` +
-      `   🕐 ${slot}\n` +
-      `   💰 ₹${Math.round(j.payout_paise / 100)}\n` +
-      `   Status: ${statusLabel[j.status] || j.status}`
-    );
-  }).join('\n\n');
+    return {
+      id: `JOB_DETAIL_${j.id}`,
+      title: `${typeIcon[j.type] || '🔧'} ${j.unit_code} · ${slot}`.substring(0, 24),
+    };
+  });
 
-  await wa.sendText(phone,
-    `🔧 *Your Pending Jobs (${jobs.length})*\n\n${lines}\n\n` +
-    `_Use ARRIVED_<job-id> or your job buttons to update status._`
+  await wa.sendButtons(phone,
+    `🔧 *Pending Jobs (${jobs.length})*\n\nTap a job to see its details:`,
+    buttons
   );
+}
+
+/**
+ * Show full details of a specific job
+ */
+async function handleTechJobDetail(phone, jobId) {
+  const jobResult = await db.query(
+    `SELECT j.*, u.unit_id as unit_code, u.install_address,
+            c.phone as customer_phone, c.name as customer_name
+     FROM jobs j
+     JOIN units u ON u.id = j.unit_id
+     JOIN customers c ON c.id = j.customer_id
+     WHERE j.id = $1`,
+    [jobId]
+  );
+  const j = jobResult.rows[0];
+  if (!j) {
+    await wa.sendText(phone, `❌ Job not found.`);
+    return;
+  }
+
+  const address = j.install_address || {};
+  const typeLabel = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
+  const statusLabel = { assigned: '📋 Assigned', en_route: '🚗 En Route', arrived: '📍 Arrived', pending_verification: '⏳ Pending OTP', completed: '✅ Completed' };
+  const slot = j.scheduled_start
+    ? new Date(j.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
+    : 'ASAP';
+
+  const details =
+    `*${typeLabel[j.type] || j.type} — ${j.unit_code}*\n\n` +
+    `📦 *Unit:* ${j.unit_code}\n` +
+    `🏠 *Address:* ${address.raw || 'Not set'}\n` +
+    (address.full_address ? `   ${address.full_address}\n` : '') +
+    `👤 *Customer:* ${j.customer_name || j.customer_phone}\n` +
+    `📞 *Phone:* ${j.customer_phone}\n` +
+    `🕐 *Slot:* ${slot}\n` +
+    `💰 *Payout:* ₹${Math.round(j.payout_paise / 100)}\n` +
+    `📊 *Status:* ${statusLabel[j.status] || j.status}\n` +
+    `🆔 *Job ID:* \`${j.id}\``;
+
+  // Show action buttons based on current status
+  const actionButtons = [];
+  if (j.status === 'assigned') {
+    actionButtons.push({ id: `ARRIVED_${j.id}`, title: '📍 Mark Arrived' });
+  }
+  if (j.status === 'arrived') {
+    actionButtons.push({ id: `ENTER_OTP_${j.id}`, title: '🔑 Enter OTP' });
+  }
+  actionButtons.push({ id: 'TECH_PENDING_JOBS', title: '◀️ Back to List' });
+
+  await wa.sendButtons(phone, details, actionButtons);
+
+  // If location was shared, send pin too
+  if (address.location?.latitude && address.location?.longitude) {
+    const { sendLocation } = require('../services/whatsappService');
+    await sendLocation(phone, address.location.latitude, address.location.longitude,
+      address.raw || 'Installation Location', address.full_address || '');
+  }
 }
 
 /**
