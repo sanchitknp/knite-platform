@@ -1,0 +1,134 @@
+{
+  "version": "5.1",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "PENDING_JOBS": ["JOB_DETAIL"],
+    "JOB_DETAIL": []
+  },
+  "screens": [
+    {
+      "id": "PENDING_JOBS",
+      "title": "Pending Installations",
+      "data": {
+        "header": {
+          "type": "string",
+          "__example__": "2 pending jobs"
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id":          { "type": "string" },
+              "title":       { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "abc-123", "title": "KN-15 · 208001", "description": "15 Apr · ₹400" },
+            { "id": "def-456", "title": "KN-22 · 226001", "description": "16 Apr · ₹350" }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "jobs_form",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "${data.header}"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "selected_job",
+                "label": "Tap to select a job",
+                "required": true,
+                "data-source": "${data.jobs}"
+              },
+              {
+                "type": "Footer",
+                "label": "View Details",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "selected_job": "${form.selected_job}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "JOB_DETAIL",
+      "title": "Job Details",
+      "terminal": true,
+      "data": {
+        "header":   { "type": "string", "__example__": "🔧 Installation — KN-15" },
+        "address":  { "type": "string", "__example__": "Flat 4B, Sector 74, Kanpur\nPincode: 208001" },
+        "customer": { "type": "string", "__example__": "Rahul Kumar · +91 98765 43210" },
+        "slot":     { "type": "string", "__example__": "15 Apr 2026, 8:40 PM" },
+        "payout":   { "type": "string", "__example__": "₹400" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "${data.header}"
+          },
+          {
+            "type": "TextSubheading",
+            "text": "📍 Address"
+          },
+          {
+            "type": "TextBody",
+            "text": "${data.address}"
+          },
+          {
+            "type": "TextSubheading",
+            "text": "👤 Customer"
+          },
+          {
+            "type": "TextBody",
+            "text": "${data.customer}"
+          },
+          {
+            "type": "TextSubheading",
+            "text": "🕐 Slot"
+          },
+          {
+            "type": "TextBody",
+            "text": "${data.slot}"
+          },
+          {
+            "type": "TextSubheading",
+            "text": "💰 Payout"
+          },
+          {
+            "type": "TextBody",
+            "text": "${data.payout}"
+          },
+          {
+            "type": "Form",
+            "name": "close_form",
+            "children": [
+              {
+                "type": "Footer",
+                "label": "Close",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

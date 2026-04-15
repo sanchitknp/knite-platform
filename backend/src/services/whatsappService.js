@@ -194,12 +194,39 @@ async function getAllRecentMessages(limit = 50) {
 
 /**
  * Send a WhatsApp Flow message
+ *
+ * useDataExchange = true  → flow_action: 'data_exchange'
+ *   WhatsApp calls the exchange endpoint on open (INIT), enabling dynamic
+ *   screen data. Use this for flows with data_api_version.
+ *
+ * useDataExchange = false (default) → flow_action: 'navigate'
+ *   Opens directly to initialScreen with optional screenData payload.
  */
-async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Form', initialScreen = 'STATE_SCREEN', screenData = null) {
-  console.log(`[WA→${toPhone}] FLOW: ${bodyText.substring(0, 60)}`);
+async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Form', initialScreen = 'STATE_SCREEN', screenData = null, useDataExchange = false) {
+  console.log(`[WA→${toPhone}] FLOW(${useDataExchange ? 'data_exchange' : 'navigate'}): ${bodyText.substring(0, 60)}`);
   if (MODE === 'production') {
-    const flowActionPayload = { screen: initialScreen };
-    if (screenData) flowActionPayload.data = screenData;
+    let parameters;
+
+    if (useDataExchange) {
+      parameters = {
+        flow_message_version: '3',
+        flow_token: flowToken,
+        flow_id: flowId,
+        flow_cta: ctaText,
+        flow_action: 'data_exchange',
+      };
+    } else {
+      const flowActionPayload = { screen: initialScreen };
+      if (screenData) flowActionPayload.data = screenData;
+      parameters = {
+        flow_message_version: '3',
+        flow_token: flowToken,
+        flow_id: flowId,
+        flow_cta: ctaText,
+        flow_action: 'navigate',
+        flow_action_payload: flowActionPayload,
+      };
+    }
 
     await callMetaAPI({
       to: toPhone,
@@ -207,17 +234,7 @@ async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Fo
       interactive: {
         type: 'flow',
         body: { text: bodyText },
-        action: {
-          name: 'flow',
-          parameters: {
-            flow_message_version: '3',
-            flow_token: flowToken,
-            flow_id: flowId,
-            flow_cta: ctaText,
-            flow_action: 'navigate',
-            flow_action_payload: flowActionPayload,
-          },
-        },
+        action: { name: 'flow', parameters },
       },
     });
   } else {

@@ -490,7 +490,10 @@ async function handleJobVerification(phone, jobId, approved) {
 }
 
 /**
- * Show pending jobs as a tappable list — tap any job to see full details
+ * Show pending jobs.
+ * In production with WA_FLOW_PENDING_JOBS set: opens a WhatsApp Flow where
+ * the technician can browse jobs and tap to view full details inside the flow.
+ * Otherwise: falls back to a button list (simulator / no flow ID configured).
  */
 async function handleTechPendingJobs(phone) {
   const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [phone]);
@@ -518,11 +521,28 @@ async function handleTechPendingJobs(phone) {
     return;
   }
 
+  const flowId = process.env.WA_FLOW_PENDING_JOBS;
+
+  // ── Production with flow configured: open WhatsApp Flow ──────────────────
+  if (flowId && process.env.WHATSAPP_MODE === 'production') {
+    await wa.sendFlow(
+      phone,
+      `You have ${jobs.length} pending installation${jobs.length !== 1 ? 's' : ''}. Open to select a job and view its details.`,
+      flowId,
+      phone,          // flow_token = tech phone — exchange endpoint uses this to load jobs
+      'View Jobs',
+      'PENDING_JOBS', // ignored for data_exchange, but kept for clarity
+      null,
+      true            // useDataExchange — triggers INIT call to exchange endpoint
+    );
+    return;
+  }
+
+  // ── Fallback: button list (simulator or no flow ID) ───────────────────────
   const typeIcon  = { install: '🔧', repair: '🛠️', maintenance: '🔄' };
   const typeLabel = { install: 'Installation', repair: 'Repair', maintenance: 'Maintenance' };
   const statusShort = { assigned: '📋 Assigned', en_route: '🚗 En Route', arrived: '📍 Arrived', pending_verification: '⏳ Pending OTP' };
 
-  // Build a summary block in the body, one entry per job
   const summary = jobs.map((j, i) => {
     const address = j.install_address || {};
     const pincode = address.pincode || '';
@@ -537,7 +557,6 @@ async function handleTechPendingJobs(phone) {
     );
   }).join('\n\n');
 
-  // Buttons are just tap targets — title kept short due to WA 24-char limit
   const buttons = jobs.map(j => ({
     id: `JOB_DETAIL_${j.id}`,
     title: `${typeIcon[j.type] || '🔧'} ${j.unit_code}`.substring(0, 24),
