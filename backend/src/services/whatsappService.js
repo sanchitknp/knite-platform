@@ -195,7 +195,7 @@ async function getAllRecentMessages(limit = 50) {
 /**
  * Send a WhatsApp Flow message
  */
-async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Form') {
+async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Form', initialScreen = 'STATE_SCREEN') {
   console.log(`[WA→${toPhone}] FLOW: ${bodyText.substring(0, 60)}`);
   if (MODE === 'production') {
     await callMetaAPI({
@@ -213,7 +213,7 @@ async function sendFlow(toPhone, bodyText, flowId, flowToken, ctaText = 'Open Fo
             flow_cta: ctaText,
             flow_action: 'navigate',
             flow_action_payload: {
-              screen: 'STATE_SCREEN',
+              screen: initialScreen,
             },
           },
         },

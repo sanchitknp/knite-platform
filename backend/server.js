@@ -11,13 +11,23 @@ const webhook = require('./src/controllers/webhookController');
 const admin = require('./src/controllers/adminController');
 const wa = require('./src/services/whatsappService');
 const crons = require('./src/jobs/cronJobs');
+const { handleFlowExchange } = require('./src/services/flowExchangeService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
+
+// ─────────────────────────────────────────────
+// WHATSAPP FLOW DATA EXCHANGE ENDPOINT
+// Must be registered BEFORE express.json() so we receive the raw
+// encrypted binary body that Meta sends.
+// ─────────────────────────────────────────────
+app.get('/api/flow-exchange', (req, res) => res.json({ data: { status: 'active' } }));
+app.post('/api/flow-exchange', express.json(), handleFlowExchange);
+
+app.use(express.json({ limit: '10mb' }));
 
 // Serve frontend files (mounted at /app/frontend in Docker, or ../frontend locally)
 const frontendPath = process.env.FRONTEND_PATH || path.join(__dirname, 'frontend');

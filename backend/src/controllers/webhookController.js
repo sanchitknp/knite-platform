@@ -550,57 +550,41 @@ async function handleTechPendingJobs(phone) {
 }
 
 /**
- * Show full details of a specific job
+ * Show full details of a specific job via WhatsApp Flow
  */
 async function handleTechJobDetail(phone, jobId) {
-  const jobResult = await db.query(
-    `SELECT j.*, u.unit_id as unit_code, u.install_address,
-            c.phone as customer_phone, c.name as customer_name
-     FROM jobs j
-     JOIN units u ON u.id = j.unit_id
-     JOIN customers c ON c.id = j.customer_id
-     WHERE j.id = $1`,
-    [jobId]
-  );
-  const j = jobResult.rows[0];
-  if (!j) {
+  const jobResult = await db.query(`SELECT id FROM jobs WHERE id = $1`, [jobId]);
+  if (!jobResult.rows[0]) {
     await wa.sendText(phone, `❌ Job not found.`);
     return;
   }
 
-  const address = j.install_address || {};
-  const typeLabel = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
-  const statusLabel = { assigned: '📋 Assigned', en_route: '🚗 En Route', arrived: '📍 Arrived', pending_verification: '⏳ Pending OTP', completed: '✅ Completed' };
-  const slot = j.scheduled_start
-    ? new Date(j.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
-    : 'ASAP';
+  const flowId = process.env.WA_FLOW_JOB_DETAIL;
+  // Use jobId as the flow_token so the exchange endpoint knows which job to load
+  await wa.sendFlow(
+    phone,
+    `📋 Tap below to view full job details`,
+    flowId,
+    jobId,
+    'View Details',
+    'JOB_DETAIL'
+  );
 
-  const details =
-    `*${typeLabel[j.type] || j.type} — ${j.unit_code}*\n\n` +
-    `📦 *Unit:* ${j.unit_code}\n` +
-    `🏠 *Address:* ${address.raw || 'Not set'}\n` +
-    (address.full_address ? `   ${address.full_address}\n` : '') +
-    `👤 *Customer:* ${j.customer_name || j.customer_phone}\n` +
-    `📞 *Phone:* ${j.customer_phone}\n` +
-    `🕐 *Slot:* ${slot}\n` +
-    `💰 *Payout:* ₹${Math.round(j.payout_paise / 100)}`;
+  // Also send action buttons separately so technician can act without reopening flow
+  const j = (await db.query(
+    `SELECT j.status, u.install_address FROM jobs j JOIN units u ON u.id = j.unit_id WHERE j.id = $1`,
+    [jobId]
+  )).rows[0];
 
-  // Show action buttons based on current status
-  const actionButtons = [];
-  if (j.status === 'assigned') {
-    actionButtons.push({ id: `ARRIVED_${j.id}`, title: '📍 Mark Arrived' });
-  }
-  if (j.status === 'arrived') {
-    actionButtons.push({ id: `ENTER_OTP_${j.id}`, title: '🔑 Enter OTP' });
-  }
-  actionButtons.push({ id: 'TECH_PENDING_JOBS', title: '◀️ Back to List' });
+  const address = j?.install_address || {};
+  const actionButtons = [{ id: 'TECH_PENDING_JOBS', title: '◀️ Back to List' }];
+  if (j?.status === 'assigned') actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '📍 Mark Arrived' });
 
-  await wa.sendButtons(phone, details, actionButtons);
+  await wa.sendButtons(phone, `What would you like to do?`, actionButtons);
 
-  // If location was shared, send pin too
+  // Send location pin if available
   if (address.location?.latitude && address.location?.longitude) {
-    const { sendLocation } = require('../services/whatsappService');
-    await sendLocation(phone, address.location.latitude, address.location.longitude,
+    await wa.sendLocation(phone, address.location.latitude, address.location.longitude,
       address.raw || 'Installation Location', address.full_address || '');
   }
 }
