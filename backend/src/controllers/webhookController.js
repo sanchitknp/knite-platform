@@ -502,7 +502,7 @@ async function handleTechPendingJobs(phone) {
 
   const jobsResult = await db.query(
     `SELECT j.id, j.type, j.status, j.scheduled_start, j.payout_paise,
-            u.unit_id as unit_code
+            u.unit_id as unit_code, u.install_address
      FROM jobs j
      JOIN units u ON u.id = j.unit_id
      WHERE j.technician_id = $1
@@ -518,22 +518,33 @@ async function handleTechPendingJobs(phone) {
     return;
   }
 
-  const typeIcon = { install: '🔧', repair: '🛠️', maintenance: '🔄' };
-  const statusShort = { assigned: 'Assigned', en_route: 'En Route', arrived: 'Arrived', pending_verification: 'Pending OTP' };
+  const typeIcon  = { install: '🔧', repair: '🛠️', maintenance: '🔄' };
+  const typeLabel = { install: 'Installation', repair: 'Repair', maintenance: 'Maintenance' };
+  const statusShort = { assigned: '📋 Assigned', en_route: '🚗 En Route', arrived: '📍 Arrived', pending_verification: '⏳ Pending OTP' };
 
-  // Show as interactive list — each item is a tappable button to view details
-  const buttons = jobs.map(j => {
+  // Build a summary block in the body, one entry per job
+  const summary = jobs.map((j, i) => {
+    const address = j.install_address || {};
+    const pincode = address.pincode || '';
     const slot = j.scheduled_start
-      ? new Date(j.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      ? new Date(j.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
       : 'ASAP';
-    return {
-      id: `JOB_DETAIL_${j.id}`,
-      title: `${typeIcon[j.type] || '🔧'} ${j.unit_code} · ${slot}`.substring(0, 24),
-    };
-  });
+    return (
+      `*${i + 1}. ${typeIcon[j.type] || '🔧'} ${typeLabel[j.type] || j.type} — ${j.unit_code}*\n` +
+      `   📍 Pincode: ${pincode || 'N/A'}\n` +
+      `   🕐 ${slot}\n` +
+      `   💰 ₹${Math.round(j.payout_paise / 100)}  ·  ${statusShort[j.status] || j.status}`
+    );
+  }).join('\n\n');
+
+  // Buttons are just tap targets — title kept short due to WA 24-char limit
+  const buttons = jobs.map(j => ({
+    id: `JOB_DETAIL_${j.id}`,
+    title: `${typeIcon[j.type] || '🔧'} ${j.unit_code}`.substring(0, 24),
+  }));
 
   await wa.sendButtons(phone,
-    `🔧 *Pending Jobs (${jobs.length})*\n\nTap a job to see its details:`,
+    `🔧 *Pending Jobs (${jobs.length})*\n\n${summary}\n\n_Tap a job below for full details & actions:_`,
     buttons
   );
 }
