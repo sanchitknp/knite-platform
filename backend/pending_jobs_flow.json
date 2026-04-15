@@ -3,7 +3,9 @@
   "data_api_version": "3.0",
   "routing_model": {
     "PENDING_JOBS": ["JOB_DETAIL"],
-    "JOB_DETAIL": []
+    "JOB_DETAIL": ["OTP_ENTRY", "JOB_COMPLETE"],
+    "OTP_ENTRY": ["JOB_COMPLETE"],
+    "JOB_COMPLETE": []
   },
   "screens": [
     {
@@ -12,7 +14,7 @@
       "data": {
         "header": {
           "type": "string",
-          "__example__": "2 pending jobs"
+          "__example__": "2 pending jobs — select one to view details"
         },
         "jobs": {
           "type": "array",
@@ -25,8 +27,8 @@
             }
           },
           "__example__": [
-            { "id": "abc-123", "title": "KN-15 · 208001", "description": "15 Apr · ₹400" },
-            { "id": "def-456", "title": "KN-22 · 226001", "description": "16 Apr · ₹350" }
+            { "id": "abc-123", "title": "🔧 KN-15 · 208001", "description": "15 Apr · ₹400 · Assigned" },
+            { "id": "def-456", "title": "🔧 KN-22 · 226001", "description": "16 Apr · ₹350 · Arrived" }
           ]
         }
       },
@@ -63,56 +65,111 @@
         ]
       }
     },
+
     {
       "id": "JOB_DETAIL",
       "title": "Job Details",
-      "terminal": true,
       "data": {
-        "header":   { "type": "string", "__example__": "🔧 Installation — KN-15" },
-        "address":  { "type": "string", "__example__": "Flat 4B, Sector 74, Kanpur\nPincode: 208001" },
-        "customer": { "type": "string", "__example__": "Rahul Kumar · +91 98765 43210" },
-        "slot":     { "type": "string", "__example__": "15 Apr 2026, 8:40 PM" },
-        "payout":   { "type": "string", "__example__": "₹400" }
+        "job_id":       { "type": "string", "__example__": "abc-123-def-456" },
+        "header":       { "type": "string", "__example__": "🔧 Installation — KN-15" },
+        "address":      { "type": "string", "__example__": "Flat 4B, Sector 74, Kanpur\nPincode: 208001" },
+        "customer":     { "type": "string", "__example__": "Rahul Kumar · +91 98765 43210" },
+        "slot":         { "type": "string", "__example__": "15 Apr 2026, 8:40 PM" },
+        "payout":       { "type": "string", "__example__": "₹400" },
+        "status_label": { "type": "string", "__example__": "📋 Assigned" },
+        "action_label": { "type": "string", "__example__": "📍 Mark Arrived" }
       },
       "layout": {
         "type": "SingleColumnLayout",
         "children": [
+          { "type": "TextHeading",    "text": "${data.header}" },
+          { "type": "TextSubheading", "text": "📍 Address" },
+          { "type": "TextBody",       "text": "${data.address}" },
+          { "type": "TextSubheading", "text": "👤 Customer" },
+          { "type": "TextBody",       "text": "${data.customer}" },
+          { "type": "TextSubheading", "text": "🕐 Slot" },
+          { "type": "TextBody",       "text": "${data.slot}" },
+          { "type": "TextSubheading", "text": "💰 Payout" },
+          { "type": "TextBody",       "text": "${data.payout}" },
+          { "type": "TextCaption",    "text": "Status: ${data.status_label}" },
           {
-            "type": "TextHeading",
-            "text": "${data.header}"
-          },
+            "type": "Form",
+            "name": "action_form",
+            "children": [
+              {
+                "type": "Footer",
+                "label": "${data.action_label}",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "job_id": "${data.job_id}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "id": "OTP_ENTRY",
+      "title": "Happiness Code",
+      "data": {
+        "job_id":   { "type": "string", "__example__": "abc-123-def-456" },
+        "subtitle": { "type": "string", "__example__": "Ask the customer for their 6-digit Happiness Code." },
+        "error_msg": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextHeading", "text": "🔐 Enter Happiness Code" },
+          { "type": "TextBody",    "text": "${data.subtitle}" },
+          { "type": "TextCaption", "text": "${data.error_msg}" },
           {
-            "type": "TextSubheading",
-            "text": "📍 Address"
-          },
-          {
-            "type": "TextBody",
-            "text": "${data.address}"
-          },
-          {
-            "type": "TextSubheading",
-            "text": "👤 Customer"
-          },
-          {
-            "type": "TextBody",
-            "text": "${data.customer}"
-          },
-          {
-            "type": "TextSubheading",
-            "text": "🕐 Slot"
-          },
-          {
-            "type": "TextBody",
-            "text": "${data.slot}"
-          },
-          {
-            "type": "TextSubheading",
-            "text": "💰 Payout"
-          },
-          {
-            "type": "TextBody",
-            "text": "${data.payout}"
-          },
+            "type": "Form",
+            "name": "otp_form",
+            "children": [
+              {
+                "type": "TextInput",
+                "name": "otp",
+                "label": "6-digit Happiness Code",
+                "input-type": "number",
+                "required": true,
+                "min-chars": 6,
+                "max-chars": 6,
+                "helper-text": "The code was sent to the customer when they booked"
+              },
+              {
+                "type": "Footer",
+                "label": "✅ Verify & Complete",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "job_id": "${data.job_id}",
+                    "otp":    "${form.otp}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "id": "JOB_COMPLETE",
+      "title": "Done",
+      "terminal": true,
+      "data": {
+        "message":  { "type": "string", "__example__": "✅ Happiness Code Verified!" },
+        "subtitle": { "type": "string", "__example__": "Send 2 completion photos in the chat to release payment." }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextHeading", "text": "${data.message}" },
+          { "type": "TextBody",    "text": "${data.subtitle}" },
           {
             "type": "Form",
             "name": "close_form",
@@ -120,10 +177,7 @@
               {
                 "type": "Footer",
                 "label": "Close",
-                "on-click-action": {
-                  "name": "complete",
-                  "payload": {}
-                }
+                "on-click-action": { "name": "complete", "payload": {} }
               }
             ]
           }

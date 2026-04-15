@@ -60,3 +60,9 @@ build/
 backend/.embedded-pg-data/
 backend/start-local.js
 uploads/
+
+# ─────────────────────────────────────────────
+# Claude Desktop exports & generated context
+# ─────────────────────────────────────────────
+conversations.json
+docs/claude-context/

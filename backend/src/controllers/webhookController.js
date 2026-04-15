@@ -509,7 +509,7 @@ async function handleTechPendingJobs(phone) {
      FROM jobs j
      JOIN units u ON u.id = j.unit_id
      WHERE j.technician_id = $1
-       AND j.status IN ('assigned', 'en_route', 'arrived', 'pending_verification')
+       AND j.status IN ('assigned', 'en_route', 'arrived', 'in_progress', 'pending_verification')
      ORDER BY j.scheduled_start ASC NULLS LAST`,
     [tech.id]
   );
@@ -527,13 +527,13 @@ async function handleTechPendingJobs(phone) {
   if (flowId && process.env.WHATSAPP_MODE === 'production') {
     await wa.sendFlow(
       phone,
-      `You have ${jobs.length} pending installation${jobs.length !== 1 ? 's' : ''}. Open to select a job and view its details.`,
+      `You have ${jobs.length} pending job${jobs.length !== 1 ? 's' : ''}. Open to view details, mark arrived, enter Happiness Code, and more — all inside the form.`,
       flowId,
-      phone,          // flow_token = tech phone — exchange endpoint uses this to load jobs
+      phone,
       'View Jobs',
-      'PENDING_JOBS', // ignored for data_exchange, but kept for clarity
+      'PENDING_JOBS',
       null,
-      true            // useDataExchange — triggers INIT call to exchange endpoint
+      true
     );
     return;
   }
@@ -541,7 +541,7 @@ async function handleTechPendingJobs(phone) {
   // ── Fallback: button list (simulator or no flow ID) ───────────────────────
   const typeIcon  = { install: '🔧', repair: '🛠️', maintenance: '🔄' };
   const typeLabel = { install: 'Installation', repair: 'Repair', maintenance: 'Maintenance' };
-  const statusShort = { assigned: '📋 Assigned', en_route: '🚗 En Route', arrived: '📍 Arrived', pending_verification: '⏳ Pending OTP' };
+  const statusShort = { assigned: '📋 Assigned', en_route: '🚗 En Route', arrived: '📍 Arrived', in_progress: '🔧 In Progress', pending_verification: '⏳ Awaiting Verify' };
 
   const summary = jobs.map((j, i) => {
     const address = j.install_address || {};
@@ -607,7 +607,11 @@ async function handleTechJobDetail(phone, jobId) {
     `💰 *Payout:* ₹${Math.round(j.payout_paise / 100)}`;
 
   const actionButtons = [{ id: 'TECH_PENDING_JOBS', title: '◀️ Back to List' }];
-  if (j.status === 'assigned') actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '📍 Mark Arrived' });
+  if (j.status === 'assigned') {
+    actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '📍 Mark Arrived' });
+  } else if (j.status === 'arrived' || j.status === 'en_route') {
+    actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '🔐 Enter OTP' });
+  }
 
   await wa.sendButtons(phone, details, actionButtons);
 

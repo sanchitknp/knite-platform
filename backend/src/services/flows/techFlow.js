@@ -641,11 +641,21 @@ async function handleJobDecline(phone, jobId) {
 async function handleArrived(phone, jobId) {
   const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [phone]);
   if (!techResult.rows[0]) return;
+  const tech = techResult.rows[0];
+
+  await db.query(
+    `UPDATE jobs SET status = 'arrived', updated_at = now() WHERE id = $1 AND status = 'assigned'`,
+    [jobId]
+  );
+  await db.query(
+    `SELECT log_job_event($1, 'arrived', 'assigned', 'arrived', 'technician', $2, '{}')`,
+    [jobId, tech.id]
+  );
 
   await session.setSession(phone, {
     flow: 'tech_job',
     step: 'awaiting_otp',
-    context_data: { job_id: jobId, tech_id: techResult.rows[0].id }
+    context_data: { job_id: jobId, tech_id: tech.id }
   });
 
   await wa.sendText(phone, `📍 *Arrival confirmed!*\n\nComplete the work, then ask the customer for the *Happiness Code* and enter it here:`);

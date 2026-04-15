@@ -1,9 +1,8 @@
 /**
  * WhatsApp Flow Encrypted Data Exchange
  *
- * Handles two flows:
- *  1. JOB_DETAIL  (legacy single-screen) — flow_token = job UUID
- *  2. PENDING_JOBS (two-screen)          — flow_token = tech phone number
+ * Handles the full job lifecycle inside a single WhatsApp Flow:
+ *   PENDING_JOBS → JOB_DETAIL → OTP_ENTRY → JOB_COMPLETE
  *
  * Encryption scheme:
  *  - AES key encrypted with our RSA-2048 public key (OAEP + SHA-256)
@@ -14,17 +13,15 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
+const otp = require('./otpService');
+const session = require('./sessionService');
+const wa = require('./whatsappService');
 
-// Load RSA private key once at startup
 const PRIVATE_KEY_PATH = path.join(__dirname, '../../flow_private_key.pem');
 const privateKey = fs.readFileSync(PRIVATE_KEY_PATH, 'utf8');
 
-// UUID v4 pattern — used to distinguish job-UUID tokens from phone-number tokens
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * Decrypt an incoming flow request from WhatsApp
- */
 function decryptRequest(body) {
   const { encrypted_aes_key, encrypted_flow_data, initial_vector } = body;
 
@@ -54,10 +51,6 @@ function decryptRequest(body) {
   };
 }
 
-/**
- * Encrypt a response to send back to WhatsApp
- * Uses the same AES key but with a bit-flipped IV
- */
 function encryptResponse(responseData, aesKey, iv) {
   const flippedIv = Buffer.from(iv.map(b => ~b & 0xff));
 
@@ -71,9 +64,6 @@ function encryptResponse(responseData, aesKey, iv) {
   return Buffer.concat([encrypted, tag]).toString('base64');
 }
 
-/**
- * Main handler for POST /api/flow-exchange
- */
 async function handleFlowExchange(req, res) {
   console.log('[FLOW EXCHANGE] Incoming: method=%s body_keys=%s',
     req.method, Object.keys(req.body || {}).join(','));
@@ -104,7 +94,7 @@ async function handleFlowExchange(req, res) {
   try {
     responseData = await buildResponse(decryptedBody);
   } catch (err) {
-    console.error('[FLOW EXCHANGE] Build response error:', err.message);
+    console.error('[FLOW EXCHANGE] Build response error:', err);
     responseData = {
       version: '3.0',
       screen: 'PENDING_JOBS',
@@ -112,20 +102,15 @@ async function handleFlowExchange(req, res) {
     };
   }
 
+  console.log('[FLOW EXCHANGE] Response: screen=%s', responseData.screen);
   const encrypted = encryptResponse(responseData, aesKey, iv);
   res.send(encrypted);
 }
 
-/**
- * Route the request to the right screen builder
- */
 async function buildResponse(body) {
   const { action, flow_token, screen, data } = body;
 
   if (action === 'INIT') {
-    // Distinguish the two flows by token format:
-    //  UUID → old single-screen JOB_DETAIL flow (flow_token = job id)
-    //  phone → new PENDING_JOBS flow (flow_token = tech phone)
     if (UUID_RE.test(flow_token)) {
       return await buildLegacyJobDetailScreen(flow_token);
     }
@@ -133,17 +118,26 @@ async function buildResponse(body) {
   }
 
   if (action === 'BACK') {
-    // Back from JOB_DETAIL → go back to jobs list
     return await buildPendingJobsScreen(flow_token);
   }
 
   if (action === 'data_exchange') {
     if (screen === 'PENDING_JOBS' && data?.selected_job) {
-      // Technician selected a job → show its details
       return await buildJobDetailScreen(data.selected_job);
     }
-    // JOB_DETAIL "Close" footer (complete action) — shouldn't reach here, but handle gracefully
-    return { version: '3.0', screen: 'SUCCESS', data: {} };
+
+    if (screen === 'JOB_DETAIL' && data?.job_id) {
+      return await handleJobDetailAction(data.job_id, flow_token);
+    }
+
+    if (screen === 'OTP_ENTRY' && data?.job_id) {
+      return await handleOTPSubmission(data.job_id, data.otp, flow_token);
+    }
+
+    return { version: '3.0', screen: 'JOB_COMPLETE', data: {
+      message: '✅ Done',
+      subtitle: 'No action needed.',
+    }};
   }
 
   return await buildPendingJobsScreen(flow_token);
@@ -151,10 +145,24 @@ async function buildResponse(body) {
 
 // ─── Screen builders ─────────────────────────────────────────────────────────
 
-/**
- * PENDING_JOBS screen — loads all pending/assigned jobs for a technician
- * flow_token = tech phone number
- */
+const TYPE_ICON  = { install: '🔧', repair: '🛠️', maintenance: '🔄' };
+const TYPE_LABEL = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
+const STATUS_LABEL = {
+  assigned: '📋 Assigned',
+  en_route: '🚗 En Route',
+  arrived: '📍 Arrived',
+  in_progress: '🔧 In Progress',
+  pending_verification: '⏳ Awaiting Verification',
+};
+
+function formatSlot(scheduledStart) {
+  if (!scheduledStart) return 'ASAP';
+  return new Date(scheduledStart).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short',
+    year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 async function buildPendingJobsScreen(techPhone) {
   const techResult = await db.query(
     `SELECT id FROM technicians WHERE phone = $1`,
@@ -166,10 +174,7 @@ async function buildPendingJobsScreen(techPhone) {
     return {
       version: '3.0',
       screen: 'PENDING_JOBS',
-      data: {
-        header: 'No technician account found.',
-        jobs: [],
-      },
+      data: { header: 'No technician account found.', jobs: [] },
     };
   }
 
@@ -179,27 +184,20 @@ async function buildPendingJobsScreen(techPhone) {
      FROM jobs j
      JOIN units u ON u.id = j.unit_id
      WHERE j.technician_id = $1
-       AND j.status IN ('assigned', 'en_route', 'arrived', 'pending_verification')
+       AND j.status IN ('assigned', 'en_route', 'arrived', 'in_progress', 'pending_verification')
      ORDER BY j.scheduled_start ASC NULLS LAST`,
     [tech.id]
   );
 
-  const typeIcon = { install: '🔧', repair: '🛠️', maintenance: '🔄' };
-
   const jobs = jobsResult.rows.map(j => {
     const address = j.install_address || {};
     const pincode = address.pincode ? ` · ${address.pincode}` : '';
-    const slot = j.scheduled_start
-      ? new Date(j.scheduled_start).toLocaleString('en-IN', {
-          timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short',
-          hour: '2-digit', minute: '2-digit',
-        })
-      : 'ASAP';
+    const slot = formatSlot(j.scheduled_start);
 
     return {
       id: j.id,
-      title: `${typeIcon[j.type] || '🔧'} ${j.unit_code}${pincode}`,
-      description: `${slot} · ₹${Math.round(j.payout_paise / 100)}`,
+      title: `${TYPE_ICON[j.type] || '🔧'} ${j.unit_code}${pincode}`,
+      description: `${slot} · ₹${Math.round(j.payout_paise / 100)} · ${STATUS_LABEL[j.status] || j.status}`,
     };
   });
 
@@ -215,12 +213,8 @@ async function buildPendingJobsScreen(techPhone) {
   };
 }
 
-/**
- * JOB_DETAIL screen — loads a specific job by UUID
- * Called after technician selects a job from PENDING_JOBS
- */
-async function buildJobDetailScreen(jobId) {
-  const jobResult = await db.query(
+async function loadJob(jobId) {
+  const result = await db.query(
     `SELECT j.*, u.unit_id as unit_code, u.install_address,
             c.phone as customer_phone, c.name as customer_name
      FROM jobs j
@@ -229,31 +223,36 @@ async function buildJobDetailScreen(jobId) {
      WHERE j.id = $1`,
     [jobId]
   );
+  return result.rows[0];
+}
 
-  const j = jobResult.rows[0];
+function getActionLabel(status) {
+  switch (status) {
+    case 'assigned':              return '📍 Mark Arrived';
+    case 'en_route':
+    case 'arrived':               return '🔐 Enter Happiness Code';
+    case 'in_progress':           return '📸 Send Photos in Chat';
+    case 'pending_verification':  return '⏳ Awaiting Verification';
+    default:                      return 'View';
+  }
+}
+
+async function buildJobDetailScreen(jobId) {
+  const j = await loadJob(jobId);
   if (!j) {
     return {
       version: '3.0',
       screen: 'JOB_DETAIL',
       data: {
-        header:   '❌ Job Not Found',
-        address:  '—',
-        customer: '—',
-        slot:     '—',
-        payout:   '—',
+        job_id: jobId,
+        header: '❌ Job Not Found',
+        address: '—', customer: '—', slot: '—', payout: '—',
+        status_label: 'Unknown', action_label: 'Close',
       },
     };
   }
 
   const address = j.install_address || {};
-  const typeLabel = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
-  const slot = j.scheduled_start
-    ? new Date(j.scheduled_start).toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short',
-        year: 'numeric', hour: '2-digit', minute: '2-digit',
-      })
-    : 'ASAP';
-
   const addressLines = [address.raw || address.full_address].filter(Boolean);
   if (address.pincode) addressLines.push(`Pincode: ${address.pincode}`);
 
@@ -261,64 +260,206 @@ async function buildJobDetailScreen(jobId) {
     version: '3.0',
     screen: 'JOB_DETAIL',
     data: {
-      header:   `${typeLabel[j.type] || j.type} — ${j.unit_code}`,
-      address:  addressLines.join('\n') || 'Address not set',
-      customer: `${j.customer_name || 'Customer'} · ${j.customer_phone}`,
-      slot,
-      payout:   `₹${Math.round(j.payout_paise / 100)}`,
+      job_id:       j.id,
+      header:       `${TYPE_LABEL[j.type] || j.type} — ${j.unit_code}`,
+      address:      addressLines.join('\n') || 'Address not set',
+      customer:     `${j.customer_name || 'Customer'} · ${j.customer_phone}`,
+      slot:         formatSlot(j.scheduled_start),
+      payout:       `₹${Math.round(j.payout_paise / 100)}`,
+      status_label: STATUS_LABEL[j.status] || j.status,
+      action_label: getActionLabel(j.status),
     },
   };
 }
 
 /**
- * Legacy single-screen JOB_DETAIL flow (old WA_FLOW_JOB_DETAIL)
- * flow_token = job UUID — kept for backward compatibility
+ * Technician tapped the action button on JOB_DETAIL.
+ * Behavior depends on current job status.
  */
-async function buildLegacyJobDetailScreen(jobId) {
-  const jobResult = await db.query(
-    `SELECT j.*, u.unit_id as unit_code, u.install_address,
-            c.phone as customer_phone, c.name as customer_name
-     FROM jobs j
-     JOIN units u ON u.id = j.unit_id
-     JOIN customers c ON c.id = j.customer_id
-     WHERE j.id = $1`,
+async function handleJobDetailAction(jobId, techPhone) {
+  const j = await loadJob(jobId);
+  if (!j) {
+    return { version: '3.0', screen: 'JOB_COMPLETE', data: {
+      message: '❌ Job not found', subtitle: 'This job may have been cancelled.',
+    }};
+  }
+
+  const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [techPhone]);
+  const tech = techResult.rows[0];
+
+  if (j.status === 'assigned') {
+    // Mark arrived: update DB status and set session for OTP collection
+    await db.query(
+      `UPDATE jobs SET status = 'arrived', updated_at = now() WHERE id = $1`,
+      [jobId]
+    );
+    if (tech) {
+      await db.query(
+        `SELECT log_job_event($1, 'arrived', 'assigned', 'arrived', 'technician', $2, '{}')`,
+        [jobId, tech.id]
+      );
+    }
+    console.log('[FLOW] Tech %s marked arrived for job %s', techPhone, jobId);
+
+    return {
+      version: '3.0',
+      screen: 'OTP_ENTRY',
+      data: {
+        job_id: jobId,
+        subtitle: '📍 Arrival confirmed!\n\nComplete the work, then ask the customer for their 6-digit Happiness Code.',
+        error_msg: ' ',
+      },
+    };
+  }
+
+  if (j.status === 'en_route' || j.status === 'arrived') {
+    return {
+      version: '3.0',
+      screen: 'OTP_ENTRY',
+      data: {
+        job_id: jobId,
+        subtitle: 'Ask the customer for their 6-digit Happiness Code after completing the work.',
+        error_msg: ' ',
+      },
+    };
+  }
+
+  if (j.status === 'in_progress') {
+    return { version: '3.0', screen: 'JOB_COMPLETE', data: {
+      message: '🔧 Work In Progress',
+      subtitle: 'OTP already verified. Close this form and send 2 completion photos in the chat to finish the job.\n\n📸 1. Before/during work\n📸 2. Completed installation',
+    }};
+  }
+
+  if (j.status === 'pending_verification') {
+    return { version: '3.0', screen: 'JOB_COMPLETE', data: {
+      message: '⏳ Awaiting Customer Verification',
+      subtitle: 'Photos submitted. Waiting for the customer to confirm.\n\nPayment auto-releases in 4 hours if no response.',
+    }};
+  }
+
+  return { version: '3.0', screen: 'JOB_COMPLETE', data: {
+    message: `Job Status: ${j.status}`,
+    subtitle: 'No further actions available for this job.',
+  }};
+}
+
+/**
+ * Technician submitted the Happiness Code on OTP_ENTRY screen.
+ * Verifies the code, updates the job, and sets up photo collection in chat.
+ */
+async function handleOTPSubmission(jobId, otpInput, techPhone) {
+  const j = await loadJob(jobId);
+  if (!j) {
+    return { version: '3.0', screen: 'JOB_COMPLETE', data: {
+      message: '❌ Job not found', subtitle: 'This job may have been cancelled.',
+    }};
+  }
+
+  const otpStr = String(otpInput || '').trim();
+  if (!otpStr || otpStr.length < 4) {
+    return {
+      version: '3.0',
+      screen: 'OTP_ENTRY',
+      data: {
+        job_id: jobId,
+        subtitle: 'Ask the customer for their 6-digit Happiness Code.',
+        error_msg: '❌ Please enter a valid 6-digit code.',
+      },
+    };
+  }
+
+  const isValid = await otp.verifyOTP(otpStr, j.otp_hash);
+  if (!isValid) {
+    console.log('[FLOW] Invalid OTP for job %s from %s', jobId, techPhone);
+    return {
+      version: '3.0',
+      screen: 'OTP_ENTRY',
+      data: {
+        job_id: jobId,
+        subtitle: 'The code didn\'t match. Ask the customer to check and share the correct Happiness Code.',
+        error_msg: '❌ Invalid Happiness Code! Please try again.',
+      },
+    };
+  }
+
+  // OTP valid — update job and prepare for photo collection
+  const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [techPhone]);
+  const tech = techResult.rows[0];
+  const techId = tech?.id;
+
+  await db.query(
+    `UPDATE jobs SET status = 'in_progress', started_at = now(), otp_verified = true, updated_at = now() WHERE id = $1`,
     [jobId]
   );
 
-  const j = jobResult.rows[0];
+  if (techId) {
+    await db.query(
+      `SELECT log_job_event($1, 'otp_verified', 'arrived', 'in_progress', 'technician', $2, '{}')`,
+      [jobId, techId]
+    );
+  }
+
+  // Set session so chat picks up photo uploads after the flow closes
+  await session.setSession(techPhone, {
+    flow: 'tech_job',
+    step: 'awaiting_completion_photos',
+    context_data: { job_id: jobId, tech_id: techId, photos: [] },
+  });
+
+  // Send a chat message prompting for photos (arrives after they close the flow)
+  wa.sendText(techPhone,
+    `✅ *Happiness Code verified!*\n\n` +
+    `Now send *2 photos* in this chat:\n` +
+    `📸 1. Before/during work\n📸 2. Completed ${j.type}\n\n` +
+    `_(Required for payment release)_`
+  ).catch(err => console.error('[FLOW] Failed to send photo prompt:', err.message));
+
+  console.log('[FLOW] OTP verified for job %s by %s — awaiting photos', jobId, techPhone);
+
+  return {
+    version: '3.0',
+    screen: 'JOB_COMPLETE',
+    data: {
+      message: '✅ Happiness Code Verified!',
+      subtitle: 'Close this form and send 2 completion photos in the chat.\n\n📸 1. Before/during work\n📸 2. Completed installation\n\nPayment will be released after customer confirms.',
+    },
+  };
+}
+
+// ─── Legacy support ──────────────────────────────────────────────────────────
+
+async function buildLegacyJobDetailScreen(jobId) {
+  const j = await loadJob(jobId);
   if (!j) {
     return {
       version: '3.0',
       screen: 'JOB_DETAIL',
       data: {
-        job_type: '❌ Job Not Found',
-        unit_code: '-', address: '-', pincode: '-',
-        customer: '-', phone: '-', slot: '-', payout: '-',
+        job_id: jobId,
+        header: '❌ Job Not Found',
+        address: '—', customer: '—', slot: '—', payout: '—',
+        status_label: 'Unknown', action_label: 'Close',
       },
     };
   }
 
   const address = j.install_address || {};
-  const typeLabel = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
-  const slot = j.scheduled_start
-    ? new Date(j.scheduled_start).toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short',
-        year: 'numeric', hour: '2-digit', minute: '2-digit',
-      })
-    : 'ASAP';
+  const addressLines = [address.raw || address.full_address].filter(Boolean);
+  if (address.pincode) addressLines.push(`Pincode: ${address.pincode}`);
 
   return {
     version: '3.0',
     screen: 'JOB_DETAIL',
     data: {
-      job_type: typeLabel[j.type] || j.type,
-      unit_code: j.unit_code,
-      address: address.raw || address.full_address || 'Not set',
-      pincode: address.pincode || 'N/A',
-      customer: j.customer_name || 'Customer',
-      phone: j.customer_phone,
-      slot,
-      payout: `₹${Math.round(j.payout_paise / 100)}`,
+      job_id:       j.id,
+      header:       `${TYPE_LABEL[j.type] || j.type} — ${j.unit_code}`,
+      address:      addressLines.join('\n') || 'Address not set',
+      customer:     `${j.customer_name || 'Customer'} · ${j.customer_phone}`,
+      slot:         formatSlot(j.scheduled_start),
+      payout:       `₹${Math.round(j.payout_paise / 100)}`,
+      status_label: STATUS_LABEL[j.status] || j.status,
+      action_label: getActionLabel(j.status),
     },
   };
 }
