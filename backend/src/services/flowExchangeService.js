@@ -76,6 +76,9 @@ function encryptResponse(responseData, aesKey, iv) {
  * Called by WhatsApp when a user opens a flow with an endpoint_uri
  */
 async function handleFlowExchange(req, res) {
+  console.log('[FLOW EXCHANGE] Incoming: method=%s body_keys=%s',
+    req.method, Object.keys(req.body || {}).join(','));
+
   // Plain-text health check (GET or POST with action=ping not encrypted)
   if (req.method === 'GET' || req.body?.action === 'ping') {
     return res.json({ data: { status: 'active' } });
@@ -86,16 +89,17 @@ async function handleFlowExchange(req, res) {
   try {
     ({ decryptedBody, aesKey, iv } = decryptRequest(req.body));
   } catch (err) {
-    console.error('[FLOW EXCHANGE] Decryption failed:', err.message);
+    console.error('[FLOW EXCHANGE] Decryption failed:', err.message, '| body_keys:', Object.keys(req.body || {}).join(','));
     return res.status(421).json({ error: 'decryption_failed' });
   }
 
-  console.log('[FLOW EXCHANGE] action=%s screen=%s token=%s',
-    decryptedBody.action, decryptedBody.screen, decryptedBody.flow_token);
+  console.log('[FLOW EXCHANGE] Decrypted: action=%s screen=%s token=%s data=%s',
+    decryptedBody.action, decryptedBody.screen, decryptedBody.flow_token,
+    JSON.stringify(decryptedBody.data || {}));
 
-  // Encrypted health check ping — respond with encrypted active status
+  // Encrypted health check ping
   if (decryptedBody.action === 'ping') {
-    const encrypted = encryptResponse({ data: { status: 'active' } }, aesKey, iv);
+    const encrypted = encryptResponse({ version: '3.0', data: { status: 'active' } }, aesKey, iv);
     return res.send(encrypted);
   }
 
@@ -153,6 +157,7 @@ async function buildJobDetailScreen(jobId) {
   const j = jobResult.rows[0];
   if (!j) {
     return {
+      version: '3.0',
       screen: 'JOB_DETAIL',
       data: {
         job_type: '❌ Job Not Found',
@@ -177,6 +182,7 @@ async function buildJobDetailScreen(jobId) {
     : 'ASAP';
 
   return {
+    version: '3.0',
     screen: 'JOB_DETAIL',
     data: {
       job_type: typeLabel[j.type] || j.type,

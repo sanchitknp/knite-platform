@@ -589,14 +589,14 @@ async function handleTechJobDetail(phone, jobId) {
     payout:    `₹${Math.round(j.payout_paise / 100)}`,
   };
 
+  // flow_token = jobId so the exchange endpoint INIT can look up the job
   await wa.sendFlow(
     phone,
     `📋 Tap below to view full job details`,
     process.env.WA_FLOW_JOB_DETAIL,
     jobId,
     'View Details',
-    'JOB_DETAIL',
-    screenData
+    'JOB_DETAIL'
   );
 
   // Action buttons below the flow message
