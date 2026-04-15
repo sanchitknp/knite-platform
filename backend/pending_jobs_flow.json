@@ -76,8 +76,7 @@
         "customer":     { "type": "string", "__example__": "Rahul Kumar · +91 98765 43210" },
         "slot":         { "type": "string", "__example__": "15 Apr 2026, 8:40 PM" },
         "payout":       { "type": "string", "__example__": "₹400" },
-        "status_label": { "type": "string", "__example__": "📋 Assigned" },
-        "action_label": { "type": "string", "__example__": "📍 Mark Arrived" }
+        "status_label": { "type": "string", "__example__": "📋 Assigned" }
       },
       "layout": {
         "type": "SingleColumnLayout",
@@ -97,12 +96,23 @@
             "name": "action_form",
             "children": [
               {
+                "type": "RadioButtonsGroup",
+                "name": "choice",
+                "label": "What would you like to do?",
+                "required": true,
+                "data-source": [
+                  { "id": "get_directions", "title": "📍 Get Directions" },
+                  { "id": "arrived",        "title": "✅ I Have Arrived" }
+                ]
+              },
+              {
                 "type": "Footer",
-                "label": "${data.action_label}",
+                "label": "Continue",
                 "on-click-action": {
                   "name": "data_exchange",
                   "payload": {
-                    "job_id": "${data.job_id}"
+                    "job_id": "${data.job_id}",
+                    "choice": "${form.choice}"
                   }
                 }
               }

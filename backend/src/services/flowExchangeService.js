@@ -127,7 +127,7 @@ async function buildResponse(body) {
     }
 
     if (screen === 'JOB_DETAIL' && data?.job_id) {
-      return await handleJobDetailAction(data.job_id, flow_token);
+      return await handleJobDetailAction(data.job_id, data.choice, flow_token);
     }
 
     if (screen === 'OTP_ENTRY' && data?.job_id) {
@@ -226,57 +226,57 @@ async function loadJob(jobId) {
   return result.rows[0];
 }
 
-function getActionLabel(status) {
-  switch (status) {
-    case 'assigned':              return '📍 Mark Arrived';
-    case 'en_route':
-    case 'arrived':               return '🔐 Enter Happiness Code';
-    case 'in_progress':           return '📸 Send Photos in Chat';
-    case 'pending_verification':  return '⏳ Awaiting Verification';
-    default:                      return 'View';
-  }
+function sendLocationToChat(techPhone, address) {
+  const lat = address?.location?.latitude;
+  const lng = address?.location?.longitude;
+  if (!lat || !lng) return;
+
+  const label = address.raw || address.full_address || 'Installation Location';
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+  wa.sendLocation(techPhone, lat, lng, label, address.full_address || '')
+    .catch(err => console.error('[FLOW] Failed to send location pin:', err.message));
+  wa.sendText(techPhone, `📍 *Get Directions:*\n${mapsUrl}`)
+    .catch(err => console.error('[FLOW] Failed to send maps link:', err.message));
 }
 
-async function buildJobDetailScreen(jobId) {
-  const j = await loadJob(jobId);
-  if (!j) {
-    return {
-      version: '3.0',
-      screen: 'JOB_DETAIL',
-      data: {
-        job_id: jobId,
-        header: '❌ Job Not Found',
-        address: '—', customer: '—', slot: '—', payout: '—',
-        status_label: 'Unknown', action_label: 'Close',
-      },
-    };
-  }
-
+function buildJobDetailData(j) {
   const address = j.install_address || {};
   const addressLines = [address.raw || address.full_address].filter(Boolean);
   if (address.pincode) addressLines.push(`Pincode: ${address.pincode}`);
 
   return {
-    version: '3.0',
-    screen: 'JOB_DETAIL',
-    data: {
-      job_id:       j.id,
-      header:       `${TYPE_LABEL[j.type] || j.type} — ${j.unit_code}`,
-      address:      addressLines.join('\n') || 'Address not set',
-      customer:     `${j.customer_name || 'Customer'} · ${j.customer_phone}`,
-      slot:         formatSlot(j.scheduled_start),
-      payout:       `₹${Math.round(j.payout_paise / 100)}`,
-      status_label: STATUS_LABEL[j.status] || j.status,
-      action_label: getActionLabel(j.status),
-    },
+    job_id:       j.id,
+    header:       `${TYPE_LABEL[j.type] || j.type} — ${j.unit_code}`,
+    address:      addressLines.join('\n') || 'Address not set',
+    customer:     `${j.customer_name || 'Customer'} · ${j.customer_phone}`,
+    slot:         formatSlot(j.scheduled_start),
+    payout:       `₹${Math.round(j.payout_paise / 100)}`,
+    status_label: STATUS_LABEL[j.status] || j.status,
   };
 }
 
+const JOB_NOT_FOUND_DATA = {
+  job_id: '', header: '❌ Job Not Found',
+  address: '—', customer: '—', slot: '—', payout: '—',
+  status_label: 'Unknown',
+};
+
+async function buildJobDetailScreen(jobId) {
+  const j = await loadJob(jobId);
+  if (!j) {
+    return { version: '3.0', screen: 'JOB_DETAIL', data: { ...JOB_NOT_FOUND_DATA, job_id: jobId } };
+  }
+
+  return { version: '3.0', screen: 'JOB_DETAIL', data: buildJobDetailData(j) };
+}
+
 /**
- * Technician tapped the action button on JOB_DETAIL.
- * Behavior depends on current job status.
+ * Technician chose an action on JOB_DETAIL:
+ *   "get_directions" → send location pin in chat + close flow
+ *   "arrived"        → mark arrived + proceed to OTP_ENTRY
  */
-async function handleJobDetailAction(jobId, techPhone) {
+async function handleJobDetailAction(jobId, choice, techPhone) {
   const j = await loadJob(jobId);
   if (!j) {
     return { version: '3.0', screen: 'JOB_COMPLETE', data: {
@@ -284,23 +284,34 @@ async function handleJobDetailAction(jobId, techPhone) {
     }};
   }
 
-  const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [techPhone]);
+  // ── Get Directions ──────────────────────────────────────────────────────
+  if (choice === 'get_directions') {
+    sendLocationToChat(techPhone, j.install_address);
+    return { version: '3.0', screen: 'JOB_COMPLETE', data: {
+      message: '📍 Directions Sent!',
+      subtitle: 'Check your chat for the location pin and Google Maps link.',
+    }};
+  }
+
+  // ── I Have Arrived ──────────────────────────────────────────────────────
+  const techResult = await db.query(`SELECT id FROM technicians WHERE phone = $1`, [techPhone]);
   const tech = techResult.rows[0];
 
-  if (j.status === 'assigned') {
-    // Mark arrived: update DB status and set session for OTP collection
+  if (j.status === 'assigned' || j.status === 'en_route') {
     await db.query(
-      `UPDATE jobs SET status = 'arrived', updated_at = now() WHERE id = $1`,
+      `UPDATE jobs SET status = 'arrived', updated_at = now() WHERE id = $1 AND status IN ('assigned', 'en_route')`,
       [jobId]
     );
     if (tech) {
       await db.query(
-        `SELECT log_job_event($1, 'arrived', 'assigned', 'arrived', 'technician', $2, '{}')`,
-        [jobId, tech.id]
+        `SELECT log_job_event($1, 'arrived', $2, 'arrived', 'technician', $3, '{}')`,
+        [jobId, j.status, tech.id]
       );
     }
     console.log('[FLOW] Tech %s marked arrived for job %s', techPhone, jobId);
+  }
 
+  if (['assigned', 'en_route', 'arrived'].includes(j.status)) {
     return {
       version: '3.0',
       screen: 'OTP_ENTRY',
@@ -312,22 +323,10 @@ async function handleJobDetailAction(jobId, techPhone) {
     };
   }
 
-  if (j.status === 'en_route' || j.status === 'arrived') {
-    return {
-      version: '3.0',
-      screen: 'OTP_ENTRY',
-      data: {
-        job_id: jobId,
-        subtitle: 'Ask the customer for their 6-digit Happiness Code after completing the work.',
-        error_msg: ' ',
-      },
-    };
-  }
-
   if (j.status === 'in_progress') {
     return { version: '3.0', screen: 'JOB_COMPLETE', data: {
       message: '🔧 Work In Progress',
-      subtitle: 'OTP already verified. Close this form and send 2 completion photos in the chat to finish the job.\n\n📸 1. Before/during work\n📸 2. Completed installation',
+      subtitle: 'OTP already verified. Close this form and send 2 completion photos in the chat.\n\n📸 1. Before/during work\n📸 2. Completed installation',
     }};
   }
 
@@ -432,36 +431,10 @@ async function handleOTPSubmission(jobId, otpInput, techPhone) {
 async function buildLegacyJobDetailScreen(jobId) {
   const j = await loadJob(jobId);
   if (!j) {
-    return {
-      version: '3.0',
-      screen: 'JOB_DETAIL',
-      data: {
-        job_id: jobId,
-        header: '❌ Job Not Found',
-        address: '—', customer: '—', slot: '—', payout: '—',
-        status_label: 'Unknown', action_label: 'Close',
-      },
-    };
+    return { version: '3.0', screen: 'JOB_DETAIL', data: { ...JOB_NOT_FOUND_DATA, job_id: jobId } };
   }
 
-  const address = j.install_address || {};
-  const addressLines = [address.raw || address.full_address].filter(Boolean);
-  if (address.pincode) addressLines.push(`Pincode: ${address.pincode}`);
-
-  return {
-    version: '3.0',
-    screen: 'JOB_DETAIL',
-    data: {
-      job_id:       j.id,
-      header:       `${TYPE_LABEL[j.type] || j.type} — ${j.unit_code}`,
-      address:      addressLines.join('\n') || 'Address not set',
-      customer:     `${j.customer_name || 'Customer'} · ${j.customer_phone}`,
-      slot:         formatSlot(j.scheduled_start),
-      payout:       `₹${Math.round(j.payout_paise / 100)}`,
-      status_label: STATUS_LABEL[j.status] || j.status,
-      action_label: getActionLabel(j.status),
-    },
-  };
+  return { version: '3.0', screen: 'JOB_DETAIL', data: buildJobDetailData(j) };
 }
 
 module.exports = { handleFlowExchange };
