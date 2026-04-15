@@ -553,33 +553,55 @@ async function handleTechPendingJobs(phone) {
  * Show full details of a specific job via WhatsApp Flow
  */
 async function handleTechJobDetail(phone, jobId) {
-  const jobResult = await db.query(`SELECT id FROM jobs WHERE id = $1`, [jobId]);
-  if (!jobResult.rows[0]) {
+  const jobResult = await db.query(
+    `SELECT j.*, u.unit_id as unit_code, u.install_address,
+            c.phone as customer_phone, c.name as customer_name
+     FROM jobs j
+     JOIN units u ON u.id = j.unit_id
+     JOIN customers c ON c.id = j.customer_id
+     WHERE j.id = $1`,
+    [jobId]
+  );
+  const j = jobResult.rows[0];
+  if (!j) {
     await wa.sendText(phone, `❌ Job not found.`);
     return;
   }
 
-  const flowId = process.env.WA_FLOW_JOB_DETAIL;
-  // Use jobId as the flow_token so the exchange endpoint knows which job to load
+  const address = j.install_address || {};
+  const typeLabel = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
+  const slot = j.scheduled_start
+    ? new Date(j.scheduled_start).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short',
+        year: 'numeric', hour: '2-digit', minute: '2-digit',
+      })
+    : 'ASAP';
+
+  // Build screen data to pass directly in the flow payload
+  const screenData = {
+    job_type:  typeLabel[j.type] || j.type,
+    unit_code: j.unit_code,
+    address:   address.raw || address.full_address || 'Not set',
+    pincode:   address.pincode || 'N/A',
+    customer:  j.customer_name || 'Customer',
+    phone:     j.customer_phone,
+    slot,
+    payout:    `₹${Math.round(j.payout_paise / 100)}`,
+  };
+
   await wa.sendFlow(
     phone,
     `📋 Tap below to view full job details`,
-    flowId,
+    process.env.WA_FLOW_JOB_DETAIL,
     jobId,
     'View Details',
-    'JOB_DETAIL'
+    'JOB_DETAIL',
+    screenData
   );
 
-  // Also send action buttons separately so technician can act without reopening flow
-  const j = (await db.query(
-    `SELECT j.status, u.install_address FROM jobs j JOIN units u ON u.id = j.unit_id WHERE j.id = $1`,
-    [jobId]
-  )).rows[0];
-
-  const address = j?.install_address || {};
+  // Action buttons below the flow message
   const actionButtons = [{ id: 'TECH_PENDING_JOBS', title: '◀️ Back to List' }];
-  if (j?.status === 'assigned') actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '📍 Mark Arrived' });
-
+  if (j.status === 'assigned') actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '📍 Mark Arrived' });
   await wa.sendButtons(phone, `What would you like to do?`, actionButtons);
 
   // Send location pin if available
