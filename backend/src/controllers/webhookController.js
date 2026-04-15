@@ -131,6 +131,12 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
     return;
   }
 
+  // Technician: pending installations
+  if (upper === 'TECH_PENDING_JOBS') {
+    await handleTechPendingJobs(phone);
+    return;
+  }
+
   // Main menu button: New Installation
   if (upper === 'SCAN_HELP') {
     await wa.sendText(phone, `📦 *New Installation*\n\nPlease type: *Install <unit-code>*\n\n_Example: Install KN-8492_\n\n_The unit code is printed on the QR sticker on your RO purifier._`);
@@ -477,6 +483,67 @@ async function handleJobVerification(phone, jobId, approved) {
 }
 
 /**
+ * Show pending jobs assigned to a technician
+ */
+async function handleTechPendingJobs(phone) {
+  const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [phone]);
+  const tech = techResult.rows[0];
+  if (!tech) {
+    await wa.sendText(phone, `❌ You are not registered as a technician.`);
+    return;
+  }
+
+  const jobsResult = await db.query(
+    `SELECT j.id, j.type, j.status, j.scheduled_start, j.payout_paise,
+            u.unit_id as unit_code, u.install_address,
+            c.phone as customer_phone, c.name as customer_name
+     FROM jobs j
+     JOIN units u ON u.id = j.unit_id
+     JOIN customers c ON c.id = j.customer_id
+     WHERE j.technician_id = $1
+       AND j.status IN ('assigned', 'en_route', 'arrived', 'pending_verification')
+     ORDER BY j.scheduled_start ASC NULLS LAST`,
+    [tech.id]
+  );
+
+  const jobs = jobsResult.rows;
+
+  if (jobs.length === 0) {
+    await wa.sendText(phone, `✅ You have no pending installations right now.\n\nNew jobs will be sent to you automatically.`);
+    return;
+  }
+
+  const typeLabel = { install: '🔧 Installation', repair: '🛠️ Repair', maintenance: '🔄 Maintenance' };
+  const statusLabel = {
+    assigned: '📋 Assigned',
+    en_route: '🚗 En Route',
+    arrived: '📍 Arrived',
+    pending_verification: '⏳ Pending Verification',
+  };
+
+  const lines = jobs.map((j, i) => {
+    const address = j.install_address || {};
+    const slot = j.scheduled_start
+      ? new Date(j.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
+      : 'ASAP';
+    return (
+      `*${i + 1}. ${typeLabel[j.type] || j.type}*\n` +
+      `   📦 Unit: ${j.unit_code}\n` +
+      `   📍 ${address.raw || 'Address not set'}\n` +
+      `   👤 ${j.customer_name || j.customer_phone}\n` +
+      `   🕐 ${slot}\n` +
+      `   💰 ₹${Math.round(j.payout_paise / 100)}\n` +
+      `   Status: ${statusLabel[j.status] || j.status}`
+    );
+  }).join('\n\n');
+
+  await wa.sendText(phone,
+    `🔧 *Your Pending Jobs (${jobs.length})*\n\n${lines}\n\n` +
+    `_Use ARRIVED_<job-id> or your job buttons to update status._`
+  );
+}
+
+/**
  * Send main menu
  */
 async function sendMainMenu(phone, isTech) {
@@ -485,6 +552,7 @@ async function sendMainMenu(phone, isTech) {
       `👋 *Knite Technician Portal*\n\nYou'll receive job notifications automatically.\n\nWhat do you need?`,
       [
         { id: 'TECH_STATUS', title: '📊 My Stats' },
+        { id: 'TECH_PENDING_JOBS', title: '🔧 Pending Installations' },
         { id: 'REFER_TECH', title: '🤝 Refer a Technician' },
         { id: 'HELP', title: '❓ Help' },
       ]
