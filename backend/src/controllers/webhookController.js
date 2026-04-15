@@ -583,9 +583,7 @@ async function handleTechJobDetail(phone, jobId) {
     `👤 *Customer:* ${j.customer_name || j.customer_phone}\n` +
     `📞 *Phone:* ${j.customer_phone}\n` +
     `🕐 *Slot:* ${slot}\n` +
-    `💰 *Payout:* ₹${Math.round(j.payout_paise / 100)}\n` +
-    `📊 *Status:* ${statusLabel[j.status] || j.status}\n` +
-    `🆔 *Job ID:* \`${j.id}\``;
+    `💰 *Payout:* ₹${Math.round(j.payout_paise / 100)}`;
 
   // Show action buttons based on current status
   const actionButtons = [];
