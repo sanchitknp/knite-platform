@@ -550,7 +550,7 @@ async function handleTechPendingJobs(phone) {
 }
 
 /**
- * Show full details of a specific job via WhatsApp Flow
+ * Show full details of a specific job as a chat message
  */
 async function handleTechJobDetail(phone, jobId) {
   const jobResult = await db.query(
@@ -577,34 +577,22 @@ async function handleTechJobDetail(phone, jobId) {
       })
     : 'ASAP';
 
-  // Build screen data to pass directly in the flow payload
-  const screenData = {
-    job_type:  typeLabel[j.type] || j.type,
-    unit_code: j.unit_code,
-    address:   address.raw || address.full_address || 'Not set',
-    pincode:   address.pincode || 'N/A',
-    customer:  j.customer_name || 'Customer',
-    phone:     j.customer_phone,
-    slot,
-    payout:    `₹${Math.round(j.payout_paise / 100)}`,
-  };
+  const details =
+    `*${typeLabel[j.type] || j.type} — ${j.unit_code}*\n\n` +
+    `📦 *Unit:* ${j.unit_code}\n` +
+    `🏠 *Address:* ${address.raw || 'Not set'}\n` +
+    (address.full_address ? `   ${address.full_address}\n` : '') +
+    `👤 *Customer:* ${j.customer_name || j.customer_phone}\n` +
+    `📞 *Phone:* ${j.customer_phone}\n` +
+    `🕐 *Slot:* ${slot}\n` +
+    `💰 *Payout:* ₹${Math.round(j.payout_paise / 100)}`;
 
-  // flow_token = jobId so the exchange endpoint INIT can look up the job
-  await wa.sendFlow(
-    phone,
-    `📋 Tap below to view full job details`,
-    process.env.WA_FLOW_JOB_DETAIL,
-    jobId,
-    'View Details',
-    'JOB_DETAIL'
-  );
-
-  // Action buttons below the flow message
   const actionButtons = [{ id: 'TECH_PENDING_JOBS', title: '◀️ Back to List' }];
   if (j.status === 'assigned') actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '📍 Mark Arrived' });
-  await wa.sendButtons(phone, `What would you like to do?`, actionButtons);
 
-  // Send location pin if available
+  await wa.sendButtons(phone, details, actionButtons);
+
+  // Send location pin if customer shared GPS
   if (address.location?.latitude && address.location?.longitude) {
     await wa.sendLocation(phone, address.location.latitude, address.location.longitude,
       address.raw || 'Installation Location', address.full_address || '');
