@@ -5,6 +5,10 @@
 .env.*
 !.env.example
 
+# Private keys (WhatsApp Flow signing, SSH, etc.)
+*.pem
+*.key
+
 # ─────────────────────────────────────────────
 # Node.js
 # ─────────────────────────────────────────────

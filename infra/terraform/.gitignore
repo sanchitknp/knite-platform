@@ -1,0 +1,14 @@
+# Terraform state + lock + plan files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+tfplan
+tfplan.*
+crash.log
+crash.*.log
+
+# Variables with secrets (none right now, but reserving)
+*.tfvars
+!example.tfvars

@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AXIOS ENTERPRISE LLP — Knite — DPIIT & 80-IAC Write-Up</title>
+<style>
+  @page { size: A4; margin: 22mm 20mm 22mm 20mm; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Georgia", "Iowan Old Style", "Times New Roman", serif;
+    font-size: 11.5pt;
+    line-height: 1.55;
+    color: #111;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 32px 48px;
+    background: #fff;
+  }
+  h1 {
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 22pt;
+    line-height: 1.2;
+    margin: 0 0 4pt;
+    letter-spacing: -0.2pt;
+  }
+  h2 {
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 15pt;
+    margin: 28pt 0 8pt;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4pt;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 12.5pt;
+    margin: 18pt 0 6pt;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 11.5pt;
+    margin: 14pt 0 4pt;
+    page-break-after: avoid;
+  }
+  .subtitle {
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 13pt;
+    color: #444;
+    margin: 0 0 14pt;
+  }
+  .meta {
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 10pt;
+    color: #333;
+    margin: 0 0 22pt;
+    line-height: 1.55;
+  }
+  .meta strong { color: #000; }
+  p { margin: 0 0 9pt; text-align: justify; }
+  ul, ol { margin: 0 0 10pt 20pt; padding: 0; }
+  li { margin-bottom: 4pt; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+    margin: 8pt 0 14pt;
+  }
+  th, td {
+    border: 1px solid #bbb;
+    padding: 6pt 8pt;
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    background: #f2f2f2;
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-weight: 600;
+  }
+  blockquote {
+    margin: 10pt 0;
+    padding: 8pt 14pt;
+    border-left: 3px solid #444;
+    background: #fafafa;
+    font-style: italic;
+  }
+  hr { border: none; border-top: 1px solid #ccc; margin: 22pt 0; }
+  .sig-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 36pt;
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 10.5pt;
+  }
+  .sig-block { width: 45%; }
+  .sig-line {
+    border-top: 1px solid #000;
+    padding-top: 4pt;
+    margin-top: 30pt;
+  }
+  .footer-note {
+    font-family: "Helvetica Neue", "Inter", Arial, sans-serif;
+    font-size: 9.5pt;
+    color: #666;
+    text-align: center;
+    margin-top: 40pt;
+  }
+  @media print {
+    body { max-width: none; padding: 0; }
+    h2 { page-break-after: avoid; }
+    table, blockquote { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>AXIOS ENTERPRISE LLP — Knite</h1>
+<div class="subtitle">Application for DPIIT Recognition &amp; Section 80-IAC Certification</div>
+
+<div class="meta">
+  <strong>LLPIN:</strong> ACX-2874 &nbsp;·&nbsp;
+  <strong>PAN:</strong> ACOFA0039R &nbsp;·&nbsp;
+  <strong>TAN:</strong> DELA88512E<br>
+  <strong>Date of Incorporation:</strong> 17 April 2026<br>
+  <strong>Registered Office:</strong> Malviya Nagar, New Delhi — 110017<br>
+  <strong>Operating Office:</strong> Kanpur, Uttar Pradesh — 208001<br>
+  <strong>Website:</strong> <em>[to be finalised]</em>
+</div>
+
+<h2>Cover Summary</h2>
+<p>AXIOS ENTERPRISE LLP is an Indian limited liability partnership incorporated on 17 April 2026, operating under the product brand <strong>Knite</strong> — a WhatsApp-native operating system for India's 1.8 million field technicians. The LLP is wholly owned by its two Designated Partners, Sanchit Agarwal (IIT Kanpur, 50%) and Anmol Kumar Shrivastava (IIT BHU, 50%), both experienced software engineers working in applied AI.</p>
+<p>Knite eliminates the single biggest barrier to digitising India's home-services aftermarket: app adoption. Every technician workflow — onboarding, KYC, job dispatch, navigation, customer verification, and payout — is delivered inside a single WhatsApp thread using encrypted WhatsApp Cloud API Flows. Customers get a trust-first booking experience. Brands get real-time SLA and NPS visibility via API and dashboard.</p>
+<p>This document contains the innovation write-up required for DPIIT Startup India recognition and the product narrative required for Section 80-IAC certification by the Inter-Ministerial Board.</p>
+
+<h2>Section A — Innovation Write-Up</h2>
+
+<h3>A.1 What is the problem the startup is solving?</h3>
+<p>India's ~₹1.2 lakh-crore home-appliance and smart-device aftermarket runs on an informal network of more than <strong>1.8 million field technicians</strong> who install, repair, and service everything from geysers and air-conditioners to CCTV kits, water purifiers, and solar inverters. The market is plagued by three structural failures:</p>
+<p><strong>(a) Customer trust has collapsed.</strong> Brands and marketplaces ship products but outsource the "last-metre" installation to third-party agencies. Customers face no-shows, inflated on-site quotes, unverified technicians, and no effective redressal — driving installation review scores below 3★ on every major e-commerce platform.</p>
+<p><strong>(b) Technician economics are broken.</strong> A typical installer earns ₹8,000–₹20,000 per month, receives jobs through WhatsApp forwards from four or five competing aggregators, has no fixed schedule, waits 30–60 days for payment, and has zero structured upskilling path. In our primary field research across Kanpur and Lucknow (February–April 2026), 62% of technicians surveyed had never used a smartphone application beyond WhatsApp and Google Pay.</p>
+<p><strong>(c) Brands fly blind.</strong> OEMs and D2C sellers cannot observe installation SLAs, first-time-fix rates, or customer feedback at the job level. They cannot enforce quality, cannot attribute warranty failures to field causes, and cannot learn from patterns across pincodes or product lines.</p>
+<p>Existing "technician apps" — Urban Company, NoBroker Services, Zimmber, and several B2B dashboard SaaS products — all require Android application downloads, Play Store accounts, continuous 4G data, and literacy with complex multi-screen interfaces. As a consequence, adoption among Tier-2 and Tier-3 technicians — where roughly 80% of installation volume actually sits — is negligible.</p>
+
+<h3>A.2 How does your startup propose to solve this problem?</h3>
+<p>Knite is a <strong>WhatsApp-native field-service operating system</strong>. Technicians never install an app. Every interaction — onboarding, KYC, job assignment, navigation, customer verification, and payout — happens inside a single WhatsApp thread with our business number, powered by <strong>WhatsApp Cloud API Flows</strong> (v5.1).</p>
+<p>A technician receives a job as a rich WhatsApp message with a tap-through flow: they see the full job card (address, customer contact, slot, payout), tap "Get Directions" (which sends a location pin and Google Maps deep-link into the same chat), tap "I Have Arrived" to start the SLA clock, and finally enter a 6-digit <strong>Happiness Code</strong> that the customer received at the time of booking. Entering the correct code closes the job, releases payment within 24 hours, and triggers a customer-satisfaction poll — also delivered on WhatsApp.</p>
+<p>On the brand side, Knite is a multi-tenant SaaS platform: OEMs, marketplaces, and service franchises integrate through a REST API or via CSV upload, and receive a live dashboard with first-time-fix rate, mean time to arrive, technician-level NPS, and pincode-level heatmaps.</p>
+<p>The moat is <strong>operational, not cosmetic</strong>. Knite is building the first country-scale technician graph that is reachable <em>without</em> an app — addressable in 22 Indian languages through WhatsApp's native language support, trainable via short WhatsApp audio and video lessons, and rate-able by customers inside the same thread that booked the job. Every completed job enriches the graph with location, product-category, failure-mode, and customer-feedback data — creating a compounding data asset for brand partners.</p>
+
+<h3>A.3 What is the uniqueness of your solution?</h3>
+<p>Three innovations make Knite defensible:</p>
+<p><strong>1. Zero-app technician onboarding.</strong> Competing platforms require Android 9 or higher, a 200 MB install, Play Store sign-in, and continuous data. Knite onboards a technician with a single WhatsApp "Hi" — KYC upload (Aadhaar, PAN, bank proof), bank linking, training videos, and job dispatch all happen inside chat. Based on our pilot cohort in Kanpur, this expands the addressable technician base by approximately four times relative to app-based competitors.</p>
+<p><strong>2. Encrypted WhatsApp Flows with stateful data exchange.</strong> Knite uses WhatsApp Flows v5.1 with RSA-2048 public-key cryptography and AES-128-GCM symmetric encryption for every data-exchange round-trip, combined with a custom Redis-backed session state machine that renders dynamic, multi-screen experiences (pending-jobs list → job detail → OTP verification → completion) without ever leaving the WhatsApp thread. We believe Knite is among the earliest Indian platforms to apply WhatsApp Flows to an end-to-end job lifecycle, not merely to lead capture or single-form intake.</p>
+<p><strong>3. The Happiness Code — trust as a primitive.</strong> A 6-digit code is issued to the customer at the moment of booking, stored in the Knite backend as a bcrypt-hashed value, and verifiable only by the technician assigned to that specific job at the customer's doorstep. This replaces paper job sheets, structurally prevents fraudulent "ghost closures" by technicians, is tamper-evident in our database audit log, and is observable by brand partners in real time. The Happiness Code will be commercially proven first on our own flagship product — <strong>Knite Pure+ (Mineral Edition)</strong>, a 7-stage RO water purifier — and then extended to third-party brands. It is the first verifiable, low-friction proof of physical service delivery that works without an app on either side.</p>
+<p>Combined, these three innovations give Knite a structurally lower customer-acquisition cost, dramatically higher technician retention, and a proprietary data asset that improves monotonically with every completed job.</p>
+
+<h2>Section B — Business &amp; Market Narrative</h2>
+
+<h3>B.1 Why now</h3>
+<p>Three conditions have aligned in 2025–26 that make Knite possible today, but were not possible eighteen months ago:</p>
+<ul>
+  <li><strong>WhatsApp Cloud API + Flows (v5.1)</strong>, released by Meta in early 2026, enables encrypted, multi-screen, stateful workflows inside chat. Prior versions supported only static message templates and simple buttons, which are insufficient for a multi-step field-service workflow.</li>
+  <li><strong>UPI AutoPay and Aadhaar-based e-KYC</strong> are now fully remote and API-accessible, removing the last paperwork barrier to onboarding informal-sector workers in minutes.</li>
+  <li><strong>OEM margin compression</strong> has pushed brands to unbundle installation from sale and seek third-party operators who can guarantee SLAs — historically a gap in the market.</li>
+</ul>
+
+<h3>B.2 Market sizing</h3>
+<table>
+  <thead>
+    <tr><th>Horizon</th><th>Definition</th><th>Size</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>TAM</strong></td><td>India aftermarket + installation services across all categories</td><td>≈ ₹1.2 lakh crore / year</td></tr>
+    <tr><td><strong>SAM</strong></td><td>Home-services categories addressable via WhatsApp in top 50 cities</td><td>≈ ₹18,000 crore / year</td></tr>
+    <tr><td><strong>SOM (Year 3)</strong></td><td>Knite's targeted GMV capture in 50 cities across priority categories (CCTV, solar, water purifier, geyser, air-conditioner)</td><td>≈ ₹240 crore</td></tr>
+  </tbody>
+</table>
+
+<h3>B.3 Go-to-market</h3>
+<p>Knite's go-to-market is deliberately sequenced to build category depth before breadth. Instead of launching as a horizontal platform and chasing brand partnerships cold, we are first launching our own consumer product, using it to stress-test the WhatsApp-native operating system at real scale, and simultaneously building a proprietary, certified technician network in a single high-volume category — RO water purifiers.</p>
+<ul>
+  <li><strong>Phase 1 (2026) — Launch Knite Pure+ (Mineral Edition); prove the platform on our own product.</strong> We will launch our in-house flagship product, <strong>Knite Pure+ (Mineral Edition)</strong>, a 7-stage RO water purifier featuring a Powerflow 100 GPD pump, RO membrane, UV-C Pure Cycle, Ultrafiltration, Active Carbon Matrix, Minerals + Copper stage, and pH balancing — delivering safe, mineral-balanced drinking water for Indian households. Every Knite Pure+ unit sold will be installed, AMC-serviced, and filter-replaced through the WhatsApp-native Knite technician flow. This phase delivers three compounding advantages: (i) a live, at-scale production deployment of the WhatsApp Flows stack on a real consumer SKU; (ii) a growing, vetted database of RO-specialist technicians with verified KYC, training history, and customer-NPS track record; and (iii) first-party revenue from purifier sales plus recurring AMC, funding the platform build-out without external capital dependency.</li>
+  <li><strong>Phase 2 (2027) — Open the platform to third-party RO brands.</strong> With a proven WhatsApp workflow and a certified RO technician network already in place, we will sign up established RO manufacturers and distributors as tenants on the Knite platform for their installation, AMC, and service needs. For these partners, Knite reduces installation no-show rates, eliminates technician onboarding overhead, and gives them real-time SLA and NPS dashboards — without their having to build any of it themselves.</li>
+  <li><strong>Phase 3 (2028 and beyond) — Generalise across product categories.</strong> Once the RO vertical is saturated, we will extend the Knite platform horizontally to adjacent installation and maintenance categories — air-conditioners, geysers, CCTV, solar inverters, kitchen appliances, and smart-home devices — reusing the same WhatsApp Flows, Happiness Code, and brand-dashboard layers. At this stage Knite becomes a category-agnostic field-services operating system for India, available in 22 Indian languages.</li>
+</ul>
+
+<h2>Section C — Product Pitch Narrative</h2>
+
+<h3>C.1 Title</h3>
+<p><strong>Knite — The WhatsApp-native operating system for India's 1.8 million field technicians.</strong><br>
+AXIOS ENTERPRISE LLP · New Delhi &amp; Kanpur · April 2026.</p>
+
+<h3>C.2 The problem in one paragraph</h3>
+<p>India installs roughly 40 million appliances and connected devices every year. Almost every installation is carried out by a technician who got the job via WhatsApp forwarding, does not use a smartphone application, and is paid 30–45 days late. Customers complain. Brands are blind. Technicians stay poor.</p>
+
+<h3>C.3 The product</h3>
+<p>Knite is built as two integrated layers — a consumer hardware product and the software platform that services it.</p>
+
+<h4>C.3.1 Hardware — Knite Pure+ (Mineral Edition)</h4>
+<p>Our flagship consumer product is a 7-stage RO water purifier designed for Indian households. Filtration stages: RO membrane · UV-C Pure Cycle · Ultrafiltration (UF) · Active Carbon Matrix · Minerals + Copper · pH balance · TDS controller. Core pump: Powerflow 100 GPD. Knite Pure+ is the first mass-market RO purifier in India designed from day one around a zero-app, WhatsApp-native installation and service workflow.</p>
+
+<h4>C.3.2 Software — the Knite platform</h4>
+<p>Three surfaces:</p>
+<ol>
+  <li><strong>Technician surface</strong> — 100% WhatsApp-delivered, zero-app, available in 22 Indian languages.</li>
+  <li><strong>Customer surface</strong> — booking, live tracking, Happiness Code delivery, and CSAT collection, all on WhatsApp.</li>
+  <li><strong>Brand surface</strong> — REST API, CSV upload, and a SaaS dashboard reporting first-time-fix rate, mean time to arrive, and technician-level NPS.</li>
+</ol>
+
+<h3>C.4 How it works — the technician journey</h3>
+<blockquote>
+  <strong>Booking → Assignment → Directions in chat → "I Have Arrived" → Happiness Code → Auto-payout.</strong><br>
+  Four taps, one thread, no app.
+</blockquote>
+
+<h3>C.5 Innovation &amp; IP</h3>
+<ul>
+  <li>Encrypted WhatsApp Flows (RSA-2048 + AES-128-GCM) with stateful data exchange for full multi-screen job lifecycle inside chat.</li>
+  <li>Happiness Code — bcrypt-hashed, customer-issued, technician-verified 6-digit OTP as a platform-level trust primitive.</li>
+  <li>Session state machine capable of surviving chat → flow → chat handoffs without context loss.</li>
+</ul>
+
+<h3>C.6 Team</h3>
+<ul>
+  <li><strong>Sanchit Agarwal</strong> — Designated Partner &amp; CTO. Experienced software engineer in AI, graduated from IIT Kanpur. Builds and owns Knite's backend, WhatsApp Flows, and data platform. DIN: 11668712.</li>
+  <li><strong>Anmol Kumar Shrivastava</strong> — Designated Partner &amp; COO. Experienced software engineer in AI, graduated from IIT (BHU) Varanasi. Leads technician onboarding, field operations, and brand partnerships. DIN: 11668713.</li>
+  <li><strong>Sahar Rizvi, CA</strong> — Finance and compliance facilitator (external advisor, not a partner).</li>
+</ul>
+
+<h3>C.7 Ask</h3>
+<p>AXIOS ENTERPRISE LLP seeks DPIIT Startup India recognition and Section 80-IAC certification. The resulting three-year tax holiday (on any three consecutive assessment years within the first ten from incorporation) will be redirected into technician training, vernacular content production, and Tier-2 and Tier-3 city expansion — directly furthering the Startup India mandate to create scalable employment and wealth in under-served geographies.</p>
+
+<h2>Section D — Declarations</h2>
+<p>The LLP hereby declares that:</p>
+<ol>
+  <li>It is a Limited Liability Partnership incorporated under the Limited Liability Partnership Act, 2008, on 17 April 2026, bearing LLPIN <strong>ACX-2874</strong>.</li>
+  <li>It has not completed ten years from the date of its incorporation as of the date of this application.</li>
+  <li>Its turnover has not exceeded ₹100 crore in any financial year since incorporation (entity is in its first financial year).</li>
+  <li>It is working towards innovation, development, or improvement of products, processes, or services, and has a scalable business model with high potential for employment generation and wealth creation, as demonstrated in Sections A, B, and C above.</li>
+  <li>It has not been formed by splitting up or reconstruction of a business already in existence.</li>
+  <li>All information provided in this application and in supporting documents is true and correct to the best of the knowledge and belief of the undersigned.</li>
+</ol>
+
+<p>For and on behalf of <strong>AXIOS ENTERPRISE LLP</strong></p>
+
+<div class="sig-row">
+  <div class="sig-block">
+    <div class="sig-line">
+      <strong>Sanchit Agarwal</strong><br>
+      Designated Partner<br>
+      DIN: 11668712
+    </div>
+  </div>
+  <div class="sig-block">
+    <div class="sig-line">
+      <strong>Anmol Kumar Shrivastava</strong><br>
+      Designated Partner<br>
+      DIN: 11668713
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:24pt;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10.5pt;">
+  Place: New Delhi &nbsp;·&nbsp; Date: _____ / _____ / 2026
+</p>
+
+<div class="footer-note">— End of document —</div>
+
+</body>
+</html>
