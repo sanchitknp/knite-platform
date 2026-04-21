@@ -66,7 +66,8 @@ function startBroadcastExpiryCron() {
         );
         if (custResult.rows[0]) {
           await wa.sendText(custResult.rows[0].phone,
-            `⚠️ We couldn't find a technician for your slot. Our admin has been alerted and will contact you shortly to reschedule.`
+            `⚠️ We couldn't find a technician for your slot. Our admin has been alerted and will contact you shortly to reschedule.`,
+            { line: 'service' }
           );
         }
       }
@@ -121,10 +122,12 @@ function startAutoCompleteCron() {
         );
 
         await wa.sendText(job.customer_phone,
-          `✅ Your ${job.type} for *${job.unit_code}* has been auto-completed. The technician has been paid.\n\nIf you have any issues, type *help* anytime.`
+          `✅ Your ${job.type} for *${job.unit_code}* has been auto-completed. The technician has been paid.\n\nIf you have any issues, type *help* anytime.`,
+          { line: 'service' }
         );
         await wa.sendText(job.tech_phone,
-          `✅ *Job ${job.id} auto-completed.* Payout ₹${Math.round(job.payout_paise / 100)} will be settled this week.`
+          `✅ *Job ${job.id} auto-completed.* Payout ₹${Math.round(job.payout_paise / 100)} will be settled this week.`,
+          { line: 'tech' }
         );
       }
     } catch (err) {

@@ -42,3 +42,36 @@ output "key_path" {
   description = "Local path to the private SSH key"
   value       = pathexpand("~/.ssh/${var.key_name}.pem")
 }
+
+# ── RDS outputs ────────────────────────────────────────────────────────────
+output "rds_endpoint" {
+  description = "RDS writer endpoint (host only, no port)"
+  value       = aws_db_instance.knite.address
+}
+
+output "rds_port" {
+  description = "RDS port"
+  value       = aws_db_instance.knite.port
+}
+
+output "rds_db_name" {
+  description = "RDS database name"
+  value       = aws_db_instance.knite.db_name
+}
+
+output "rds_username" {
+  description = "RDS master username"
+  value       = aws_db_instance.knite.username
+}
+
+output "rds_password" {
+  description = "RDS master password (sensitive)"
+  value       = random_password.db.result
+  sensitive   = true
+}
+
+output "database_url" {
+  description = "Ready-to-paste DATABASE_URL for the backend"
+  value       = "postgresql://${aws_db_instance.knite.username}:${random_password.db.result}@${aws_db_instance.knite.address}:${aws_db_instance.knite.port}/${aws_db_instance.knite.db_name}"
+  sensitive   = true
+}

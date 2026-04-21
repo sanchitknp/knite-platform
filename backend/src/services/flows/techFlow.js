@@ -21,6 +21,12 @@ const otp = require('../otpService');
 const media = require('../mediaService');
 const referral = require('./referralFlow');
 
+// Tech flow mostly messages technicians (TECH line); customer-facing
+// messages (OTP request to customer, job-complete confirmation) go via
+// the SERVICE line.
+const TLINE = { line: 'tech' };
+const SLINE = { line: 'service' };
+
 const AREA_MAX = 200; // numbered text has no WhatsApp API limit
 
 // ─────────────────────────────────────────────
@@ -37,14 +43,16 @@ async function startOnboarding(phone, referralCode = null) {
       `Status: ${existing.is_active ? '🟢 Active' : '🔴 Inactive'}\n` +
       `Rating: ⭐ ${existing.rating}\n` +
       `Jobs Completed: ${existing.jobs_completed}\n\n` +
-      `You'll receive job notifications automatically when jobs are available in your zone.`
+      `You'll receive job notifications automatically when jobs are available in your zone.`,
+      TLINE
     );
     return;
   }
 
   if (existing && !existing.is_verified) {
     await wa.sendText(phone,
-      `⏳ Your registration for *${existing.name || 'your account'}* is pending admin verification.\n\nWe'll notify you once approved!`
+      `⏳ Your registration for *${existing.name || 'your account'}* is pending admin verification.\n\nWe'll notify you once approved!`,
+      TLINE
     );
     return;
   }
@@ -63,7 +71,8 @@ async function startOnboarding(phone, referralCode = null) {
     `🕐 No fixed hours - work when you want\n` +
     `📱 100% WhatsApp - no app needed\n` +
     `${referralNote}\n` +
-    `Let's get you registered. What is your *full name*?`
+    `Let's get you registered. What is your *full name*?`,
+    TLINE
   );
 }
 
@@ -73,7 +82,7 @@ async function startOnboarding(phone, referralCode = null) {
 
 async function handleName(phone, name, ctx) {
   if (name.trim().length < 3) {
-    await wa.sendText(phone, `Please enter your full name (at least 3 characters):`);
+    await wa.sendText(phone, `Please enter your full name (at least 3 characters):`, TLINE);
     return;
   }
 
@@ -93,7 +102,11 @@ async function sendAreaSelectionFlow(phone) {
     `📍 *Select your service area*\n\nChoose your state and enter the pincodes you cover.`,
     flowId,
     flowToken,
-    '📍 Select State & Pincodes'
+    '📍 Select State & Pincodes',
+    'STATE_SCREEN',
+    null,
+    false,
+    TLINE
   );
 }
 
@@ -114,7 +127,8 @@ async function sendStateList(phone, allSelections = []) {
   ).join('\n');
 
   await wa.sendText(phone,
-    `${addedHeader}📍 Which *state* do you work in?\n\n${lines}\n\nReply with the number.`
+    `${addedHeader}📍 Which *state* do you work in?\n\n${lines}\n\nReply with the number.`,
+    TLINE
   );
 }
 
@@ -133,7 +147,7 @@ async function handleState(phone, text, ctx) {
   const num = parseInt(text.trim());
 
   if (isNaN(num) || num < 1 || num > total) {
-    await wa.sendText(phone, `❌ Please enter a number between 1 and ${total}.`);
+    await wa.sendText(phone, `❌ Please enter a number between 1 and ${total}.`, TLINE);
     await sendStateList(phone, allSelections);
     return;
   }
@@ -170,7 +184,7 @@ async function handleAreaSelection(phone, text, ctx) {
   // Done with areas for current state
   if (upper === 'DONE' || upper === 'AREA_DONE') {
     if (!ctx.selected_areas || ctx.selected_areas.length === 0) {
-      await wa.sendText(phone, `Please select at least one area first.`);
+      await wa.sendText(phone, `Please select at least one area first.`, TLINE);
       await sendAreaList(phone, ctx.state, []);
       return;
     }
@@ -201,7 +215,8 @@ async function handleAreaSelection(phone, text, ctx) {
       [
         { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
         { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
-      ]
+      ],
+      TLINE
     );
     return;
   }
@@ -218,7 +233,7 @@ async function handleAreaSelection(phone, text, ctx) {
   const areaTotal = parseInt(areaCountResult.rows[0].cnt);
 
   if (isNaN(num) || num < 1 || num > areaTotal) {
-    await wa.sendText(phone, `❌ Please enter a number between 1 and ${areaTotal}.`);
+    await wa.sendText(phone, `❌ Please enter a number between 1 and ${areaTotal}.`, TLINE);
     await sendAreaList(phone, ctx.state, ctx.selected_areas || []);
     return;
   }
@@ -265,7 +280,8 @@ async function sendAreaList(phone, state, selectedAreas) {
   ).join('\n');
 
   await wa.sendText(phone,
-    `${selectedStr}📍 *${state}* — Select your service areas:\n\n${lines}\n\nReply with a number to add/select. Type *DONE* when finished.`
+    `${selectedStr}📍 *${state}* — Select your service areas:\n\n${lines}\n\nReply with a number to add/select. Type *DONE* when finished.`,
+    TLINE
   );
 }
 
@@ -277,7 +293,7 @@ async function handleFlowResponse(phone, flowPayload, ctx) {
   const { selected_state, pincodes } = flowPayload;
 
   if (!selected_state || !pincodes) {
-    await wa.sendText(phone, `❌ Something went wrong with the form. Please try again.`);
+    await wa.sendText(phone, `❌ Something went wrong with the form. Please try again.`, TLINE);
     await sendAreaSelectionFlow(phone);
     return;
   }
@@ -286,7 +302,7 @@ async function handleFlowResponse(phone, flowPayload, ctx) {
   const rawPincodes = pincodes.split(/[,\s]+/).map(p => p.trim()).filter(p => /^\d{6}$/.test(p));
 
   if (rawPincodes.length === 0) {
-    await wa.sendText(phone, `❌ No valid 6-digit pincodes found. Please try again.`);
+    await wa.sendText(phone, `❌ No valid 6-digit pincodes found. Please try again.`, TLINE);
     await sendAreaSelectionFlow(phone);
     return;
   }
@@ -304,7 +320,8 @@ async function handleFlowResponse(phone, flowPayload, ctx) {
   if (found.length === 0) {
     await wa.sendText(phone,
       `❌ None of the pincodes matched our database. Please check and try again.\n\n` +
-      `Invalid: ${rawPincodes.join(', ')}`
+      `Invalid: ${rawPincodes.join(', ')}`,
+      TLINE
     );
     await sendAreaSelectionFlow(phone);
     return;
@@ -360,7 +377,7 @@ async function handleFlowResponse(phone, flowPayload, ctx) {
   await wa.sendButtons(phone, confirmMsg, [
     { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
     { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
-  ]);
+  ], TLINE);
 }
 
 // ─────────────────────────────────────────────
@@ -387,7 +404,7 @@ async function handleMoreStates(phone, text, ctx) {
 
   if (upper === 'PROCEED_KYC') {
     if (allSelections.length === 0) {
-      await wa.sendText(phone, `Please add at least one state first.`);
+      await wa.sendText(phone, `Please add at least one state first.`, TLINE);
       return;
     }
 
@@ -436,7 +453,8 @@ async function handleMoreStates(phone, text, ctx) {
       `✅ *Coverage registered!*\n\n` +
       `*Your service zones:*\n${zoneSummaryLines.join('\n')}\n\n` +
       `Total areas: ${totalAreas}\n\n` +
-      `Now please send a *photo of your Aadhaar card* (front side) for KYC verification:`
+      `Now please send a *photo of your Aadhaar card* (front side) for KYC verification:`,
+      TLINE
     );
     return;
   }
@@ -448,7 +466,8 @@ async function handleMoreStates(phone, text, ctx) {
     [
       { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
       { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
-    ]
+    ],
+    TLINE
   );
 }
 
@@ -479,7 +498,7 @@ async function upsertZone(state, district, pincodes) {
 
 async function handleKYC(phone, mediaId, ctx) {
   if (!mediaId) {
-    await wa.sendText(phone, `Please send a *photo* of your Aadhaar card (front side):`);
+    await wa.sendText(phone, `Please send a *photo* of your Aadhaar card (front side):`, TLINE);
     return;
   }
 
@@ -535,7 +554,8 @@ async function handleKYC(phone, mediaId, ctx) {
       [
         { id: `APPROVE_TECH_${tech.id}`, title: '✅ Approve' },
         { id: `REJECT_TECH_${tech.id}`, title: '❌ Reject' },
-      ]
+      ],
+      TLINE
     );
   }
 
@@ -548,7 +568,8 @@ async function handleKYC(phone, mediaId, ctx) {
     `• Coverage: ${areasSummary}\n` +
     `• KYC: Submitted\n\n` +
     `⏳ Our admin will review your application within 24 hours.\n` +
-    `You'll receive a WhatsApp notification once approved! 🎉`
+    `You'll receive a WhatsApp notification once approved! 🎉`,
+    TLINE
   );
 }
 
@@ -561,7 +582,7 @@ async function handleJobAccept(phone, jobId) {
   const tech = techResult.rows[0];
 
   if (!tech || !tech.is_active) {
-    await wa.sendText(phone, `❌ You need to be a verified technician to accept jobs.`);
+    await wa.sendText(phone, `❌ You need to be a verified technician to accept jobs.`, TLINE);
     return;
   }
 
@@ -570,7 +591,8 @@ async function handleJobAccept(phone, jobId) {
 
   if (!accepted) {
     await wa.sendText(phone,
-      `⚡ *Too late!* This job was already taken by another technician.\n\nStay tuned for the next one! 💪`
+      `⚡ *Too late!* This job was already taken by another technician.\n\nStay tuned for the next one! 💪`,
+      TLINE
     );
     return;
   }
@@ -602,7 +624,8 @@ async function handleJobAccept(phone, jobId) {
     [
       { id: `ARRIVED_${jobId}`, title: '📍 I Have Arrived' },
       { id: `CANCEL_JOB_${jobId}`, title: '❌ Cancel' },
-    ]
+    ],
+    TLINE
   );
 
   // Send location pin if customer shared their location
@@ -612,7 +635,8 @@ async function handleJobAccept(phone, jobId) {
       address.location.latitude,
       address.location.longitude,
       address.raw || 'Installation Location',
-      address.full_address || address.raw || ''
+      address.full_address || address.raw || '',
+      TLINE
     );
   }
 
@@ -621,7 +645,8 @@ async function handleJobAccept(phone, jobId) {
     `Name: ${tech.name}\n` +
     `Phone: ${tech.phone}\n` +
     `⭐ Rating: ${tech.rating}\n\n` +
-    `They are on their way! Share the *Happiness Code only after the work is completed.*`
+    `They are on their way! Share the *Happiness Code only after the work is completed.*`,
+    SLINE
   );
 }
 
@@ -635,7 +660,7 @@ async function handleJobDecline(phone, jobId) {
     [jobId, techResult.rows[0].id]
   );
 
-  await wa.sendText(phone, `👍 Got it! You've declined this job. We'll notify you of future opportunities.`);
+  await wa.sendText(phone, `👍 Got it! You've declined this job. We'll notify you of future opportunities.`, TLINE);
 }
 
 async function handleArrived(phone, jobId) {
@@ -658,17 +683,17 @@ async function handleArrived(phone, jobId) {
     context_data: { job_id: jobId, tech_id: tech.id }
   });
 
-  await wa.sendText(phone, `📍 *Arrival confirmed!*\n\nComplete the work, then ask the customer for the *Happiness Code* and enter it here:`);
+  await wa.sendText(phone, `📍 *Arrival confirmed!*\n\nComplete the work, then ask the customer for the *Happiness Code* and enter it here:`, TLINE);
 }
 
 async function handleOTPVerification(phone, otpInput, ctx) {
   const jobResult = await db.query(`SELECT * FROM jobs WHERE id = $1`, [ctx.job_id]);
   const job = jobResult.rows[0];
-  if (!job) { await wa.sendText(phone, `❌ Job not found.`); return; }
+  if (!job) { await wa.sendText(phone, `❌ Job not found.`, TLINE); return; }
 
   const isValid = await otp.verifyOTP(otpInput.trim(), job.otp_hash);
   if (!isValid) {
-    await wa.sendText(phone, `❌ *Invalid Happiness Code!* Please ask the customer to check and share again.`);
+    await wa.sendText(phone, `❌ *Invalid Happiness Code!* Please ask the customer to check and share again.`, TLINE);
     return;
   }
 
@@ -691,7 +716,8 @@ async function handleOTPVerification(phone, otpInput, ctx) {
     `✅ *OTP verified! Work started.*\n\n` +
     `Complete the ${job.type} and then send *2 photos*:\n` +
     `📸 1. Before/during work\n📸 2. Completed installation/repair\n\n` +
-    `_(Required for payment release)_`
+    `_(Required for payment release)_`,
+    TLINE
   );
 }
 
@@ -701,7 +727,7 @@ async function handleCompletionPhoto(phone, mediaId, ctx) {
 
   if (photos.length < 2) {
     await session.updateContext(phone, { photos });
-    await wa.sendText(phone, `📸 Photo ${photos.length}/2 received. Send ${2 - photos.length} more photo(s) to complete.`);
+    await wa.sendText(phone, `📸 Photo ${photos.length}/2 received. Send ${2 - photos.length} more photo(s) to complete.`, TLINE);
     return;
   }
 
@@ -726,7 +752,8 @@ async function handleCompletionPhoto(phone, mediaId, ctx) {
   await session.clearSession(phone);
   await wa.sendText(phone,
     `✅ *All photos received! Job submitted for customer verification.*\n\n` +
-    `💰 Payment will be released after customer confirms.\n_(Auto-released in 4 hours if no response)_`
+    `💰 Payment will be released after customer confirms.\n_(Auto-released in 4 hours if no response)_`,
+    TLINE
   );
 
   await wa.sendButtons(job.customer_phone,
@@ -735,7 +762,8 @@ async function handleCompletionPhoto(phone, mediaId, ctx) {
     [
       { id: `VERIFY_YES_${ctx.job_id}`, title: '✅ Yes, All Good!' },
       { id: `VERIFY_NO_${ctx.job_id}`, title: '❌ No, Issue Remains' },
-    ]
+    ],
+    SLINE
   );
 }
 
@@ -747,21 +775,23 @@ async function handleAdminApproval(phone, techId, approved) {
     );
     const techResult = await db.query(`SELECT * FROM technicians WHERE id = $1`, [techId]);
     const tech = techResult.rows[0];
-    await wa.sendText(phone, `✅ Technician *${tech.name}* (${tech.phone}) has been *approved and activated*.`);
+    await wa.sendText(phone, `✅ Technician *${tech.name}* (${tech.phone}) has been *approved and activated*.`, TLINE);
     await wa.sendText(tech.phone,
       `🎉 *Congratulations ${tech.name}!*\n\nYour Knite technician account is now *ACTIVE*! ✅\n\n` +
       `You'll start receiving job notifications in your zone.\n\n` +
       `💡 Tips:\n• Accept jobs quickly - first accepted wins!\n` +
-      `• Maintain high ratings for priority job access\n• Typical earnings: ₹700-1,600/day\n\nWelcome to the team! 🔧`
+      `• Maintain high ratings for priority job access\n• Typical earnings: ₹700-1,600/day\n\nWelcome to the team! 🔧`,
+      TLINE
     );
   } else {
     await db.query(`UPDATE technicians SET updated_at = now() WHERE id = $1`, [techId]);
     const techResult = await db.query(`SELECT * FROM technicians WHERE id = $1`, [techId]);
     const tech = techResult.rows[0];
-    await wa.sendText(phone, `❌ Technician *${tech?.name}* application rejected.`);
+    await wa.sendText(phone, `❌ Technician *${tech?.name}* application rejected.`, TLINE);
     if (tech) {
       await wa.sendText(tech.phone,
-        `❌ Your application needs a clearer Aadhaar photo.\n\nPlease type *REGISTER TECH* to resubmit.`
+        `❌ Your application needs a clearer Aadhaar photo.\n\nPlease type *REGISTER TECH* to resubmit.`,
+        TLINE
       );
     }
   }

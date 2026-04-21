@@ -11,6 +11,10 @@
 const db = require('../../db');
 const wa = require('../whatsappService');
 
+// Referrals are a technician activity — all messages from this module
+// are sent to technicians, so they originate from the TECH line.
+const TLINE = { line: 'tech' };
+
 // ─────────────────────────────────────────────
 // Get active scheme
 // ─────────────────────────────────────────────
@@ -65,7 +69,8 @@ async function handleRefer(phone) {
       `🤝 *Refer a Technician & Earn!*\n\n` +
       `To refer others and earn rewards, you first need to be a registered Knite technician.\n\n` +
       `👨‍🔧 Type *Join as Technician* or reply *JOIN* to register — it's free and takes just a few minutes!\n\n` +
-      `💰 Once approved, you'll earn *₹50 for every 5 jobs* completed by each technician you refer.`
+      `💰 Once approved, you'll earn *₹50 for every 5 jobs* completed by each technician you refer.`,
+      TLINE
     );
     return;
   }
@@ -74,7 +79,8 @@ async function handleRefer(phone) {
     await wa.sendText(phone,
       `⏳ *Your registration is still pending approval.*\n\n` +
       `Once our admin verifies your account, you'll be able to refer other technicians and earn rewards.\n\n` +
-      `We'll notify you on WhatsApp as soon as you're approved!`
+      `We'll notify you on WhatsApp as soon as you're approved!`,
+      TLINE
     );
     return;
   }
@@ -82,7 +88,8 @@ async function handleRefer(phone) {
   if (!tech.is_active) {
     await wa.sendText(phone,
       `❌ *Your technician account is currently inactive.*\n\n` +
-      `Please contact support to reactivate your account before referring others.`
+      `Please contact support to reactivate your account before referring others.`,
+      TLINE
     );
     return;
   }
@@ -112,7 +119,8 @@ async function handleRefer(phone) {
     `📊 *Your referral stats:*\n` +
     `• Technicians referred: ${stats.total_referred}\n` +
     `• Jobs completed by referrals: ${stats.total_jobs_by_referred}\n` +
-    `• Total earned from referrals: ₹${totalEarned}`
+    `• Total earned from referrals: ₹${totalEarned}`,
+    TLINE
   );
 }
 
@@ -194,7 +202,8 @@ async function onJobCompleted(completedTechId) {
       `🎉 *Referral Bonus Earned!*\n\n` +
       `Your referred technician has completed ${newCount} jobs!\n\n` +
       `💰 *₹${totalPaise / 100} referral bonus* added to your account.\n` +
-      `_(Will be settled in your next payout)_`
+      `_(Will be settled in your next payout)_`,
+      TLINE
     );
 
     console.log(`[REFERRAL] Bonus ₹${totalPaise / 100} credited to ${referral.referrer_id} for ${rewardsToPay} threshold(s)`);

@@ -1,9 +1,15 @@
 /**
  * Flow 5: Ownership Transfer
+ *
+ * Ownership transfer is a CUSTOMER concern (the registered unit owner and
+ * the new owner are both customers), so this whole module sends from the
+ * SERVICE line.
  */
 const db = require('../../db');
 const wa = require('../whatsappService');
 const session = require('../sessionService');
+
+const LINE = { line: 'service' };
 
 async function handleTransferRequest(phone, ctx) {
   // Get unit and original owner
@@ -15,7 +21,7 @@ async function handleTransferRequest(phone, ctx) {
   );
   const unit = unitResult.rows[0];
   if (!unit) {
-    await wa.sendText(phone, `❌ Unit not found.`);
+    await wa.sendText(phone, `❌ Unit not found.`, LINE);
     return;
   }
 
@@ -33,12 +39,14 @@ async function handleTransferRequest(phone, ctx) {
     [
       { id: `TRANSFER_APPROVE_${unit.id}_${phone}`, title: '✅ Yes, Transfer It' },
       { id: `TRANSFER_DENY_${unit.id}_${phone}`, title: '❌ No, Keep It' },
-    ]
+    ],
+    LINE
   );
 
   await wa.sendText(phone,
     `⏳ We've notified the registered owner of *${unit.unit_id}*.\n\n` +
-    `You'll receive a confirmation once they approve the transfer.`
+    `You'll receive a confirmation once they approve the transfer.`,
+    LINE
   );
 }
 
@@ -65,13 +73,14 @@ async function handleTransferApprove(phone, unitId, newPhone) {
     [unitId, newCustomer.id, JSON.stringify({ from_phone: phone, to_phone: newPhone })]
   );
 
-  await wa.sendText(phone, `✅ Transfer approved! Unit ${unit.unit_id} is no longer registered to your account.`);
+  await wa.sendText(phone, `✅ Transfer approved! Unit ${unit.unit_id} is no longer registered to your account.`, LINE);
 
   await session.clearSession(newPhone);
   await wa.sendText(newPhone,
     `✅ *Transfer Approved!*\n\n` +
     `Unit *${unit.unit_id}* is now in your name.\n\n` +
-    `Please share your installation address to schedule installation:`
+    `Please share your installation address to schedule installation:`,
+    LINE
   );
 
   await session.setSession(newPhone, {
@@ -82,7 +91,7 @@ async function handleTransferApprove(phone, unitId, newPhone) {
 }
 
 async function handleTransferDeny(phone, unitId, newPhone) {
-  await wa.sendText(phone, `✅ Transfer denied. Unit ownership unchanged.`);
+  await wa.sendText(phone, `✅ Transfer denied. Unit ownership unchanged.`, LINE);
 
   const unitResult = await db.query(`SELECT * FROM units WHERE id = $1`, [unitId]);
   const unit = unitResult.rows[0];
@@ -91,7 +100,8 @@ async function handleTransferDeny(phone, unitId, newPhone) {
   if (newPhone) {
     await wa.sendText(newPhone,
       `⚠️ The original owner has *denied* the transfer of unit *${unit?.unit_id}*.\n\n` +
-      `Please contact the seller/original owner directly. If you believe this is a fraud, contact us.`
+      `Please contact the seller/original owner directly. If you believe this is a fraud, contact us.`,
+      LINE
     );
   }
 }

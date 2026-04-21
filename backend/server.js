@@ -80,6 +80,14 @@ app.post('/webhook', async (req, res) => {
     const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
     if (!entry) return;
 
+    // Which of our two WhatsApp numbers received this message?
+    // Meta puts the phone_number_id of the *receiving* business number in
+    // `metadata.phone_number_id`. This is the routing key for our two-line
+    // setup (TECH vs SERVICE) — we pass it through to handleMessage so
+    // replies go back from the same line.
+    const receivedOnPhoneId = entry.metadata?.phone_number_id || null;
+    const line = wa.lineFor(receivedOnPhoneId);
+
     // Handle incoming messages
     if (entry.messages && entry.messages.length > 0) {
       const msg = entry.messages[0];
@@ -114,8 +122,8 @@ app.post('/webhook', async (req, res) => {
           if (responseJson) {
             try {
               const flowData = JSON.parse(responseJson);
-              console.log(`[WEBHOOK] From=${phone} Type=flow_response`);
-              webhook.handleMessage(phone, '[FLOW_RESPONSE]', null, flowData).catch(err =>
+              console.log(`[WEBHOOK] From=${phone} line=${line} Type=flow_response`);
+              webhook.handleMessage(phone, '[FLOW_RESPONSE]', null, flowData, null, line).catch(err =>
                 console.error(`[WEBHOOK] Flow handler error for ${phone}:`, err.message)
               );
               handled = true;
@@ -142,17 +150,17 @@ app.post('/webhook', async (req, res) => {
           name: msg.location?.name || null,
           address: msg.location?.address || null,
         };
-        console.log(`[WEBHOOK] From=${phone} Type=location lat=${loc.latitude} lng=${loc.longitude}`);
-        webhook.handleMessage(phone, '[LOCATION]', null, null, loc).catch(err =>
+        console.log(`[WEBHOOK] From=${phone} line=${line} Type=location lat=${loc.latitude} lng=${loc.longitude}`);
+        webhook.handleMessage(phone, '[LOCATION]', null, null, loc, line).catch(err =>
           console.error(`[WEBHOOK] Location handler error for ${phone}:`, err.message)
         );
         handled = true;
       }
 
       if (!handled) {
-        console.log(`[WEBHOOK] From=${phone} Type=${msg.type} Text="${text}" MediaId=${mediaId}`);
+        console.log(`[WEBHOOK] From=${phone} line=${line} Type=${msg.type} Text="${text}" MediaId=${mediaId}`);
         // Process asynchronously
-        webhook.handleMessage(phone, text, mediaId).catch(err =>
+        webhook.handleMessage(phone, text, mediaId, null, null, line).catch(err =>
           console.error(`[WEBHOOK] Handler error for ${phone}:`, err.message)
         );
       }
@@ -176,16 +184,20 @@ app.post('/webhook', async (req, res) => {
  * POST /api/simulate - Main simulator endpoint (simulates incoming WhatsApp message)
  */
 app.post('/api/simulate', async (req, res) => {
-  const { phone, message, media_url } = req.body;
+  const { phone, message, media_url, line } = req.body;
   if (!phone || !message) {
     return res.status(400).json({ error: 'phone and message required' });
   }
 
+  // Simulator caller may specify which line (tech/service) to simulate;
+  // default to service (customer-facing) if omitted.
+  const simulatedLine = line || 'service';
+
   // Process the message asynchronously
-  webhook.handleMessage(phone, message, media_url || null)
+  webhook.handleMessage(phone, message, media_url || null, null, null, simulatedLine)
     .catch(err => console.error('[WEBHOOK] Error:', err));
 
-  res.json({ status: 'processing', phone, message });
+  res.json({ status: 'processing', phone, message, line: simulatedLine });
 });
 
 /**

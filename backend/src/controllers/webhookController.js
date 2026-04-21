@@ -1,6 +1,25 @@
 /**
  * Main Webhook Controller
- * Routes all incoming WhatsApp messages to appropriate flow handlers
+ * Routes all incoming WhatsApp messages to appropriate flow handlers.
+ *
+ * ─────────────────────────────────────────────
+ * Two-number routing
+ * ─────────────────────────────────────────────
+ * Knite runs on two WhatsApp Business numbers:
+ *   - TECH    line → technician onboarding + job lifecycle
+ *   - SERVICE line → customer installation + repair/support
+ *
+ * The 6th argument `line` is propagated from server.js (extracted from the
+ * incoming webhook's metadata.phone_number_id) and tells us which of our
+ * two numbers received the message. We gate intents accordingly:
+ *
+ *   - Customer intents (Install, Support) on TECH line  → cross-line redirect
+ *   - Technician intents (REGISTER TECH, job actions) on SERVICE line
+ *       → cross-line redirect (with the exception of CTA button `TECH_JOIN`
+ *         on the service menu, which deep-links out to the tech number)
+ *
+ * Cross-line redirects send the user a wa.me link to the correct number
+ * so they can continue the conversation there.
  */
 const db = require('../db');
 const wa = require('../services/whatsappService');
@@ -13,14 +32,51 @@ const ownershipFlow = require('../services/flows/ownershipFlow');
 const maintenanceService = require('../services/flows/maintenanceFlow');
 const referralFlow = require('../services/flows/referralFlow');
 
+// Customer intents — allowed only on SERVICE line
+const CUSTOMER_INTENTS_RE = /^(SCAN_HELP|SUPPORT_HELP|TRANSFER|INSTALL[_\s])/i;
+// Technician intents — allowed only on TECH line
+const TECH_INTENTS_RE = /^(REGISTER\s+TECH|TECH_JOIN|TECH_PENDING_JOBS|TECH_STATUS|JOB_DETAIL[_\s]|ACCEPT[_\s]|DECLINE[_\s]|ARRIVED[_\s]|APPROVE_TECH[_\s]|REJECT_TECH[_\s]|REFER$|REFER_TECH$|JOIN$|TECH$)/i;
+
+/**
+ * Send a "wrong number" redirect to the correct line.
+ */
+async function redirectToLine(phone, fromLine, toLine, reason) {
+  const toPhone = wa.waMePhoneFor(toLine);
+  const toDisplay = wa.displayPhoneFor(toLine);
+  const verb = toLine === 'tech'
+    ? 'For technician support (join, job status, payments)'
+    : 'For installations, repairs and support';
+  const body =
+    `👋 You reached the wrong number for this request.\n\n` +
+    `${verb}, please message us at *${toDisplay}*:\n` +
+    `https://wa.me/${toPhone}${reason ? `?text=${encodeURIComponent(reason)}` : ''}\n\n` +
+    `_(This number handles a different set of requests.)_`;
+  await wa.sendText(phone, body, { line: fromLine });
+}
+
 /**
  * Main message handler - routes to appropriate flow
+ *
+ * @param {string} phone       - WhatsApp phone number of the sender
+ * @param {string} text        - Text / button-id content
+ * @param {string|null} mediaUrl
+ * @param {object|null} flowData - nfm_reply JSON when a WhatsApp Flow completes
+ * @param {object|null} location - location pin payload
+ * @param {'tech'|'service'|'unknown'} [line='service'] - which of our two
+ *        business numbers received this message. Defaults to 'service' so
+ *        simulator calls + any pre-two-number callers keep working.
  */
-async function handleMessage(phone, text, mediaUrl = null, flowData = null, location = null) {
+async function handleMessage(phone, text, mediaUrl = null, flowData = null, location = null, line = 'service') {
   const trimmed = text ? text.trim() : '';
   const upper = trimmed.toUpperCase();
 
-  // ─── Dedup check (by message ID not needed in simulator, but phone+time) ───
+  // Unknown line (message came in on a phone number we don't recognise) —
+  // treat as service for safety, but log so we notice if Meta ever adds
+  // a third number under our account.
+  if (line === 'unknown') {
+    console.warn(`[WEBHOOK] Unknown line for phone=${phone}; falling back to service`);
+    line = 'service';
+  }
 
   // ─── Look up session ───
   const sess = await session.getSession(phone);
@@ -32,7 +88,15 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
   const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [phone]);
   const isTech = techResult.rows.length > 0;
 
-  // ─── Handle job-related commands (any phone can send these) ───
+  // ─── Handle job-related commands (these are TECH-line intents) ───
+  // Gate: all job action IDs must arrive on the tech line. If they arrive
+  // on the service line, redirect.
+  const techActionRe = /^(ACCEPT|DECLINE|ARRIVED|APPROVE_TECH|REJECT_TECH|TRANSFER_APPROVE|TRANSFER_DENY)[_\s]/i;
+  if (techActionRe.test(trimmed) && line !== 'tech') {
+    await redirectToLine(phone, line, 'tech', trimmed);
+    return;
+  }
+
   // ACCEPT job
   const acceptMatch = upper.match(/ACCEPT[_\s]([A-F0-9-]{36})/i) ||
     (upper.startsWith('ACCEPT_') && upper.substring(7).match(/[A-F0-9-]{36}/i));
@@ -58,14 +122,16 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
     return;
   }
 
-  // VERIFY_YES / VERIFY_NO (customer verification)
+  // VERIFY_YES / VERIFY_NO (customer verification) — SERVICE line only
   const verifyYesMatch = trimmed.match(/VERIFY_YES[_\s]([a-f0-9-]{36})/i);
   if (verifyYesMatch) {
+    if (line !== 'service') { await redirectToLine(phone, line, 'service', trimmed); return; }
     await handleJobVerification(phone, verifyYesMatch[1], true);
     return;
   }
   const verifyNoMatch = trimmed.match(/VERIFY_NO[_\s]([a-f0-9-]{36})/i);
   if (verifyNoMatch) {
+    if (line !== 'service') { await redirectToLine(phone, line, 'service', trimmed); return; }
     await handleJobVerification(phone, verifyNoMatch[1], false);
     return;
   }
@@ -82,14 +148,16 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
     return;
   }
 
-  // Ownership transfer decisions
+  // Ownership transfer decisions — SERVICE line (customers own units)
   const transferApproveMatch = trimmed.match(/TRANSFER_APPROVE[_\s]([a-f0-9-]{36})[_\s](\d+)/i);
   if (transferApproveMatch) {
+    if (line !== 'service') { await redirectToLine(phone, line, 'service', trimmed); return; }
     await ownershipFlow.handleTransferApprove(phone, transferApproveMatch[1], transferApproveMatch[2]);
     return;
   }
   const transferDenyMatch = trimmed.match(/TRANSFER_DENY[_\s]([a-f0-9-]{36})[_\s](\d+)/i);
   if (transferDenyMatch) {
+    if (line !== 'service') { await redirectToLine(phone, line, 'service', trimmed); return; }
     await ownershipFlow.handleTransferDeny(phone, transferDenyMatch[1], transferDenyMatch[2]);
     return;
   }
@@ -97,61 +165,100 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
   // ─── Reset keywords always show main menu, even mid-flow ───
   if (upper === 'HELP' || upper === 'HI' || upper === 'HELLO' || upper === 'MENU' || upper === 'MAIN_MENU') {
     await session.clearSession(phone);
-    await sendMainMenu(phone, isTech);
+    await sendMainMenu(phone, isTech, line);
     return;
   }
 
-  // ─── Tech registration — checked BEFORE session continuation so referral links
-  //     like "REGISTER TECH REF_XXX" always start fresh and don't get swallowed
-  //     by an existing awaiting_name session ───
+  // ─── Tech registration — TECH line only ───
   if (upper.includes('REGISTER TECH') || upper === 'TECH' || upper === 'JOIN' || upper === 'TECH_JOIN') {
+    if (line !== 'tech') {
+      await redirectToLine(phone, line, 'tech', 'JOIN');
+      return;
+    }
     const refMatch = trimmed.match(/REF[_\s]([A-Z0-9]{6,10})/i);
     await techFlow.startOnboarding(phone, refMatch ? refMatch[1].toUpperCase() : null);
     return;
   }
 
   // ─── Continue active session flow ───
+  // Sessions are created on a specific line; continuing them is allowed on
+  // the same line. If a user somehow lands on the other line mid-session
+  // (e.g. typing unrelated text), we'd drop through to the line-gated
+  // intents below and show them a menu/redirect. To avoid confusion, we
+  // also record the line in the session (see setSession callers) and
+  // require it match when resuming — but for now we just forward.
   if (flow && step) {
-    await continueFlow(phone, flow, step, ctx, trimmed, upper, mediaUrl, isTech, flowData, location);
+    await continueFlow(phone, flow, step, ctx, trimmed, upper, mediaUrl, isTech, flowData, location, line);
     return;
   }
 
   // ─── Intent detection for new flows ───
 
-  // Install command: "Install KN-XXXX" or just "KN-XXXX"
+  // Install command: "Install KN-XXXX" or just "KN-XXXX" — SERVICE line only
   const installMatch = trimmed.match(/^(?:install\s+)?(KN-\w+)$/i);
   if (installMatch) {
+    if (line !== 'service') {
+      await redirectToLine(phone, line, 'service', `Install ${installMatch[1].toUpperCase()}`);
+      return;
+    }
     await installFlow.start(phone, installMatch[1].toUpperCase());
     return;
   }
 
-  // Technician referral
+  // Technician referral — TECH line only (this is a technician activity)
   if (upper === 'REFER' || upper === 'REFER_TECH') {
+    if (line !== 'tech') {
+      await redirectToLine(phone, line, 'tech', 'REFER');
+      return;
+    }
     await referralFlow.handleRefer(phone);
     return;
   }
 
-  // Technician: pending installations
+  // Technician: pending installations — TECH line only
   if (upper === 'TECH_PENDING_JOBS') {
+    if (line !== 'tech') {
+      await redirectToLine(phone, line, 'tech', 'TECH_PENDING_JOBS');
+      return;
+    }
     await handleTechPendingJobs(phone);
     return;
   }
 
-  // Technician: view job detail
+  // Technician: view job detail — TECH line only
   const jobDetailMatch = trimmed.match(/^JOB_DETAIL[_\s]([a-f0-9-]{36})$/i);
   if (jobDetailMatch) {
+    if (line !== 'tech') {
+      await redirectToLine(phone, line, 'tech', trimmed);
+      return;
+    }
     await handleTechJobDetail(phone, jobDetailMatch[1]);
     return;
   }
 
-  // Main menu button: New Installation
-  if (upper === 'SCAN_HELP') {
-    await wa.sendText(phone, `📦 *New Installation*\n\nPlease type: *Install <unit-code>*\n\n_Example: Install KN-8492_\n\n_The unit code is printed on the QR sticker on your RO purifier._`);
+  // Service-line CTA: "Join as Technician" button on the customer menu
+  // deep-links out to the tech number instead of handling join inline here.
+  if (upper === 'JOIN_TECH_REDIRECT') {
+    await redirectToLine(phone, line, 'tech', 'JOIN');
     return;
   }
 
-  // Main menu button: Support / Repair
+  // Main menu button: New Installation — SERVICE line
+  if (upper === 'SCAN_HELP') {
+    if (line !== 'service') {
+      await redirectToLine(phone, line, 'service', 'SCAN_HELP');
+      return;
+    }
+    await wa.sendText(phone, `📦 *New Installation*\n\nPlease type: *Install <unit-code>*\n\n_Example: Install KN-8492_\n\n_The unit code is printed on the QR sticker on your RO purifier._`, { line: 'service' });
+    return;
+  }
+
+  // Main menu button: Support / Repair — SERVICE line
   if (upper === 'SUPPORT_HELP') {
+    if (line !== 'service') {
+      await redirectToLine(phone, line, 'service', 'SUPPORT_HELP');
+      return;
+    }
     const custResult = await db.query(
       `INSERT INTO customers (phone) VALUES ($1) ON CONFLICT (phone) DO UPDATE SET updated_at = now() RETURNING *`,
       [phone]
@@ -160,18 +267,26 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
     return;
   }
 
-  // Transfer request
+  // Transfer request — SERVICE line (customer ownership action)
   if (upper === 'TRANSFER') {
+    if (line !== 'service') {
+      await redirectToLine(phone, line, 'service', 'TRANSFER');
+      return;
+    }
     if (ctx.unit_id) {
       await ownershipFlow.handleTransferRequest(phone, ctx);
     } else {
-      await wa.sendText(phone, `Please scan the QR code on your unit first, then type TRANSFER.`);
+      await wa.sendText(phone, `Please scan the QR code on your unit first, then type TRANSFER.`, { line: 'service' });
     }
     return;
   }
 
-  // Support keywords
+  // Support keywords — SERVICE line
   if (supportFlow.isSupport(trimmed)) {
+    if (line !== 'service') {
+      await redirectToLine(phone, line, 'service', trimmed);
+      return;
+    }
     const custResult = await db.query(
       `INSERT INTO customers (phone) VALUES ($1) ON CONFLICT (phone) DO UPDATE SET updated_at = now() RETURNING *`,
       [phone]
@@ -180,21 +295,15 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
     return;
   }
 
-  // Help / Menu
-  if (upper === 'HELP' || upper === 'HI' || upper === 'HELLO' || upper === 'MENU' || upper === 'MAIN_MENU') {
-    await sendMainMenu(phone, isTech);
-    return;
-  }
-
-  // Default
-  await sendMainMenu(phone, isTech);
+  // Default → main menu (line-specific)
+  await sendMainMenu(phone, isTech, line);
 }
 
 /**
  * Continue an active flow session
  */
-async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech, flowData = null, location = null) {
-  // ── INSTALLATION FLOW ──
+async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTech, flowData = null, location = null, line = 'service') {
+  // ── INSTALLATION FLOW ── (SERVICE line)
   if (flow === 'installation') {
     if (step === 'awaiting_flow') {
       // WhatsApp Flow completion response
@@ -202,7 +311,7 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
         await installFlow.handleInstallFlowResponse(phone, flowData, ctx);
       } else {
         // User sent text while waiting for flow — re-send
-        await wa.sendText(phone, `Please complete the address form to continue. 👇`);
+        await wa.sendText(phone, `Please complete the address form to continue. 👇`, { line: 'service' });
         await installFlow.sendInstallAddressFlow(phone);
       }
     } else if (step === 'awaiting_location') {
@@ -218,7 +327,8 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
       } else {
         // Remind them with a location request button
         await wa.sendLocationRequest(phone,
-          `📌 Tap the button below to share your location, or type *SKIP* to continue without sharing.`
+          `📌 Tap the button below to share your location, or type *SKIP* to continue without sharing.`,
+          { line: 'service' }
         );
       }
     } else if (step === 'awaiting_slot') {
@@ -227,7 +337,7 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
     return;
   }
 
-  // ── SUPPORT FLOW ──
+  // ── SUPPORT FLOW ── (SERVICE line)
   if (flow === 'support') {
     if (step === 'awaiting_unit_selection') {
       const unitMatch = text.match(/UNIT[_\s]([a-f0-9-]{36})/i);
@@ -275,17 +385,17 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
           { id: 'TOMORROW_MIDDAY', title: '☀️ Tomorrow 12-2 PM' },
           { id: 'TOMORROW_EVENING', title: '🌆 Tomorrow 4-6 PM' }
         );
-        await wa.sendText(phone, `✅ Payment of ₹500 noted. Choose a slot:`);
-        await wa.sendButtons(phone, `📅 Select repair slot:`, buttons);
+        await wa.sendText(phone, `✅ Payment of ₹500 noted. Choose a slot:`, { line: 'service' });
+        await wa.sendButtons(phone, `📅 Select repair slot:`, buttons, { line: 'service' });
       } else {
         await session.clearSession(phone);
-        await wa.sendText(phone, `👍 Repair cancelled. Type 'help' anytime if you need assistance.`);
+        await wa.sendText(phone, `👍 Repair cancelled. Type 'help' anytime if you need assistance.`, { line: 'service' });
       }
     }
     return;
   }
 
-  // ── MAINTENANCE FLOW ──
+  // ── MAINTENANCE FLOW ── (SERVICE line)
   if (flow === 'maintenance') {
     if (step === 'awaiting_confirm') {
       if (upper.includes('MAINTENANCE_YES') || upper.includes('YES')) {
@@ -298,7 +408,7 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
         await maintenanceFlow.handlePaymentConfirmed(phone, ctx);
       } else if (upper.includes('CANCEL')) {
         await session.clearSession(phone);
-        await wa.sendText(phone, `👍 Cancelled. We'll remind you later.`);
+        await wa.sendText(phone, `👍 Cancelled. We'll remind you later.`, { line: 'service' });
       }
     } else if (step === 'awaiting_slot') {
       await maintenanceFlow.handleSlot(phone, text, ctx);
@@ -306,7 +416,7 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
     return;
   }
 
-  // ── TECH ONBOARDING FLOW ──
+  // ── TECH ONBOARDING FLOW ── (TECH line)
   if (flow === 'tech_onboarding') {
     if (step === 'awaiting_name') {
       await techFlow.handleName(phone, text, ctx);
@@ -316,7 +426,7 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
         await techFlow.handleFlowResponse(phone, flowData, ctx);
       } else {
         // User sent a text message while waiting for flow — re-send the flow
-        await wa.sendText(phone, `Please complete the form to continue. 👇`);
+        await wa.sendText(phone, `Please complete the form to continue. 👇`, { line: 'tech' });
         await techFlow.sendAreaSelectionFlow(phone);
       }
     } else if (step === 'awaiting_more_states') {
@@ -327,25 +437,25 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
     return;
   }
 
-  // ── TECH JOB FLOW ──
+  // ── TECH JOB FLOW ── (TECH line)
   if (flow === 'tech_job') {
     if (step === 'awaiting_otp') {
       if (/^\d{6}$/.test(text.trim())) {
         await techFlow.handleOTPVerification(phone, text.trim(), ctx);
       } else {
-        await wa.sendText(phone, `Please enter the 6-digit *Happiness Code* from the customer:`);
+        await wa.sendText(phone, `Please enter the 6-digit *Happiness Code* from the customer:`, { line: 'tech' });
       }
     } else if (step === 'awaiting_completion_photos') {
       if (mediaUrl) {
         await techFlow.handleCompletionPhoto(phone, mediaUrl, ctx);
       } else {
-        await wa.sendText(phone, `Please send a *photo* of the completed work (${(ctx.photos || []).length + 1}/2):`);
+        await wa.sendText(phone, `Please send a *photo* of the completed work (${(ctx.photos || []).length + 1}/2):`, { line: 'tech' });
       }
     }
     return;
   }
 
-  // ── OWNERSHIP TRANSFER FLOW ──
+  // ── OWNERSHIP TRANSFER FLOW ── (SERVICE line)
   if (flow === 'ownership_transfer') {
     if (step === 'awaiting_transfer_request' && upper === 'TRANSFER') {
       await ownershipFlow.handleTransferRequest(phone, ctx);
@@ -355,7 +465,7 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
 }
 
 /**
- * Handle customer job verification
+ * Handle customer job verification (runs on SERVICE line)
  */
 async function handleJobVerification(phone, jobId, approved) {
   const jobResult = await db.query(
@@ -425,11 +535,13 @@ async function handleJobVerification(phone, jobId, approved) {
       [jobId, job.customer_id]
     );
 
-    await wa.sendText(phone, `✅ *Thank you for confirming!* We hope you're satisfied with the service.\n\n⭐ How would you rate the technician? (Reply 1-5)`);
+    // Customer is on SERVICE line; technician notification goes on TECH line
+    await wa.sendText(phone, `✅ *Thank you for confirming!* We hope you're satisfied with the service.\n\n⭐ How would you rate the technician? (Reply 1-5)`, { line: 'service' });
     await wa.sendText(job.tech_phone,
       `✅ *Job Verified & Completed!*\n\n` +
       `💰 Payout: ₹${Math.round(job.payout_paise / 100)} will be settled this week.\n\n` +
-      `Great job! 🎉`
+      `Great job! 🎉`,
+      { line: 'tech' }
     );
   } else {
     // Dispute
@@ -462,15 +574,17 @@ async function handleJobVerification(phone, jobId, approved) {
         { id: 'DISPUTE_DAMAGE', title: 'Unit damaged' },
         { id: 'DISPUTE_RUDE', title: 'Rude behavior' },
         { id: 'DISPUTE_OTHER', title: 'Other' },
-      ]
+      ],
+      { line: 'service' }
     );
 
     await wa.sendText(job.tech_phone,
       `⚠️ *Customer raised a dispute on Job ${jobId}.*\n\n` +
-      `Payout is temporarily frozen. Admin will review and contact you.`
+      `Payout is temporarily frozen. Admin will review and contact you.`,
+      { line: 'tech' }
     );
 
-    // Alert admin
+    // Alert admin (admin is on the TECH line — admins manage the tech side)
     const adminResult = await db.query(`SELECT phone FROM customers WHERE phone = '919999999999'`);
     if (adminResult.rows[0]) {
       await wa.sendButtons(adminResult.rows[0].phone,
@@ -483,23 +597,21 @@ async function handleJobVerification(phone, jobId, approved) {
         [
           { id: `ADMIN_PAY_TECH_${jobId}`, title: '✅ Pay Tech (Work Done)' },
           { id: `ADMIN_SIDE_CUSTOMER_${jobId}`, title: '❌ Side with Customer' },
-        ]
+        ],
+        { line: 'tech' }
       );
     }
   }
 }
 
 /**
- * Show pending jobs.
- * In production with WA_FLOW_PENDING_JOBS set: opens a WhatsApp Flow where
- * the technician can browse jobs and tap to view full details inside the flow.
- * Otherwise: falls back to a button list (simulator / no flow ID configured).
+ * Show pending jobs (TECH line)
  */
 async function handleTechPendingJobs(phone) {
   const techResult = await db.query(`SELECT * FROM technicians WHERE phone = $1`, [phone]);
   const tech = techResult.rows[0];
   if (!tech) {
-    await wa.sendText(phone, `❌ You are not registered as a technician.`);
+    await wa.sendText(phone, `❌ You are not registered as a technician.`, { line: 'tech' });
     return;
   }
 
@@ -517,7 +629,7 @@ async function handleTechPendingJobs(phone) {
   const jobs = jobsResult.rows;
 
   if (jobs.length === 0) {
-    await wa.sendText(phone, `✅ You have no pending installations right now.\n\nNew jobs will be sent to you automatically.`);
+    await wa.sendText(phone, `✅ You have no pending installations right now.\n\nNew jobs will be sent to you automatically.`, { line: 'tech' });
     return;
   }
 
@@ -533,7 +645,8 @@ async function handleTechPendingJobs(phone) {
       'View Jobs',
       'PENDING_JOBS',
       null,
-      true
+      true,
+      { line: 'tech' }
     );
     return;
   }
@@ -564,12 +677,13 @@ async function handleTechPendingJobs(phone) {
 
   await wa.sendButtons(phone,
     `🔧 *Pending Jobs (${jobs.length})*\n\n${summary}\n\n_Tap a job below for full details & actions:_`,
-    buttons
+    buttons,
+    { line: 'tech' }
   );
 }
 
 /**
- * Show full details of a specific job as a chat message
+ * Show full details of a specific job as a chat message (TECH line)
  */
 async function handleTechJobDetail(phone, jobId) {
   const jobResult = await db.query(
@@ -583,7 +697,7 @@ async function handleTechJobDetail(phone, jobId) {
   );
   const j = jobResult.rows[0];
   if (!j) {
-    await wa.sendText(phone, `❌ Job not found.`);
+    await wa.sendText(phone, `❌ Job not found.`, { line: 'tech' });
     return;
   }
 
@@ -613,40 +727,65 @@ async function handleTechJobDetail(phone, jobId) {
     actionButtons.unshift({ id: `ARRIVED_${jobId}`, title: '🔐 Enter OTP' });
   }
 
-  await wa.sendButtons(phone, details, actionButtons);
+  await wa.sendButtons(phone, details, actionButtons, { line: 'tech' });
 
   // Send location pin if customer shared GPS
   if (address.location?.latitude && address.location?.longitude) {
     await wa.sendLocation(phone, address.location.latitude, address.location.longitude,
-      address.raw || 'Installation Location', address.full_address || '');
+      address.raw || 'Installation Location', address.full_address || '', { line: 'tech' });
   }
 }
 
 /**
- * Send main menu
+ * Send main menu — line-specific.
+ *
+ * TECH line:
+ *   - Registered tech → technician portal (jobs, stats, referrals)
+ *   - Unknown caller  → "Join as Technician" as the primary CTA
+ *
+ * SERVICE line:
+ *   - Customer menu (install + support only). Technician join is NOT
+ *     offered here — callers on the service line must go to the tech
+ *     number separately.
  */
-async function sendMainMenu(phone, isTech) {
-  if (isTech) {
-    await wa.sendButtons(phone,
-      `👋 *Knite Technician Portal*\n\nYou'll receive job notifications automatically.\n\nWhat do you need?`,
-      [
-        { id: 'TECH_STATUS', title: '📊 My Stats' },
-        { id: 'TECH_PENDING_JOBS', title: '🔧 Pending Installations' },
-        { id: 'REFER_TECH', title: '🤝 Refer a Technician' },
-        { id: 'HELP', title: '❓ Help' },
-      ]
-    );
-  } else {
-    await wa.sendButtons(phone,
-      `👋 *Welcome to Knite!*\n\nWater purifier installation & support 💧\n\nHow can I help you?`,
-      [
-        { id: 'SCAN_HELP', title: '📦 New Installation' },
-        { id: 'SUPPORT_HELP', title: '🔧 Support / Repair' },
-        { id: 'TECH_JOIN', title: '👨‍🔧 Join as Technician' },
-        { id: 'REFER_TECH', title: '🤝 Refer a Technician' },
-      ]
-    );
+async function sendMainMenu(phone, isTech, line = 'service') {
+  if (line === 'tech') {
+    if (isTech) {
+      // Registered technician on the tech line → full portal
+      await wa.sendButtons(phone,
+        `👋 *Knite Technician Portal*\n\nYou'll receive job notifications automatically.\n\nWhat do you need?`,
+        [
+          { id: 'TECH_STATUS', title: '📊 My Stats' },
+          { id: 'TECH_PENDING_JOBS', title: '🔧 Pending Jobs' },
+          { id: 'REFER_TECH', title: '🤝 Refer a Technician' },
+          { id: 'HELP', title: '❓ Help' },
+        ],
+        { line: 'tech' }
+      );
+    } else {
+      // Unknown caller on the tech line → tech-focused menu
+      await wa.sendButtons(phone,
+        `👋 *Knite — Technician Line*\n\nThis number is for Knite technicians.\n\n` +
+        `👨‍🔧 *Looking to join as a technician?*`,
+        [
+          { id: 'TECH_JOIN', title: '👨‍🔧 Join as Technician' },
+          { id: 'HELP', title: '❓ Help' },
+        ],
+        { line: 'tech' }
+      );
+    }
+    return;
   }
+
+  // SERVICE line → customer menu
+  await wa.sendButtons(phone,
+    `👋 *Welcome to Knite!*\n\nWater purifier installation & support 💧\n\nHow can I help you?`,
+    [
+      { id: 'SCAN_HELP', title: '📦 New Installation' },
+      { id: 'SUPPORT_HELP', title: '🔧 Support / Repair' },
+    ],
+    { line: 'service' }
+  );
 }
 
 function extractSlotKey(text) {

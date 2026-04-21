@@ -127,13 +127,13 @@ async function resolveDispute(req, res) {
     );
     const techResult = await db.query(`SELECT * FROM technicians WHERE id = $1`, [job.technician_id]);
     if (techResult.rows[0]) {
-      await wa.sendText(techResult.rows[0].phone, `✅ Admin resolved dispute in your favor. Payout released!`);
+      await wa.sendText(techResult.rows[0].phone, `✅ Admin resolved dispute in your favor. Payout released!`, { line: 'tech' });
     }
   } else {
     await db.query(`UPDATE jobs SET status = 'failed', updated_at = now() WHERE id = $1`, [job.id]);
     const custResult = await db.query(`SELECT * FROM customers WHERE id = $1`, [job.customer_id]);
     if (custResult.rows[0]) {
-      await wa.sendText(custResult.rows[0].phone, `✅ Dispute resolved in your favor. We'll re-dispatch a technician.`);
+      await wa.sendText(custResult.rows[0].phone, `✅ Dispute resolved in your favor. We'll re-dispatch a technician.`, { line: 'service' });
     }
   }
 
@@ -167,10 +167,11 @@ async function approveTechnician(req, res) {
   const tech = result.rows[0];
   if (approved) {
     await wa.sendText(tech.phone,
-      `🎉 *Congratulations ${tech.name}!*\n\nYour Knite technician account is now *ACTIVE*!\n\nYou'll start receiving job notifications in your zone. Welcome to the team! 🔧`
+      `🎉 *Congratulations ${tech.name}!*\n\nYour Knite technician account is now *ACTIVE*!\n\nYou'll start receiving job notifications in your zone. Welcome to the team! 🔧`,
+      { line: 'tech' }
     );
   } else {
-    await wa.sendText(tech.phone, `❌ Your application was not approved. Please type *REGISTER TECH* to resubmit with a clearer Aadhaar photo.`);
+    await wa.sendText(tech.phone, `❌ Your application was not approved. Please type *REGISTER TECH* to resubmit with a clearer Aadhaar photo.`, { line: 'tech' });
   }
 
   res.json(result.rows[0]);

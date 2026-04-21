@@ -345,3 +345,26 @@ BEGIN
   VALUES (p_job_id, p_type, p_from_status, p_to_status, p_actor_type, p_actor_id, p_metadata);
 END;
 $$ LANGUAGE plpgsql;
+
+-- ─────────────────────────────────────────────
+-- INDIA POST PINCODE DIRECTORY
+-- Loaded from a public CSV (India Post). Referenced by techFlow
+-- (state/area list during onboarding) and installationFlow (pincode lookup).
+-- The CSV load happens in infra/deploy.sh on first bootstrap.
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS india_pincodes (
+  id            SERIAL PRIMARY KEY,
+  circle_name   TEXT,
+  region_name   TEXT,
+  division_name TEXT,
+  area_name     TEXT,   -- officename
+  pincode       TEXT,
+  office_type   TEXT,
+  delivery      TEXT,
+  district      TEXT,
+  state         TEXT,   -- stored in Title Case (normalised from ALL CAPS)
+  latitude      TEXT,
+  longitude     TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_india_pincodes_state   ON india_pincodes(state);
+CREATE INDEX IF NOT EXISTS idx_india_pincodes_pincode ON india_pincodes(pincode);

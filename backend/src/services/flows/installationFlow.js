@@ -82,22 +82,28 @@ async function sendInstallAddressFlow(phone) {
   const flowToken = `install_${phone}_${Date.now()}`;
   await wa.sendFlow(
     phone,
-    `📍 *Where should we install your purifier?*\n\nPlease select your state and enter your 6-digit pincode.`,
+    `📍 *Where should we install your purifier?*\n\nPlease enter your address and 6-digit pincode.`,
     flowId,
     flowToken,
-    'Enter Address'
+    'Enter Address',
+    'ADDRESS_SCREEN'
   );
 }
 
 /**
- * Handle WhatsApp Flow response for installation address
- * flowPayload = { selected_state, full_address, pincode, share_location: "yes"|"skip" }
+ * Handle WhatsApp Flow response for installation address.
+ *
+ * Expected flowPayload (new 2-field flow):
+ *   { full_address, pincode, share_location: "yes"|"skip" }
+ *
+ * Older flow payloads may also include `selected_state` — ignored (we derive
+ * state/district/area by pincode lookup against india_pincodes).
  */
 async function handleInstallFlowResponse(phone, flowPayload, ctx) {
-  const { selected_state, full_address, pincode, share_location } = flowPayload;
+  const { full_address, pincode, share_location } = flowPayload;
 
-  if (!selected_state || !pincode) {
-    await wa.sendText(phone, `❌ Address details are missing. Please try again.`);
+  if (!pincode) {
+    await wa.sendText(phone, `❌ Pincode is missing. Please try again.`);
     await sendInstallAddressFlow(phone);
     return;
   }
@@ -120,10 +126,10 @@ async function handleInstallFlowResponse(phone, flowPayload, ctx) {
   if (areaResult.rows[0]) {
     ({ area_name: areaName, district, state } = areaResult.rows[0]);
   } else {
-    // Pincode not in DB — derive state from flow selection
+    // Pincode not in our directory — proceed with just the free-text address
     areaName = 'Unknown Area';
     district = 'Unknown District';
-    state = selected_state.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    state = 'Unknown State';
   }
 
   // Build full address string: user's text + DB area + state
@@ -479,7 +485,8 @@ async function broadcastJob(job, zoneId) {
       [
         { id: `ACCEPT_${job.id}`, title: '✅ Accept Job' },
         { id: `DECLINE_${job.id}`, title: '❌ Decline' },
-      ]
+      ],
+      { line: 'tech' }
     );
   }
 

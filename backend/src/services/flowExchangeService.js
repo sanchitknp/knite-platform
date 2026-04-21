@@ -234,9 +234,9 @@ function sendLocationToChat(techPhone, address) {
   const label = address.raw || address.full_address || 'Installation Location';
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
-  wa.sendLocation(techPhone, lat, lng, label, address.full_address || '')
+  wa.sendLocation(techPhone, lat, lng, label, address.full_address || '', { line: 'tech' })
     .catch(err => console.error('[FLOW] Failed to send location pin:', err.message));
-  wa.sendText(techPhone, `📍 *Get Directions:*\n${mapsUrl}`)
+  wa.sendText(techPhone, `📍 *Get Directions:*\n${mapsUrl}`, { line: 'tech' })
     .catch(err => console.error('[FLOW] Failed to send maps link:', err.message));
 }
 
@@ -411,7 +411,8 @@ async function handleOTPSubmission(jobId, otpInput, techPhone) {
     `✅ *Happiness Code verified!*\n\n` +
     `Now send *2 photos* in this chat:\n` +
     `📸 1. Before/during work\n📸 2. Completed ${j.type}\n\n` +
-    `_(Required for payment release)_`
+    `_(Required for payment release)_`,
+    { line: 'tech' }
   ).catch(err => console.error('[FLOW] Failed to send photo prompt:', err.message));
 
   console.log('[FLOW] OTP verified for job %s by %s — awaiting photos', jobId, techPhone);
