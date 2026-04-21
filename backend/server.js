@@ -366,6 +366,15 @@ async function start() {
   // Seed default admin user if admin_users is empty (idempotent)
   await adminAuth.ensureDefaultAdmin();
 
+  // Lightweight idempotent schema migrations for columns added after the
+  // initial schema.sql bootstrap. schema.sql is only loaded on empty DBs;
+  // this keeps long-running RDS instances in sync with new columns.
+  try {
+    await db.query(`ALTER TABLE technicians ADD COLUMN IF NOT EXISTS kyc_doc_back_url TEXT`);
+  } catch (err) {
+    console.error('[SCHEMA_MIGRATE] kyc_doc_back_url:', err.message);
+  }
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 Knite Backend running on http://localhost:${PORT}`);
     console.log(`📱 Simulator: http://localhost:${PORT}/simulator.html`);

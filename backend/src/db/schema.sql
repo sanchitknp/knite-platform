@@ -37,7 +37,8 @@ CREATE TABLE technicians (
   home_zone_id UUID REFERENCES zones(id),
   is_verified BOOLEAN DEFAULT false,
   is_active BOOLEAN DEFAULT false,
-  kyc_doc_url TEXT,
+  kyc_doc_url TEXT,        -- Aadhaar FRONT photo URL (local path in dev, S3 in prod)
+  kyc_doc_back_url TEXT,   -- Aadhaar BACK photo URL
   aadhaar_hash TEXT,
   rating NUMERIC(3,2) DEFAULT 5.0,
   jobs_completed INT DEFAULT 0,

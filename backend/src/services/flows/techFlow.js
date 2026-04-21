@@ -4,7 +4,7 @@
  * Onboarding steps:
  *   awaiting_name → awaiting_state → awaiting_areas
  *     → awaiting_more_states (loop back to awaiting_state for more states)
- *     → awaiting_kyc
+ *     → awaiting_kyc_front → awaiting_kyc_back
  *
  * Context shape during onboarding:
  *   {
@@ -437,7 +437,7 @@ async function handleMoreStates(phone, text, ctx) {
 
     await session.setSession(phone, {
       flow: 'tech_onboarding',
-      step: 'awaiting_kyc',
+      step: 'awaiting_kyc_front',
       context_data: {
         name: ctx.name,
         all_state_selections: allSelections,
@@ -446,6 +446,7 @@ async function handleMoreStates(phone, text, ctx) {
         home_zone_name: stateNames,
         areas_summary: `${totalAreas} area(s) across ${allSelections.length} state(s)`,
         zone_summary: zoneSummaryLines.join('\n'),
+        referral_code: ctx.referral_code || null,
       }
     });
 
@@ -453,7 +454,8 @@ async function handleMoreStates(phone, text, ctx) {
       `✅ *Coverage registered!*\n\n` +
       `*Your service zones:*\n${zoneSummaryLines.join('\n')}\n\n` +
       `Total areas: ${totalAreas}\n\n` +
-      `Now please send a *photo of your Aadhaar card* (front side) for KYC verification:`,
+      `📸 *KYC — Step 1 of 2*\n` +
+      `Please send a photo of the *FRONT side* of your Aadhaar card:`,
       TLINE
     );
     return;
@@ -493,26 +495,71 @@ async function upsertZone(state, district, pincodes) {
 }
 
 // ─────────────────────────────────────────────
-// Step 5: KYC
+// Step 5: KYC — FRONT photo
+//
+// Two-part flow:
+//   awaiting_kyc_front → user sends Aadhaar FRONT → store URL in session,
+//                        prompt for BACK, advance to awaiting_kyc_back
+//   awaiting_kyc_back  → user sends Aadhaar BACK  → create tech row with
+//                        both URLs, notify admin, finish
 // ─────────────────────────────────────────────
 
-async function handleKYC(phone, mediaId, ctx) {
+async function handleKYCFront(phone, mediaId, ctx) {
   if (!mediaId) {
-    await wa.sendText(phone, `Please send a *photo* of your Aadhaar card (front side):`, TLINE);
+    await wa.sendText(phone,
+      `📸 *KYC — Step 1 of 2*\nPlease send a photo of the *FRONT side* of your Aadhaar card:`,
+      TLINE
+    );
     return;
   }
 
-  // Clear session immediately to prevent duplicate submissions if user sends multiple photos
+  const frontUrl = await media.storeMedia(mediaId, 'kyc', `${phone.replace('+', '')}_front`);
+
+  // Advance to awaiting_kyc_back; carry everything forward in context.
+  await session.setSession(phone, {
+    flow: 'tech_onboarding',
+    step: 'awaiting_kyc_back',
+    context_data: {
+      ...ctx,
+      kyc_front_url: frontUrl || 'simulator_upload',
+    },
+  });
+
+  await wa.sendText(phone,
+    `✅ Front side received.\n\n` +
+    `📸 *KYC — Step 2 of 2*\n` +
+    `Now please send a photo of the *BACK side* of your Aadhaar card:`,
+    TLINE
+  );
+}
+
+// ─────────────────────────────────────────────
+// Step 5b: KYC — BACK photo  (finalises onboarding)
+// ─────────────────────────────────────────────
+
+async function handleKYCBack(phone, mediaId, ctx) {
+  if (!mediaId) {
+    await wa.sendText(phone,
+      `📸 *KYC — Step 2 of 2*\nPlease send a photo of the *BACK side* of your Aadhaar card:`,
+      TLINE
+    );
+    return;
+  }
+
+  // Clear session immediately to prevent duplicate submissions if the user
+  // sends multiple photos before the DB insert settles.
   await session.clearSession(phone);
 
-  const kycUrl = await media.storeMedia(mediaId, 'kyc', phone.replace('+', ''));
+  const backUrl = await media.storeMedia(mediaId, 'kyc', `${phone.replace('+', '')}_back`);
+  const frontUrl = ctx.kyc_front_url || 'simulator_upload';
 
   const techResult = await db.query(
-    `INSERT INTO technicians (phone, name, home_zone_id, is_verified, is_active, kyc_doc_url)
-     VALUES ($1, $2, $3, false, false, $4)
-     ON CONFLICT (phone) DO UPDATE SET name = $2, home_zone_id = $3, kyc_doc_url = $4
+    `INSERT INTO technicians (phone, name, home_zone_id, is_verified, is_active, kyc_doc_url, kyc_doc_back_url)
+     VALUES ($1, $2, $3, false, false, $4, $5)
+     ON CONFLICT (phone) DO UPDATE SET
+       name = $2, home_zone_id = $3, kyc_doc_url = $4, kyc_doc_back_url = $5
      RETURNING *`,
-    [phone, ctx.name, ctx.home_zone_id, kycUrl || 'simulator_upload']
+    [phone, ctx.name, ctx.home_zone_id, frontUrl, backUrl || 'simulator_upload']
   );
   const tech = techResult.rows[0];
 
@@ -549,7 +596,7 @@ async function handleKYC(phone, mediaId, ctx) {
       `📱 Phone: ${phone}\n` +
       `📍 Service zones:\n${statesSummary}\n` +
       `🏘️ Coverage: ${areasSummary}\n` +
-      `🪪 KYC: ${kycUrl ? 'Photo uploaded' : 'Pending'}\n\n` +
+      `🪪 KYC: Front + back uploaded\n\n` +
       `Tech ID: ${tech.id}`,
       [
         { id: `APPROVE_TECH_${tech.id}`, title: '✅ Approve' },
@@ -566,7 +613,7 @@ async function handleKYC(phone, mediaId, ctx) {
     `• Name: ${ctx.name}\n` +
     `• Service zones:\n${statesSummary}\n` +
     `• Coverage: ${areasSummary}\n` +
-    `• KYC: Submitted\n\n` +
+    `• KYC: Front + back submitted\n\n` +
     `⏳ Our admin will review your application within 24 hours.\n` +
     `You'll receive a WhatsApp notification once approved! 🎉`,
     TLINE
@@ -817,7 +864,8 @@ module.exports = {
   sendAreaSelectionFlow,
   handleFlowResponse,
   handleMoreStates,
-  handleKYC,
+  handleKYCFront,
+  handleKYCBack,
   handleJobAccept,
   handleJobDecline,
   handleArrived,

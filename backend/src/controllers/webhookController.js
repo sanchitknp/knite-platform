@@ -431,8 +431,12 @@ async function continueFlow(phone, flow, step, ctx, text, upper, mediaUrl, isTec
       }
     } else if (step === 'awaiting_more_states') {
       await techFlow.handleMoreStates(phone, text, ctx);
-    } else if (step === 'awaiting_kyc') {
-      await techFlow.handleKYC(phone, mediaUrl, ctx);
+    } else if (step === 'awaiting_kyc_front' || step === 'awaiting_kyc') {
+      // awaiting_kyc kept for backwards compat with any in-flight sessions
+      // from before the front/back split.
+      await techFlow.handleKYCFront(phone, mediaUrl, ctx);
+    } else if (step === 'awaiting_kyc_back') {
+      await techFlow.handleKYCBack(phone, mediaUrl, ctx);
     }
     return;
   }
