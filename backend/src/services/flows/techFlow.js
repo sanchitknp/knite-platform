@@ -99,11 +99,11 @@ async function sendAreaSelectionFlow(phone) {
   const flowId = process.env.WA_FLOW_AREA_SELECTION;
   const flowToken = `tech_area_${phone}_${Date.now()}`;
   await wa.sendFlow(phone,
-    `📍 *Select your service area*\n\nChoose your state and enter the pincodes you cover.`,
+    `📍 *Select your service areas*\n\nEnter the pincodes you cover (comma-separated). We'll figure out the state and areas automatically.`,
     flowId,
     flowToken,
-    '📍 Select State & Pincodes',
-    'STATE_SCREEN',
+    '📍 Enter Pincodes',
+    'PINCODE_SCREEN',
     null,
     false,
     TLINE
@@ -290,9 +290,11 @@ async function sendAreaList(phone, state, selectedAreas) {
 // ─────────────────────────────────────────────
 
 async function handleFlowResponse(phone, flowPayload, ctx) {
-  const { selected_state, pincodes } = flowPayload;
+  // Pincode-only flow (Meta: PINCODE_SCREEN is the sole terminal screen).
+  // The state is derived from the india_pincodes lookup — no dropdown needed.
+  const { pincodes } = flowPayload;
 
-  if (!selected_state || !pincodes) {
+  if (!pincodes) {
     await wa.sendText(phone, `❌ Something went wrong with the form. Please try again.`, TLINE);
     await sendAreaSelectionFlow(phone);
     return;
@@ -307,7 +309,8 @@ async function handleFlowResponse(phone, flowPayload, ctx) {
     return;
   }
 
-  // Look up areas from DB
+  // Look up areas from DB. One pincode can have multiple area rows — we keep
+  // them all so the tech's coverage is maximally granular.
   const result = await db.query(
     `SELECT id, area_name, pincode, district, state FROM india_pincodes
      WHERE pincode = ANY($1::text[]) AND area_name IS NOT NULL`,
@@ -327,55 +330,67 @@ async function handleFlowResponse(phone, flowPayload, ctx) {
     return;
   }
 
-  // Build selection entry for this state
-  const stateNameMap = {
-    andaman_nicobar: 'Andaman Nicobar', andhra_pradesh: 'Andhra Pradesh',
-    arunachal_pradesh: 'Arunachal Pradesh', assam: 'Assam', bihar: 'Bihar',
-    chandigarh: 'Chandigarh', chhattisgarh: 'Chhattisgarh',
-    dadra_and_nagar_haveli: 'Dadra & Nagar Haveli', daman_and_diu: 'Daman & Diu',
-    delhi: 'Delhi', goa: 'Goa', gujarat: 'Gujarat', haryana: 'Haryana',
-    himachal_pradesh: 'Himachal Pradesh', jammu_and_kashmir: 'Jammu & Kashmir',
-    jharkhand: 'Jharkhand', karnataka: 'Karnataka', kerala: 'Kerala',
-    lakshdweep: 'Lakshdweep', madhya_pradesh: 'Madhya Pradesh',
-    maharashtra: 'Maharashtra', manipur: 'Manipur', meghalaya: 'Meghalaya',
-    mizoram: 'Mizoram', nagaland: 'Nagaland', orissa: 'Orissa',
-    pondicherry: 'Pondicherry', punjab: 'Punjab', rajasthan: 'Rajasthan',
-    sikkim: 'Sikkim', tamil_nadu: 'Tamil Nadu', tripura: 'Tripura',
-    uttar_pradesh: 'Uttar Pradesh', uttaranchal: 'Uttaranchal', west_bengal: 'West Bengal',
-  };
-  const stateName = stateNameMap[selected_state] || found[0]?.state || selected_state;
+  // Group found areas by state. A tech can submit pincodes that span
+  // multiple states; each state becomes its own selection entry so zone
+  // creation and the summary UI still work per-state.
+  const byState = {};
+  for (const row of found) {
+    const s = row.state || 'Unknown';
+    if (!byState[s]) byState[s] = [];
+    byState[s].push(row);
+  }
+  const newSelections = Object.entries(byState).map(([state, areas]) => ({
+    state,
+    selected_areas: areas,
+  }));
 
-  const currentSelection = {
-    state: stateName,
-    selected_areas: found,
-  };
-
-  const allSelections = [...(ctx.all_state_selections || []), currentSelection];
-  const totalAreas = allSelections.reduce((sum, s) => sum + s.selected_areas.length, 0);
-  const statesSummary = allSelections.map(s => `📍 *${s.state}*: ${s.selected_areas.length} area(s)`).join('\n');
-
-  // Confirmation message
-  let confirmMsg = `✅ *${stateName} saved!*\n\n` +
-    `Areas found:\n${found.map(a => `• ${a.area_name} (${a.pincode})`).join('\n')}`;
-
-  if (notFound.length > 0) {
-    confirmMsg += `\n\n⚠️ Not found in DB: ${notFound.join(', ')} (skipped)`;
+  // Merge with any pre-existing selections (if the tech is adding more
+  // pincodes). For states that already had an entry, union the areas.
+  const existing = ctx.all_state_selections || [];
+  const merged = [...existing];
+  for (const sel of newSelections) {
+    const i = merged.findIndex(e => e.state === sel.state);
+    if (i >= 0) {
+      const existingIds = new Set(merged[i].selected_areas.map(a => a.id));
+      merged[i] = {
+        state: sel.state,
+        selected_areas: [
+          ...merged[i].selected_areas,
+          ...sel.selected_areas.filter(a => !existingIds.has(a.id)),
+        ],
+      };
+    } else {
+      merged.push(sel);
+    }
   }
 
-  confirmMsg += `\n\n*All states so far (${allSelections.length}):*\n${statesSummary}\nTotal areas: ${totalAreas}`;
+  const totalAreas = merged.reduce((sum, s) => sum + s.selected_areas.length, 0);
+  const statesSummary = merged.map(s => `📍 *${s.state}*: ${s.selected_areas.length} area(s)`).join('\n');
+
+  // Confirmation message — show areas grouped by state
+  let confirmMsg = `✅ *Coverage saved!*\n\n`;
+  for (const sel of newSelections) {
+    confirmMsg += `*${sel.state}:*\n${sel.selected_areas.map(a => `• ${a.area_name} (${a.pincode})`).join('\n')}\n\n`;
+  }
+
+  if (notFound.length > 0) {
+    confirmMsg += `⚠️ Not found in DB: ${notFound.join(', ')} (skipped)\n\n`;
+  }
+
+  confirmMsg += `*All coverage so far (${merged.length} state${merged.length === 1 ? '' : 's'}):*\n${statesSummary}\nTotal areas: ${totalAreas}`;
 
   await session.setSession(phone, {
     flow: 'tech_onboarding',
     step: 'awaiting_more_states',
     context_data: {
       ...ctx,
-      all_state_selections: allSelections,
+      all_state_selections: merged,
       state: null, selected_areas: null,
     }
   });
 
   await wa.sendButtons(phone, confirmMsg, [
-    { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
+    { id: 'ADD_MORE_STATES', title: '➕ Add more pincodes' },
     { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
   ], TLINE);
 }
@@ -464,9 +479,9 @@ async function handleMoreStates(phone, text, ctx) {
   // Unrecognised input — re-prompt
   const stateNames = allSelections.map(s => s.state).join(', ');
   await wa.sendButtons(phone,
-    `✅ *States added so far:* ${stateNames}\n\nWould you like to add another state or proceed to KYC?`,
+    `✅ *Coverage so far:* ${stateNames}\n\nWould you like to add more pincodes or proceed to KYC?`,
     [
-      { id: 'ADD_MORE_STATES', title: '➕ Add another state' },
+      { id: 'ADD_MORE_STATES', title: '➕ Add more pincodes' },
       { id: 'PROCEED_KYC', title: '✅ Proceed to KYC' },
     ],
     TLINE
