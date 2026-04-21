@@ -368,3 +368,21 @@ CREATE TABLE IF NOT EXISTS india_pincodes (
 );
 CREATE INDEX IF NOT EXISTS idx_india_pincodes_state   ON india_pincodes(state);
 CREATE INDEX IF NOT EXISTS idx_india_pincodes_pincode ON india_pincodes(pincode);
+
+-- ─────────────────────────────────────────────
+-- ADMIN USERS (auth for admin.html dashboard)
+-- Seeded on backend startup: a default `admin` user is inserted if the
+-- table is empty. Subsequent users are created via the admin UI by a
+-- logged-in admin.
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS admin_users (
+  id            SERIAL PRIMARY KEY,
+  username      TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,         -- bcryptjs hash
+  created_by    INTEGER REFERENCES admin_users(id) ON DELETE SET NULL,
+  is_active     BOOLEAN NOT NULL DEFAULT true,
+  is_superuser  BOOLEAN NOT NULL DEFAULT false, -- root admin: can manage users, cannot be deactivated
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_login_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_admin_users_username ON admin_users(username);

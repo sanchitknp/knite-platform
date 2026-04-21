@@ -192,8 +192,13 @@
     <div class="nav-item" onclick="showSection('maintenance')"><span class="icon">🔄</span> Maintenance</div>
     <div class="nav-item" onclick="showSection('ledger')"><span class="icon">💰</span> Ledger</div>
     <div class="nav-item" onclick="showSection('zones')"><span class="icon">🗺️</span> Zones</div>
+    <div class="nav-item" onclick="showSection('users')"><span class="icon">🔐</span> Admin Users</div>
   </nav>
   <div class="sidebar-footer">
+    <div id="currentUserInfo" style="font-size:12px;color:#64b5f6;margin-bottom:8px;">
+      Signed in as <b id="currentUsername" style="color:#fff">—</b>
+    </div>
+    <a href="#" onclick="logout(); return false;" style="color:#ff9a80;">🚪 Logout</a>
     <a href="/simulator.html">📱 WhatsApp Simulator</a>
     <a href="/api/health" target="_blank">❤️ Health Check</a>
   </div>
@@ -332,6 +337,23 @@
       <div class="card-body" id="zonesTable"><div class="loading">Loading...</div></div>
     </div>
   </div>
+
+  <!-- ADMIN USERS -->
+  <div class="section" id="section-users">
+    <div class="page-title">Admin Users</div>
+    <div class="page-subtitle">Manage who can sign in to this dashboard</div>
+    <div class="refresh-bar">
+      <button class="btn btn-primary" onclick="showCreateUserModal()">+ Add User</button>
+      <button class="btn btn-secondary" onclick="loadUsers()">🔄 Refresh</button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="title">All Admin Users</span>
+        <span class="count" id="userCount">...</span>
+      </div>
+      <div class="card-body" id="usersTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal -->
@@ -348,6 +370,24 @@
 <script>
 const API = '';
 let autoRefreshInterval = null;
+
+// ── Auth ──
+// Wrap fetch so any 401 from an admin API redirects to the login page.
+const _fetch = window.fetch.bind(window);
+window.fetch = async function(url, opts = {}) {
+  const res = await _fetch(url, { credentials: 'same-origin', ...opts });
+  if (res.status === 401 && typeof url === 'string' && url.includes('/api/admin/')) {
+    window.location.href = '/admin-login.html';
+    // Return a never-resolving promise so callers don't try to parse a body.
+    return new Promise(() => {});
+  }
+  return res;
+};
+
+async function logout() {
+  try { await fetch('/api/admin/logout', { method: 'POST' }); } catch (e) {}
+  window.location.href = '/admin-login.html';
+}
 
 // ── Navigation ──
 function showSection(name) {
@@ -368,6 +408,7 @@ function showSection(name) {
     maintenance: loadMaintenance,
     ledger: loadLedger,
     zones: loadZones,
+    users: loadUsers,
   };
   if (loaders[name]) loaders[name]();
 }
@@ -840,9 +881,136 @@ function toggleAutoRefresh() {
   }
 }
 
-// Init
-loadAll();
-autoRefreshInterval = setInterval(loadAll, 5000);
+// ── Admin Users ──
+let _currentUser = null;
+
+async function loadCurrentUser() {
+  const r = await fetch('/api/admin/me');
+  if (!r.ok) { window.location.href = '/admin-login.html'; return; }
+  const data = await r.json();
+  _currentUser = data.user;
+  document.getElementById('currentUsername').textContent = data.user.username
+    + (data.user.is_superuser ? ' ⭐' : '');
+  // Hide "+ Add User" button from non-superusers (server also enforces this).
+  if (!data.user.is_superuser) {
+    const addBtn = document.querySelector("#section-users .btn-primary");
+    if (addBtn) addBtn.style.display = 'none';
+  }
+}
+
+async function loadUsers() {
+  try {
+    const r = await fetch(`${API}/api/admin/users`);
+    const users = await r.json();
+    document.getElementById('userCount').textContent = `${users.length} users`;
+    if (users.length === 0) {
+      document.getElementById('usersTable').innerHTML = '<div class="empty">No users</div>';
+      return;
+    }
+    const isSU = _currentUser && _currentUser.is_superuser;
+    const rows = users.map(u => {
+      const isSelf = _currentUser && u.id === _currentUser.id;
+      // Reset PW: superuser can reset anyone; non-superusers can only reset themselves.
+      const canResetPW = isSU || isSelf;
+      // Superuser's password can only be reset by themselves.
+      const canResetThis = canResetPW && (!u.is_superuser || isSelf);
+      // Deactivate: superuser only, target must not be superuser, target must be active.
+      const canDeactivate = isSU && !u.is_superuser && u.is_active && !isSelf;
+      return `
+      <tr>
+        <td>
+          <b>${u.username}</b>
+          ${u.is_superuser ? ' <span class="badge badge-teal">⭐ superuser</span>' : ''}
+          ${isSelf ? ' <span class="badge badge-blue">you</span>' : ''}
+        </td>
+        <td><span class="badge ${u.is_active ? 'badge-green' : 'badge-red'}">${u.is_active ? 'active' : 'inactive'}</span></td>
+        <td>${u.created_by_username || '—'}</td>
+        <td>${new Date(u.created_at).toLocaleString()}</td>
+        <td>${u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '—'}</td>
+        <td style="text-align:right;white-space:nowrap">
+          ${canResetThis ? `<button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="resetUserPassword(${u.id}, '${u.username.replace(/'/g,"\\'")}')">Reset PW</button>` : ''}
+          ${canDeactivate ? `<button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;color:#ff7770" onclick="deactivateUser(${u.id}, '${u.username.replace(/'/g,"\\'")}')">Deactivate</button>` : ''}
+        </td>
+      </tr>
+      `;
+    }).join('');
+    document.getElementById('usersTable').innerHTML = `
+      <table>
+        <thead><tr><th>Username</th><th>Status</th><th>Created By</th><th>Created At</th><th>Last Login</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  } catch (err) {
+    document.getElementById('usersTable').innerHTML = `<div class="empty">Error: ${err.message}</div>`;
+  }
+}
+
+function showCreateUserModal() {
+  showModal('Add Admin User', `
+    <form id="createUserForm" onsubmit="submitCreateUser(event)">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;color:#90a4ae;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Username</label>
+        <input name="username" required minlength="3" autofocus
+          style="width:100%;background:#0a1628;border:1px solid #1e3a55;border-radius:6px;padding:10px;color:#fff;font-size:14px">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;color:#90a4ae;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Password (min 6 chars)</label>
+        <input name="password" type="password" required minlength="6"
+          style="width:100%;background:#0a1628;border:1px solid #1e3a55;border-radius:6px;padding:10px;color:#fff;font-size:14px">
+      </div>
+      <button class="btn btn-primary" type="submit" style="width:100%">Create User</button>
+    </form>
+  `);
+}
+
+async function submitCreateUser(e) {
+  e.preventDefault();
+  const form = e.target;
+  const body = {
+    username: form.username.value.trim(),
+    password: form.password.value,
+  };
+  const r = await fetch(`${API}/api/admin/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json();
+  if (!r.ok) { alert(data.error || 'Failed to create user'); return; }
+  hideModal();
+  showToast('User created');
+  loadUsers();
+}
+
+async function deactivateUser(id, username) {
+  if (!confirm(`Deactivate admin user "${username}"? They won't be able to sign in.`)) return;
+  const r = await fetch(`${API}/api/admin/users/${id}/deactivate`, { method: 'POST' });
+  const data = await r.json();
+  if (!r.ok) { alert(data.error || 'Failed'); return; }
+  showToast('User deactivated');
+  loadUsers();
+}
+
+async function resetUserPassword(id, username) {
+  const pw = prompt(`New password for "${username}" (min 6 chars):`);
+  if (!pw) return;
+  if (pw.length < 6) { alert('Password must be ≥6 chars'); return; }
+  const r = await fetch(`${API}/api/admin/users/${id}/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_password: pw }),
+  });
+  const data = await r.json();
+  if (!r.ok) { alert(data.error || 'Failed'); return; }
+  showToast('Password reset');
+}
+
+// Init — gate on auth, then load dashboard
+(async () => {
+  await loadCurrentUser();    // redirects to /admin-login.html if not signed in
+  loadAll();
+  autoRefreshInterval = setInterval(loadAll, 5000);
+})();
 </script>
 </body>
 </html>

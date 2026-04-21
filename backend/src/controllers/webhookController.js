@@ -35,7 +35,7 @@ const referralFlow = require('../services/flows/referralFlow');
 // Customer intents — allowed only on SERVICE line
 const CUSTOMER_INTENTS_RE = /^(SCAN_HELP|SUPPORT_HELP|TRANSFER|INSTALL[_\s])/i;
 // Technician intents — allowed only on TECH line
-const TECH_INTENTS_RE = /^(REGISTER\s+TECH|TECH_JOIN|TECH_PENDING_JOBS|TECH_STATUS|JOB_DETAIL[_\s]|ACCEPT[_\s]|DECLINE[_\s]|ARRIVED[_\s]|APPROVE_TECH[_\s]|REJECT_TECH[_\s]|REFER$|REFER_TECH$|JOIN$|TECH$)/i;
+const TECH_INTENTS_RE = /^(REGISTER\s+TECH|TECH_JOIN|TECH_PENDING_JOBS|JOB_DETAIL[_\s]|ACCEPT[_\s]|DECLINE[_\s]|ARRIVED[_\s]|APPROVE_TECH[_\s]|REJECT_TECH[_\s]|REFER$|REFER_TECH$|JOIN$|TECH$)/i;
 
 /**
  * Send a "wrong number" redirect to the correct line.
@@ -751,13 +751,15 @@ async function handleTechJobDetail(phone, jobId) {
 async function sendMainMenu(phone, isTech, line = 'service') {
   if (line === 'tech') {
     if (isTech) {
-      // Registered technician on the tech line → full portal
+      // Registered technician on the tech line → full portal.
+      // Exactly 3 buttons so WhatsApp renders them as native reply buttons
+      // (4+ buttons collapse into a "Choose an option" list dropdown that
+      // hides the actions until the user taps it).
       await wa.sendButtons(phone,
         `👋 *Knite Technician Portal*\n\nYou'll receive job notifications automatically.\n\nWhat do you need?`,
         [
-          { id: 'TECH_STATUS', title: '📊 My Stats' },
           { id: 'TECH_PENDING_JOBS', title: '🔧 Pending Jobs' },
-          { id: 'REFER_TECH', title: '🤝 Refer a Technician' },
+          { id: 'REFER_TECH', title: '🤝 Refer & Earn' },
           { id: 'HELP', title: '❓ Help' },
         ],
         { line: 'tech' }

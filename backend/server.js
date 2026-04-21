@@ -5,10 +5,13 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 
 const db = require('./src/db');
 const webhook = require('./src/controllers/webhookController');
 const admin = require('./src/controllers/adminController');
+const adminAuth = require('./src/controllers/adminAuthController');
+const { adminAuth: requireAdmin } = require('./src/middleware/adminAuth');
 const wa = require('./src/services/whatsappService');
 const crons = require('./src/jobs/cronJobs');
 const { handleFlowExchange } = require('./src/services/flowExchangeService');
@@ -18,6 +21,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(morgan('dev'));
+app.use(cookieParser());
 
 // ─────────────────────────────────────────────
 // WHATSAPP FLOW DATA EXCHANGE ENDPOINT
@@ -217,8 +221,23 @@ app.get('/api/messages/all/recent', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// ADMIN API ENDPOINTS
+// ADMIN AUTH ENDPOINTS  (public — must come BEFORE the guard)
 // ─────────────────────────────────────────────
+app.post('/api/admin/login', adminAuth.login);
+app.post('/api/admin/logout', adminAuth.logout);
+app.get('/api/admin/me', adminAuth.me);
+
+// ─────────────────────────────────────────────
+// ADMIN API ENDPOINTS  (all /api/admin/* below require auth)
+// ─────────────────────────────────────────────
+app.use('/api/admin', requireAdmin);
+
+// Admin user management
+app.get('/api/admin/users', adminAuth.listUsers);
+app.post('/api/admin/users', adminAuth.createUser);
+app.post('/api/admin/users/:id/deactivate', adminAuth.deactivateUser);
+app.post('/api/admin/users/:id/reset-password', adminAuth.resetPassword);
+
 app.get('/api/admin/stats', admin.getStats);
 app.get('/api/admin/units', admin.getUnits);
 app.get('/api/admin/units/:id', admin.getUnit);
@@ -343,6 +362,9 @@ async function start() {
       await new Promise(r => setTimeout(r, 2000));
     }
   }
+
+  // Seed default admin user if admin_users is empty (idempotent)
+  await adminAuth.ensureDefaultAdmin();
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 Knite Backend running on http://localhost:${PORT}`);

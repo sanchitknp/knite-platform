@@ -780,7 +780,21 @@ async function handleAdminApproval(phone, techId, approved) {
       `🎉 *Congratulations ${tech.name}!*\n\nYour Knite technician account is now *ACTIVE*! ✅\n\n` +
       `You'll start receiving job notifications in your zone.\n\n` +
       `💡 Tips:\n• Accept jobs quickly - first accepted wins!\n` +
-      `• Maintain high ratings for priority job access\n• Typical earnings: ₹700-1,600/day\n\nWelcome to the team! 🔧`,
+      `• Maintain high ratings for priority job access\n• Typical earnings: ₹700-1,600/day\n` +
+      `• 🤝 Refer other technicians and earn ₹50 for every 5 jobs they complete\n\n` +
+      `Welcome to the team! 🔧`,
+      TLINE
+    );
+
+    // Send the full tech portal menu so Refer & Pending Jobs are immediately
+    // visible as reply buttons (no need for the tech to type "Hi" first).
+    await wa.sendButtons(tech.phone,
+      `👋 *Knite Technician Portal*\n\nYou'll receive job notifications automatically.\n\nWhat do you need?`,
+      [
+        { id: 'TECH_PENDING_JOBS', title: '🔧 Pending Jobs' },
+        { id: 'REFER_TECH', title: '🤝 Refer & Earn' },
+        { id: 'HELP', title: '❓ Help' },
+      ],
       TLINE
     );
   } else {
