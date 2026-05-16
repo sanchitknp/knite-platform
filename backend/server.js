@@ -244,6 +244,7 @@ app.get('/api/admin/units/:id', admin.getUnit);
 app.post('/api/admin/units', admin.seedUnit);
 app.get('/api/admin/jobs', admin.getJobs);
 app.get('/api/admin/jobs/:id', admin.getJob);
+app.get('/api/admin/jobs/:id/suggestions', admin.getJobSuggestions);
 app.post('/api/admin/jobs/:id/broadcast', admin.forceBroadcast);
 app.post('/api/admin/jobs/:id/dispute', admin.resolveDispute);
 app.get('/api/admin/technicians', admin.getTechnicians);

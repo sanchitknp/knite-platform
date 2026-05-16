@@ -239,11 +239,92 @@ async function getCustomers(req, res) {
   res.json(result.rows);
 }
 
+// ── RO Service Lead Suggestions for a Job ──
+async function getJobSuggestions(req, res) {
+  const jobResult = await db.query(
+    `SELECT j.*, u.install_address, z.pincodes, z.name as zone_name
+     FROM jobs j
+     LEFT JOIN units u ON u.id = j.unit_id
+     LEFT JOIN zones z ON z.id = j.zone_id
+     WHERE j.id = $1`,
+    [req.params.id]
+  );
+  const job = jobResult.rows[0];
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+
+  // Extract pincode from install_address JSONB
+  const addr = job.install_address || {};
+  const pincode = addr.pincode || null;
+  const zonePincodes = job.pincodes || [];
+
+  let suggestions = [];
+
+  // 1. Exact pincode match
+  if (pincode) {
+    const r = await db.query(
+      `SELECT id, business_name, phone, intl_phone, full_address, city, state,
+              pincode, rating, total_ratings, website, google_maps_link,
+              primary_category, opening_hours, business_status
+       FROM ro_service_leads
+       WHERE pincode = $1 AND business_status = 'OPERATIONAL'
+       ORDER BY rating DESC NULLS LAST, total_ratings DESC NULLS LAST
+       LIMIT 10`,
+      [pincode]
+    );
+    suggestions = r.rows;
+  }
+
+  // 2. Fallback: other pincodes in same zone
+  if (suggestions.length < 5 && zonePincodes.length > 0) {
+    const existingIds = new Set(suggestions.map(s => s.id));
+    const r = await db.query(
+      `SELECT id, business_name, phone, intl_phone, full_address, city, state,
+              pincode, rating, total_ratings, website, google_maps_link,
+              primary_category, opening_hours, business_status
+       FROM ro_service_leads
+       WHERE pincode = ANY($1) AND business_status = 'OPERATIONAL'
+       ORDER BY rating DESC NULLS LAST, total_ratings DESC NULLS LAST
+       LIMIT 15`,
+      [zonePincodes]
+    );
+    r.rows.forEach(row => {
+      if (!existingIds.has(row.id)) suggestions.push(row);
+    });
+  }
+
+  // 3. Fallback: city match from zone name
+  if (suggestions.length < 5 && job.zone_name) {
+    const cityKeyword = job.zone_name.split(' ')[0]; // e.g. "Noida" from "Noida Sector 1-49"
+    const existingIds = new Set(suggestions.map(s => s.id));
+    const r = await db.query(
+      `SELECT id, business_name, phone, intl_phone, full_address, city, state,
+              pincode, rating, total_ratings, website, google_maps_link,
+              primary_category, opening_hours, business_status
+       FROM ro_service_leads
+       WHERE city ILIKE $1 AND business_status = 'OPERATIONAL'
+       ORDER BY rating DESC NULLS LAST, total_ratings DESC NULLS LAST
+       LIMIT 20`,
+      [`%${cityKeyword}%`]
+    );
+    r.rows.forEach(row => {
+      if (!existingIds.has(row.id) && suggestions.length < 15) suggestions.push(row);
+    });
+  }
+
+  res.json({
+    job_id: job.id,
+    pincode,
+    zone_name: job.zone_name,
+    has_technician: !!job.technician_id,
+    suggestions: suggestions.slice(0, 15),
+  });
+}
+
 module.exports = {
   getStats, getUnits, getUnit, seedUnit,
   getJobs, getJob, forceBroadcast, resolveDispute,
   getTechnicians, approveTechnician,
   getZones, getRecentMessages,
   getMaintenanceSchedules, getLedger, markSettled,
-  getCustomers,
+  getCustomers, getJobSuggestions,
 };

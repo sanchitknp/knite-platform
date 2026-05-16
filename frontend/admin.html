@@ -539,8 +539,55 @@ async function loadJobs() {
 }
 
 async function showJobDetail(id) {
-  const r = await fetch(`${API}/api/admin/jobs/${id}`);
-  const j = await r.json();
+  const [jr, sr] = await Promise.all([
+    fetch(`${API}/api/admin/jobs/${id}`),
+    fetch(`${API}/api/admin/jobs/${id}/suggestions`)
+  ]);
+  const j = await jr.json();
+  const suggData = await sr.json().catch(() => ({ suggestions: [] }));
+  const noTech = !j.technician_id;
+  const needsSuggestions = noTech && ['created','scheduled','broadcasting','install_pending','install_dispatched'].includes(j.status);
+
+  const suggestionsHtml = needsSuggestions ? `
+    <div style="margin-bottom:20px;border:1px solid #f59e0b44;border-radius:8px;overflow:hidden">
+      <div style="background:#f59e0b22;padding:10px 14px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px">💡</span>
+        <span style="font-size:12px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.5px">
+          Manual Allotment Suggestions
+        </span>
+        <span style="margin-left:auto;font-size:11px;color:#888">
+          ${suggData.suggestions?.length || 0} leads near ${suggData.pincode || suggData.zone_name || 'zone'}
+        </span>
+      </div>
+      ${!suggData.suggestions?.length ? `
+        <div style="padding:14px;color:#888;font-size:13px;text-align:center">No local RO service leads found for this area</div>
+      ` : `
+        <div style="max-height:320px;overflow-y:auto">
+          ${suggData.suggestions.map(s => `
+            <div style="padding:12px 14px;border-bottom:1px solid #1e3a5a;display:flex;align-items:flex-start;gap:12px">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${s.business_name}">${s.business_name}</div>
+                <div style="font-size:11px;color:#888;margin-top:2px">${s.full_address || '–'}</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap">
+                  ${s.rating ? `<span style="font-size:11px;color:#f59e0b">⭐ ${s.rating} <span style="color:#666">(${s.total_ratings || 0})</span></span>` : ''}
+                  ${s.pincode ? `<span style="font-size:11px;color:#4a6a8c">📍 ${s.pincode}</span>` : ''}
+                  ${s.opening_hours ? `<span style="font-size:10px;color:#4a6a8c" title="${s.opening_hours.replace(/\|/g,'\n')}">🕐 See hours</span>` : ''}
+                  ${s.website ? `<a href="${s.website}" target="_blank" style="font-size:10px;color:#64b5f6;text-decoration:none">🌐 Website</a>` : ''}
+                  ${s.google_maps_link ? `<a href="${s.google_maps_link}" target="_blank" style="font-size:10px;color:#64b5f6;text-decoration:none">🗺 Maps</a>` : ''}
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+                <div style="font-size:13px;font-weight:600;color:#4caf50">${s.intl_phone || s.phone}</div>
+                <button onclick="copyToClipboard('${s.intl_phone || s.phone}')" style="font-size:11px;padding:4px 10px;background:#1e3a5a;border:1px solid #2a4a6a;border-radius:4px;color:#e0e0e0;cursor:pointer">📋 Copy</button>
+                <a href="https://wa.me/${(s.intl_phone||s.phone).replace(/[^0-9]/g,'')}" target="_blank" style="font-size:11px;padding:4px 10px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:4px;color:#4caf50;cursor:pointer;text-decoration:none;text-align:center">💬 WhatsApp</a>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+  ` : '';
+
   showModal('Job: ' + j.type + ' · ' + j.unit_code, `
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
       <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Status</label><div style="margin-top:4px">${statusBadge(j.status)}</div></div>
@@ -551,6 +598,7 @@ async function showJobDetail(id) {
       <div><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Warranty</label><div style="margin-top:4px">${j.is_warranty ? '<span class="badge badge-green">Yes</span>' : '<span class="badge badge-red">No</span>'}</div></div>
     </div>
     <div style="margin-bottom:16px"><label style="font-size:11px;color:#64b5f6;text-transform:uppercase">Proof Photos</label><pre style="margin-top:8px">${JSON.stringify(j.proof_photos, null, 2)}</pre></div>
+    ${suggestionsHtml}
     <div style="margin-bottom:16px"><label style="font-size:12px;color:#64b5f6;font-weight:600">Broadcasts (${(j.broadcasts||[]).length})</label>
     <table style="margin-top:8px"><thead><tr><th>Tech</th><th>Phone</th><th>Status</th><th>Sent At</th></tr></thead>
     <tbody>${(j.broadcasts||[]).map(b => `<tr><td>${b.name}</td><td>${b.phone}</td><td>${statusBadge(b.status)}</td><td>${new Date(b.sent_at).toLocaleTimeString()}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#4a6a8c;text-align:center">None</td></tr>'}</tbody></table></div>
@@ -559,6 +607,10 @@ async function showJobDetail(id) {
       ${(j.events||[]).map(e => `<div class="timeline-item"><div class="time">${new Date(e.created_at).toLocaleString()}</div><div class="event">${e.type} · ${e.from_status||'–'} → ${e.to_status||'–'}</div><div class="meta">Actor: ${e.actor_type}</div></div>`).join('')||'<div style="color:#4a6a8c;font-size:13px">No events</div>'}
     </div></div>
   `);
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Copied: ' + text));
 }
 
 async function forceBroadcast(jobId) {
