@@ -79,12 +79,18 @@ async function getJobs(req, res) {
 
 async function getJob(req, res) {
   const job = await db.query(
-    `SELECT j.*, u.unit_id as unit_code, c.phone as customer_phone,
-            t.name as tech_name, t.phone as tech_phone
+    `SELECT j.*, u.unit_id as unit_code, u.model as unit_model,
+            u.install_address->>'raw'      as install_address_raw,
+            u.install_address->>'pincode'  as install_pincode,
+            u.install_address->>'zone_name' as install_zone,
+            c.phone as customer_phone, c.name as customer_name,
+            t.name as tech_name, t.phone as tech_phone,
+            z.name as zone_name
      FROM jobs j
      LEFT JOIN units u ON u.id = j.unit_id
      LEFT JOIN customers c ON c.id = j.customer_id
      LEFT JOIN technicians t ON t.id = j.technician_id
+     LEFT JOIN zones z ON z.id = j.zone_id
      WHERE j.id = $1`,
     [req.params.id]
   );
@@ -264,7 +270,8 @@ async function getJobSuggestions(req, res) {
     const r = await db.query(
       `SELECT id, business_name, phone, intl_phone, full_address, city, state,
               pincode, rating, total_ratings, website, google_maps_link,
-              primary_category, opening_hours, business_status
+              primary_category, opening_hours, business_status,
+              whether_contacted, remark
        FROM ro_service_leads
        WHERE pincode = $1 AND business_status = 'OPERATIONAL'
        ORDER BY rating DESC NULLS LAST, total_ratings DESC NULLS LAST
@@ -320,11 +327,110 @@ async function getJobSuggestions(req, res) {
   });
 }
 
+// ── Send Manual Allotment Offer to a Lead via WhatsApp ──
+async function sendManualOffer(req, res) {
+  const { lead_phone, lead_name } = req.body;
+  if (!lead_phone) return res.status(400).json({ error: 'lead_phone required' });
+
+  // Fetch full job + customer + unit details
+  const jobResult = await db.query(
+    `SELECT j.*, u.unit_id as unit_code, u.model as unit_model,
+            u.install_address->>'raw'       as install_address_raw,
+            u.install_address->>'pincode'   as install_pincode,
+            u.install_address->>'zone_name' as install_zone,
+            c.phone as customer_phone, c.name as customer_name,
+            z.name as zone_name
+     FROM jobs j
+     LEFT JOIN units u ON u.id = j.unit_id
+     LEFT JOIN customers c ON c.id = j.customer_id
+     LEFT JOIN zones z ON z.id = j.zone_id
+     WHERE j.id = $1`,
+    [req.params.id]
+  );
+  const job = jobResult.rows[0];
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+
+  // Cancel any previous pending offer to this lead for this job
+  await db.query(
+    `UPDATE manual_allotment_offers SET status='cancelled'
+     WHERE job_id=$1 AND lead_phone=$2 AND status='pending'`,
+    [job.id, lead_phone]
+  );
+
+  // Record new offer
+  const offerResult = await db.query(
+    `INSERT INTO manual_allotment_offers (job_id, lead_phone, lead_name, status)
+     VALUES ($1,$2,$3,'pending') RETURNING id`,
+    [job.id, lead_phone, lead_name || null]
+  );
+  const offerId = offerResult.rows[0].id;
+
+  // Build WhatsApp message
+  const jobType  = job.type === 'install' ? 'Installation' : job.type === 'maintenance' ? 'Filter Maintenance' : 'Repair';
+  const address  = job.install_address_raw || job.install_zone || job.zone_name || 'Address shared on acceptance';
+  const pincode  = job.install_pincode || '–';
+  const payout   = Math.round((job.payout_paise || 40000) / 100);
+
+  const msgBody =
+    `🔧 *New Job Offer — Knite RO Services*\n\n` +
+    `We have a customer needing *${jobType}* for their RO water purifier.\n\n` +
+    `📍 *Area:* ${address}\n` +
+    `📮 *Pincode:* ${pincode}\n` +
+    `💰 *Payout:* ₹${payout} on completion\n\n` +
+    `Tap a button below to respond.\n` +
+    `_(Offer ID: ${offerId.slice(0,8).toUpperCase()})_`;
+
+  // Normalise phone — strip non-digits, ensure 91 prefix for India
+  const rawPhone  = lead_phone.replace(/[^0-9]/g, '');
+  const normPhone = rawPhone.startsWith('91') ? rawPhone : `91${rawPhone}`;
+
+  const waMsgId = await wa.sendButtons(normPhone, msgBody, [
+    { id: 'YES', title: '✅ Accept Job' },
+    { id: 'NO',  title: '❌ Decline'   },
+  ], { line: 'tech' });
+
+  // Store the WhatsApp message ID so we can track delivery failures (e.g. 131047)
+  if (waMsgId) {
+    await db.query(
+      `UPDATE manual_allotment_offers SET wa_message_id=$1 WHERE id=$2`,
+      [waMsgId, offerId]
+    );
+  }
+
+  res.json({ ok: true, offer_id: offerId, sent_to: normPhone });
+}
+
+// ── Update whether_contacted / remark on a lead ──
+async function updateLeadContact(req, res) {
+  const { id } = req.params;
+  const { whether_contacted, remark } = req.body;
+  const fields = [];
+  const vals = [];
+  if (whether_contacted !== undefined) { fields.push(`whether_contacted=$${fields.length+1}`); vals.push(whether_contacted); }
+  if (remark !== undefined)            { fields.push(`remark=$${fields.length+1}`);            vals.push(remark); }
+  if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+  vals.push(id);
+  await db.query(
+    `UPDATE ro_service_leads SET ${fields.join(',')} WHERE id=$${vals.length} RETURNING id, whether_contacted, remark`,
+    vals
+  );
+  res.json({ ok: true });
+}
+
+// ── Get all offers for a job ──
+async function getJobOffers(req, res) {
+  const r = await db.query(
+    `SELECT * FROM manual_allotment_offers WHERE job_id=$1 ORDER BY created_at DESC`,
+    [req.params.id]
+  );
+  res.json(r.rows);
+}
+
 module.exports = {
   getStats, getUnits, getUnit, seedUnit,
   getJobs, getJob, forceBroadcast, resolveDispute,
   getTechnicians, approveTechnician,
   getZones, getRecentMessages,
   getMaintenanceSchedules, getLedger, markSettled,
-  getCustomers, getJobSuggestions,
+  getCustomers, getJobSuggestions, sendManualOffer, getJobOffers, updateLeadContact,
 };

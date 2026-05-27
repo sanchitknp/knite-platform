@@ -1,0 +1,8 @@
+# robots.txt for Knite RO Water Purifiers
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://knite.in/sitemap.xml

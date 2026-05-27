@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140" fill="none">
+  <!-- Yellow rounded background -->
+  <rect width="200" height="140" rx="18" fill="#fbd521"/>
+
+  <!-- Motion / speed lines on the left -->
+  <rect x="22" y="58" width="22" height="7" rx="3.5" fill="#2874f0"/>
+  <rect x="14" y="72" width="46" height="9" rx="4.5" fill="#2874f0"/>
+  <rect x="26" y="88" width="32" height="7" rx="3.5" fill="#2874f0"/>
+
+  <!-- Stylized "f" -->
+  <!-- Curved leaf top -->
+  <path d="M120 20
+           C 150 20, 168 38, 168 60
+           L 118 60
+           Z"
+        fill="#2874f0"/>
+  <!-- Vertical stem -->
+  <rect x="108" y="40" width="28" height="95" rx="2" fill="#2874f0"/>
+  <!-- Horizontal crossbar -->
+  <rect x="68" y="72" width="68" height="14" rx="2" fill="#2874f0"/>
+</svg>

@@ -173,11 +173,102 @@ app.post('/webhook', async (req, res) => {
     // Handle message status updates (delivered, read, failed)
     if (entry.statuses && entry.statuses.length > 0) {
       const status = entry.statuses[0];
-      console.log(`[WEBHOOK STATUS] msgId=${status.id} status=${status.status} to=${status.recipient_id}`);
+      const errInfo = status.errors?.length
+        ? ` errors=${JSON.stringify(status.errors)}`
+        : '';
+      console.log(`[WEBHOOK STATUS] msgId=${status.id} status=${status.status} to=${status.recipient_id}${errInfo}`);
+
+      // Any delivery failure — mark the offer with the exact Meta error
+      if (status.status === 'failed' && status.errors?.length) {
+        try {
+          const metaErr = status.errors[0];
+          const code = metaErr.code;
+          const detail = metaErr.error_data?.details || metaErr.message || metaErr.title || 'Unknown delivery error';
+          const failureReason = `[Meta error ${code}] ${detail}`;
+          const newStatus = code === 131047 ? 'window_expired' : 'delivery_failed';
+
+          const updated = await db.query(
+            `UPDATE manual_allotment_offers
+             SET status=$1, failure_reason=$2
+             WHERE wa_message_id=$3 AND status='pending'
+             RETURNING id`,
+            [newStatus, failureReason, status.id]
+          );
+          if (updated.rowCount > 0) {
+            console.log(`[MANUAL ALLOTMENT] Offer msgId=${status.id} → ${newStatus}: ${failureReason}`);
+          }
+        } catch (e) {
+          console.error('[MANUAL ALLOTMENT] Failed to update offer status:', e.message);
+        }
+      }
     }
   } catch (err) {
     console.error('[WEBHOOK] Processing error:', err.message);
   }
+});
+
+// ─────────────────────────────────────────────
+// WEBSITE PUBLIC ENDPOINTS  (no auth required)
+// ─────────────────────────────────────────────
+
+/**
+ * POST /api/website/lead — Submit feedback / enquiry form from the website
+ */
+app.post('/api/website/lead', async (req, res) => {
+  const { name, phone, email, enquiry_type, city, rating, message } = req.body;
+
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+  if (!phone || !phone.trim()) return res.status(400).json({ error: 'Phone is required' });
+  if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required' });
+
+  // Normalise phone — strip spaces/dashes/+
+  const normPhone = phone.replace(/[^0-9]/g, '');
+
+  const result = await db.query(
+    `INSERT INTO website_leads (name, phone, email, enquiry_type, city, rating, message, source)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'website')
+     RETURNING id, created_at`,
+    [
+      name.trim(),
+      normPhone,
+      email?.trim() || null,
+      enquiry_type?.trim() || null,
+      city?.trim() || null,
+      rating ? parseInt(rating) : null,
+      message.trim(),
+    ]
+  );
+
+  const lead = result.rows[0];
+  console.log(`[WEBSITE LEAD] id=${lead.id} name=${name} phone=${normPhone} type=${enquiry_type || '–'}`);
+
+  res.json({ ok: true, id: lead.id });
+});
+
+/**
+ * GET /api/admin/website-leads — View all website enquiries (admin only)
+ */
+app.get('/api/admin/website-leads', requireAdmin, async (req, res) => {
+  const { status, limit = 100 } = req.query;
+  const where = status ? `WHERE status = $1` : '';
+  const params = status ? [status] : [];
+  const r = await db.query(
+    `SELECT * FROM website_leads ${where} ORDER BY created_at DESC LIMIT ${parseInt(limit)}`,
+    params
+  );
+  res.json(r.rows);
+});
+
+/**
+ * PATCH /api/admin/website-leads/:id — Update lead status (new → contacted → converted)
+ */
+app.patch('/api/admin/website-leads/:id', requireAdmin, async (req, res) => {
+  const { status, notes } = req.body;
+  await db.query(
+    `UPDATE website_leads SET status = COALESCE($1, status), notes = COALESCE($2, notes) WHERE id = $3`,
+    [status || null, notes || null, req.params.id]
+  );
+  res.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────
@@ -245,6 +336,9 @@ app.post('/api/admin/units', admin.seedUnit);
 app.get('/api/admin/jobs', admin.getJobs);
 app.get('/api/admin/jobs/:id', admin.getJob);
 app.get('/api/admin/jobs/:id/suggestions', admin.getJobSuggestions);
+app.post('/api/admin/jobs/:id/send-offer', admin.sendManualOffer);
+app.get('/api/admin/jobs/:id/offers', admin.getJobOffers);
+app.patch('/api/admin/leads/:id', admin.updateLeadContact);
 app.post('/api/admin/jobs/:id/broadcast', admin.forceBroadcast);
 app.post('/api/admin/jobs/:id/dispute', admin.resolveDispute);
 app.get('/api/admin/technicians', admin.getTechnicians);

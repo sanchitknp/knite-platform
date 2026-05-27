@@ -148,9 +148,10 @@ async function sendButtons(toPhone, body, buttons, opts = {}) {
   console.log(`[WA→${toPhone}] from=${fromPhoneId} BUTTONS(${buttons.length}): ${body.substring(0, 60)}`);
 
   if (MODE === 'production') {
+    let result;
     if (buttons.length <= 3) {
       // Use WhatsApp interactive reply buttons
-      await callMetaAPI({
+      result = await callMetaAPI({
         to: toPhone,
         type: 'interactive',
         interactive: {
@@ -169,7 +170,7 @@ async function sendButtons(toPhone, body, buttons, opts = {}) {
       }, fromPhoneId);
     } else if (buttons.length <= 10) {
       // 4–10 buttons: use WhatsApp interactive list message (dropdown)
-      await callMetaAPI({
+      result = await callMetaAPI({
         to: toPhone,
         type: 'interactive',
         interactive: {
@@ -189,14 +190,17 @@ async function sendButtons(toPhone, body, buttons, opts = {}) {
     } else {
       // > 10 buttons: plain numbered text (last resort)
       const lines = buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
-      await callMetaAPI({
+      result = await callMetaAPI({
         to: toPhone,
         type: 'text',
         text: { body: `${body}\n\n${lines}\n\nReply with a number.` },
       }, fromPhoneId);
     }
+    // Return the WhatsApp message ID so callers can track delivery
+    return result?.messages?.[0]?.id || null;
   } else {
     await queueSimulator(toPhone, 'buttons', body, buttons);
+    return null;
   }
 }
 

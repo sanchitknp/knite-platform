@@ -97,6 +97,13 @@ async function handleMessage(phone, text, mediaUrl = null, flowData = null, loca
     return;
   }
 
+  // ── Manual allotment offer: YES / NO from external RO service leads ──
+  if (upper === 'YES' || upper === 'NO') {
+    const handled = await handleManualOfferReply(phone, upper === 'YES', line);
+    if (handled) return;
+    // If no pending offer found, fall through to normal flow
+  }
+
   // ACCEPT job
   const acceptMatch = upper.match(/ACCEPT[_\s]([A-F0-9-]{36})/i) ||
     (upper.startsWith('ACCEPT_') && upper.substring(7).match(/[A-F0-9-]{36}/i));
@@ -738,6 +745,127 @@ async function handleTechJobDetail(phone, jobId) {
     await wa.sendLocation(phone, address.location.latitude, address.location.longitude,
       address.raw || 'Installation Location', address.full_address || '', { line: 'tech' });
   }
+}
+
+/**
+ * Handle YES/NO reply from an external RO service lead
+ * who was sent a manual allotment offer.
+ * Returns true if a pending offer was found and handled, false otherwise.
+ */
+async function handleManualOfferReply(phone, accepted, line) {
+  // Normalise — strip + and spaces
+  const normPhone = phone.replace(/[^0-9]/g, '');
+
+  // Find the most recent pending offer for this phone
+  const offerResult = await db.query(
+    `SELECT o.*, j.unit_id, j.customer_id, j.payout_paise, j.type,
+            u.unit_id as unit_code, u.model as unit_model,
+            u.install_address->>'raw'      as install_address_raw,
+            u.install_address->>'pincode'  as install_pincode,
+            (u.install_address->>'lat')::float  as install_lat,
+            (u.install_address->>'lng')::float  as install_lng,
+            c.phone as customer_phone, c.name as customer_name,
+            z.name as zone_name
+     FROM manual_allotment_offers o
+     JOIN jobs j     ON j.id = o.job_id
+     JOIN units u    ON u.id = j.unit_id
+     JOIN customers c ON c.id = j.customer_id
+     LEFT JOIN zones z ON z.id = j.zone_id
+     WHERE o.lead_phone = $1 AND o.status = 'pending'
+     ORDER BY o.created_at DESC
+     LIMIT 1`,
+    [normPhone]
+  );
+
+  const offer = offerResult.rows[0];
+  if (!offer) return false; // no pending offer → fall through to normal flow
+
+  if (!accepted) {
+    // Lead declined
+    await db.query(
+      `UPDATE manual_allotment_offers SET status='declined', responded_at=now() WHERE id=$1`,
+      [offer.id]
+    );
+    await wa.sendText(phone,
+      `Thanks for letting us know! We'll find another technician for this job.\n\n— Knite Support Team`,
+      { line: 'tech' }
+    );
+    return true;
+  }
+
+  // ── Lead accepted ──
+
+  // Check if job already assigned (another lead accepted faster)
+  const jobCheck = await db.query(`SELECT status, technician_id FROM jobs WHERE id=$1`, [offer.job_id]);
+  const currentJob = jobCheck.rows[0];
+  if (currentJob?.technician_id || !['broadcasting','scheduled','created','install_pending','install_dispatched'].includes(currentJob?.status)) {
+    await db.query(
+      `UPDATE manual_allotment_offers SET status='cancelled', responded_at=now() WHERE id=$1`,
+      [offer.id]
+    );
+    await wa.sendText(phone,
+      `Sorry, this job has already been assigned to someone else. We'll send you the next available job!\n\n— Knite Support Team`,
+      { line: 'tech' }
+    );
+    return true;
+  }
+
+  // Mark offer accepted, cancel all other pending offers for same job
+  await db.query(
+    `UPDATE manual_allotment_offers SET status='accepted', responded_at=now() WHERE id=$1`,
+    [offer.id]
+  );
+  await db.query(
+    `UPDATE manual_allotment_offers SET status='cancelled', responded_at=now()
+     WHERE job_id=$1 AND id!=$2 AND status='pending'`,
+    [offer.job_id, offer.id]
+  );
+
+  const payout    = Math.round((offer.payout_paise || 40000) / 100);
+  const jobType   = offer.type === 'install' ? 'Installation' : offer.type === 'maintenance' ? 'Filter Maintenance' : 'Repair';
+  const address   = offer.install_address_raw || offer.zone_name || '–';
+  const leadName  = offer.lead_name || 'Service Partner';
+
+  // ── Send full job details to the lead ──
+  await wa.sendText(phone,
+    `✅ *Job Confirmed!*\n\n` +
+    `Thank you for accepting. Here are the full details:\n\n` +
+    `🔧 *Service:* ${jobType}\n` +
+    `📦 *Unit:* ${offer.unit_code} (${offer.unit_model || 'Knite RO'})\n` +
+    `🏠 *Address:* ${address}\n` +
+    `📮 *Pincode:* ${offer.install_pincode || '–'}\n` +
+    `📞 *Customer:* ${offer.customer_name || 'Customer'} — *${offer.customer_phone}*\n` +
+    `💰 *Your Payout:* ₹${payout} on completion\n\n` +
+    `Please contact the customer to confirm a visit time.\n\n` +
+    `— Knite Support Team`,
+    { line: 'tech' }
+  );
+
+  // ── Send location pin if coordinates are available ──
+  if (offer.install_lat && offer.install_lng) {
+    await wa.sendLocation(
+      phone,
+      offer.install_lat,
+      offer.install_lng,
+      offer.customer_name ? `${offer.customer_name}'s location` : 'Installation Location',
+      address,
+      { line: 'tech' }
+    );
+  }
+
+  // ── Notify the customer with lead's contact only ──
+  const leadContactNum = offer.lead_phone.startsWith('91') ? '+' + offer.lead_phone : '+91' + offer.lead_phone;
+  await wa.sendText(offer.customer_phone,
+    `👨‍🔧 *Service Partner Assigned!*\n\n` +
+    `We've found a service partner for your *${jobType}*.\n\n` +
+    `📞 *Contact:* ${leadContactNum}\n\n` +
+    `They will contact you shortly to schedule the visit.\n\n` +
+    `— Knite Support Team`,
+    { line: 'service' }
+  );
+
+  console.log(`[MANUAL ALLOTMENT] Job ${offer.job_id} accepted by lead ${phone}`);
+  return true;
 }
 
 /**

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Knite – Admin Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -192,6 +193,7 @@
     <div class="nav-item" onclick="showSection('maintenance')"><span class="icon">🔄</span> Maintenance</div>
     <div class="nav-item" onclick="showSection('ledger')"><span class="icon">💰</span> Ledger</div>
     <div class="nav-item" onclick="showSection('zones')"><span class="icon">🗺️</span> Zones</div>
+    <div class="nav-item" onclick="showSection('website-leads')"><span class="icon">🌐</span> Website Leads</div>
     <div class="nav-item" onclick="showSection('users')"><span class="icon">🔐</span> Admin Users</div>
   </nav>
   <div class="sidebar-footer">
@@ -281,6 +283,26 @@
         <span class="count" id="techCount">...</span>
       </div>
       <div class="card-body" id="techsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- WEBSITE LEADS -->
+  <div class="section" id="section-website-leads">
+    <div class="page-title">Website Leads</div>
+    <div class="page-subtitle">Enquiries and feedback submitted via the Knite website</div>
+    <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="loadWebsiteLeads()">🔄 Refresh</button>
+      <select id="wl-filter" onchange="loadWebsiteLeads()" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+        <option value="">All Statuses</option>
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="converted">Converted</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title" id="wl-count">Website Leads</span></div>
+      <div class="card-body" id="websiteLeadsTable"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
@@ -409,6 +431,7 @@ function showSection(name) {
     ledger: loadLedger,
     zones: loadZones,
     users: loadUsers,
+    'website-leads': loadWebsiteLeads,
   };
   if (loaders[name]) loaders[name]();
 }
@@ -548,6 +571,29 @@ async function showJobDetail(id) {
   const noTech = !j.technician_id;
   const needsSuggestions = noTech && ['created','scheduled','broadcasting','install_pending','install_dispatched'].includes(j.status);
 
+  // Build pre-filled WhatsApp message with full job context
+  const jobType = j.type === 'install' ? 'Installation' : j.type === 'maintenance' ? 'Maintenance' : 'Repair';
+  const address = j.install_address_raw || j.install_zone || suggData.zone_name || '–';
+  const pincode = j.install_pincode || suggData.pincode || '–';
+  const customerPhone = j.customer_phone || '–';
+  const unitCode = j.unit_code || '–';
+  const unitModel = j.unit_model || 'Knite RO';
+  const waMessage = encodeURIComponent(
+`Hello,
+
+We have a customer who needs *${jobType}* service for their RO water purifier. Requesting your assistance for manual allotment.
+
+📦 *Unit:* ${unitCode} (${unitModel})
+🔧 *Service Type:* ${jobType}
+📍 *Address:* ${address}
+📮 *Pincode:* ${pincode}
+📞 *Customer Mobile:* ${customerPhone}
+
+Payout: ₹${Math.round((j.payout_paise||40000)/100)} on completion.
+
+Please confirm if you can take this job. Thank you!
+— Knite Support Team`);
+
   const suggestionsHtml = needsSuggestions ? `
     <div style="margin-bottom:20px;border:1px solid #f59e0b44;border-radius:8px;overflow:hidden">
       <div style="background:#f59e0b22;padding:10px 14px;display:flex;align-items:center;gap:8px">
@@ -556,33 +602,52 @@ async function showJobDetail(id) {
           Manual Allotment Suggestions
         </span>
         <span style="margin-left:auto;font-size:11px;color:#888">
-          ${suggData.suggestions?.length || 0} leads near ${suggData.pincode || suggData.zone_name || 'zone'}
+          ${suggData.suggestions?.length || 0} leads near ${pincode !== '–' ? pincode : (suggData.zone_name || 'zone')}
         </span>
       </div>
       ${!suggData.suggestions?.length ? `
         <div style="padding:14px;color:#888;font-size:13px;text-align:center">No local RO service leads found for this area</div>
       ` : `
-        <div style="max-height:320px;overflow-y:auto">
-          ${suggData.suggestions.map(s => `
-            <div style="padding:12px 14px;border-bottom:1px solid #1e3a5a;display:flex;align-items:flex-start;gap:12px">
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:600;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${s.business_name}">${s.business_name}</div>
-                <div style="font-size:11px;color:#888;margin-top:2px">${s.full_address || '–'}</div>
-                <div style="display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap">
-                  ${s.rating ? `<span style="font-size:11px;color:#f59e0b">⭐ ${s.rating} <span style="color:#666">(${s.total_ratings || 0})</span></span>` : ''}
-                  ${s.pincode ? `<span style="font-size:11px;color:#4a6a8c">📍 ${s.pincode}</span>` : ''}
-                  ${s.opening_hours ? `<span style="font-size:10px;color:#4a6a8c" title="${s.opening_hours.replace(/\|/g,'\n')}">🕐 See hours</span>` : ''}
-                  ${s.website ? `<a href="${s.website}" target="_blank" style="font-size:10px;color:#64b5f6;text-decoration:none">🌐 Website</a>` : ''}
-                  ${s.google_maps_link ? `<a href="${s.google_maps_link}" target="_blank" style="font-size:10px;color:#64b5f6;text-decoration:none">🗺 Maps</a>` : ''}
+        <div style="max-height:380px;overflow-y:auto">
+          ${suggData.suggestions.map(s => {
+            const normPhone = (s.intl_phone||s.phone).replace(/[^0-9]/g,'');
+            const safeLeadId = s.id;
+            return `
+            <div style="padding:12px 14px;border-bottom:1px solid #1e3a5a">
+              <div style="display:flex;align-items:flex-start;gap:12px">
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <div style="font-size:13px;font-weight:600;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${s.business_name}">${s.business_name}</div>
+                    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:${s.whether_contacted ? '#4caf50' : '#888'};white-space:nowrap">
+                      <input type="checkbox" ${s.whether_contacted ? 'checked' : ''} onchange="updateLead(${safeLeadId},{whether_contacted:this.checked},this)" style="accent-color:#4caf50;cursor:pointer">
+                      Contacted
+                    </label>
+                  </div>
+                  <div style="font-size:11px;color:#888;margin-top:2px">${s.full_address || '–'}</div>
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap">
+                    ${s.rating ? `<span style="font-size:11px;color:#f59e0b">⭐ ${s.rating} <span style="color:#666">(${s.total_ratings || 0})</span></span>` : ''}
+                    ${s.pincode ? `<span style="font-size:11px;color:#4a6a8c">📍 ${s.pincode}</span>` : ''}
+                    ${s.opening_hours ? `<span style="font-size:10px;color:#4a6a8c" title="${s.opening_hours.replace(/\|/g,'\n')}">🕐 See hours</span>` : ''}
+                    ${s.website ? `<a href="${s.website}" target="_blank" style="font-size:10px;color:#64b5f6;text-decoration:none">🌐 Website</a>` : ''}
+                    ${s.google_maps_link ? `<a href="${s.google_maps_link}" target="_blank" style="font-size:10px;color:#64b5f6;text-decoration:none">🗺 Maps</a>` : ''}
+                  </div>
+                  <div style="margin-top:7px;display:flex;align-items:center;gap:6px">
+                    <input type="text" placeholder="Add remark…" value="${s.remark ? s.remark.replace(/"/g,'&quot;') : ''}"
+                      id="remark-${safeLeadId}"
+                      onblur="saveRemark(${safeLeadId})"
+                      onkeydown="if(event.key==='Enter'){this.blur()}"
+                      style="flex:1;font-size:11px;padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:4px;color:#e0e0e0;outline:none">
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;max-width:160px">
+                  <div style="font-size:13px;font-weight:600;color:#4caf50">${s.intl_phone || s.phone}</div>
+                  <button onclick="copyToClipboard('${s.intl_phone || s.phone}')" style="font-size:11px;padding:4px 10px;background:#1e3a5a;border:1px solid #2a4a6a;border-radius:4px;color:#e0e0e0;cursor:pointer">📋 Copy</button>
+                  <button onclick="sendJobOffer('${id}','${normPhone}','${s.business_name.replace(/'/g,"&#39;")}')" id="offer-btn-${normPhone}" style="font-size:11px;padding:4px 10px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:4px;color:#4caf50;cursor:pointer;text-align:center">📨 Send Offer</button>
+                  <div id="offer-err-${normPhone}" style="display:none;font-size:10px;color:#ef4444;line-height:1.4;word-break:break-word"></div>
                 </div>
               </div>
-              <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-                <div style="font-size:13px;font-weight:600;color:#4caf50">${s.intl_phone || s.phone}</div>
-                <button onclick="copyToClipboard('${s.intl_phone || s.phone}')" style="font-size:11px;padding:4px 10px;background:#1e3a5a;border:1px solid #2a4a6a;border-radius:4px;color:#e0e0e0;cursor:pointer">📋 Copy</button>
-                <a href="https://wa.me/${(s.intl_phone||s.phone).replace(/[^0-9]/g,'')}" target="_blank" style="font-size:11px;padding:4px 10px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:4px;color:#4caf50;cursor:pointer;text-decoration:none;text-align:center">💬 WhatsApp</a>
-              </div>
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
       `}
     </div>
@@ -609,8 +674,87 @@ async function showJobDetail(id) {
   `);
 }
 
+async function updateLead(leadId, fields, triggerEl) {
+  try {
+    const r = await fetch(`${API}/api/admin/leads/${leadId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields)
+    });
+    if (!r.ok) throw new Error('Save failed');
+    if (triggerEl && fields.whether_contacted !== undefined) {
+      triggerEl.parentElement.style.color = fields.whether_contacted ? '#4caf50' : '#888';
+    }
+    showToast(fields.whether_contacted !== undefined
+      ? (fields.whether_contacted ? '✅ Marked as contacted' : 'Marked as not contacted')
+      : '✅ Remark saved');
+  } catch (e) {
+    showToast('❌ ' + e.message);
+  }
+}
+
+async function saveRemark(leadId) {
+  const input = document.getElementById('remark-' + leadId);
+  if (!input) return;
+  await updateLead(leadId, { remark: input.value.trim() || null });
+}
+
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => showToast('📋 Copied: ' + text));
+}
+
+async function sendJobOffer(jobId, leadPhone, leadName) {
+  const btn = document.getElementById('offer-btn-' + leadPhone);
+  const errEl = document.getElementById('offer-err-' + leadPhone);
+  const showErr = (msg) => {
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+  };
+  const clearErr = () => { if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; } };
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Sending...'; }
+  clearErr();
+
+  try {
+    const r = await fetch(`${API}/api/admin/jobs/${jobId}/send-offer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_phone: leadPhone, lead_name: leadName })
+    });
+    const data = await r.json();
+    if (r.ok && data.ok) {
+      if (btn) { btn.textContent = '⏳ Awaiting delivery...'; btn.style.color = '#f59e0b'; btn.style.borderColor = '#f59e0b'; }
+      // Poll after 6s to check actual delivery status from Meta webhook
+      setTimeout(async () => {
+        try {
+          const offersR = await fetch(`${API}/api/admin/jobs/${jobId}/offers`);
+          const offers = await offersR.json();
+          const latest = offers.find(o => o.lead_phone === leadPhone || o.lead_phone === leadPhone.replace(/^91/,''));
+          if (latest?.status === 'window_expired') {
+            const reason = latest.failure_reason || 'Message not delivered — lead must message +919196068335 first to open WhatsApp window';
+            if (btn) {
+              btn.textContent = '⚠️ Not delivered — Retry';
+              btn.style.color = '#ef4444'; btn.style.borderColor = '#ef4444';
+              btn.disabled = false;
+            }
+            showErr('❌ ' + reason);
+            showToast('⚠️ Delivery failed for ' + leadName + ': ' + reason);
+          } else if (latest?.status === 'pending') {
+            if (btn) { btn.textContent = '✅ Delivered'; btn.style.color = '#4caf50'; btn.style.borderColor = '#4caf50'; }
+            showToast('✅ Offer delivered to ' + leadName);
+          }
+        } catch (_) {}
+      }, 6000);
+    } else {
+      const errMsg = data.error || 'Unknown error';
+      if (btn) { btn.disabled = false; btn.textContent = '📨 Send Offer'; }
+      showErr('❌ ' + errMsg);
+      showToast('❌ Failed to send offer: ' + errMsg);
+    }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '📨 Send Offer'; }
+    showErr('❌ Network error: ' + e.message);
+    showToast('❌ Network error');
+  }
 }
 
 async function forceBroadcast(jobId) {
@@ -1055,6 +1199,64 @@ async function resetUserPassword(id, username) {
   const data = await r.json();
   if (!r.ok) { alert(data.error || 'Failed'); return; }
   showToast('Password reset');
+}
+
+// ── Website Leads ──
+const WL_STATUS_COLORS = { new: '#f59e0b', contacted: '#3b82f6', converted: '#10b981', closed: '#6b7280' };
+
+async function loadWebsiteLeads() {
+  const status = document.getElementById('wl-filter')?.value || '';
+  const url = `${API}/api/admin/website-leads${status ? '?status=' + status : ''}`;
+  try {
+    const leads = await fetch(url).then(r => r.json());
+    document.getElementById('wl-count').textContent = `Website Leads (${leads.length})`;
+    if (!leads.length) {
+      document.getElementById('websiteLeadsTable').innerHTML = `<div class="loading" style="color:#4a6a8c">No leads found</div>`;
+      return;
+    }
+    document.getElementById('websiteLeadsTable').innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Name</th><th>Phone</th><th>Email</th><th>Type</th><th>City</th><th>Rating</th><th>Message</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          ${leads.map(l => `
+            <tr>
+              <td style="white-space:nowrap;font-size:11px;color:#888">${new Date(l.created_at).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+              <td style="font-weight:600">${l.name}</td>
+              <td><a href="tel:+${l.phone}" style="color:#4caf50">+${l.phone}</a></td>
+              <td style="font-size:12px;color:#888">${l.email || '–'}</td>
+              <td style="font-size:12px">${l.enquiry_type || '–'}</td>
+              <td style="font-size:12px">${l.city || '–'}</td>
+              <td style="color:#f59e0b">${l.rating ? '★'.repeat(l.rating) : '–'}</td>
+              <td style="max-width:200px;font-size:12px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${l.message}">${l.message}</td>
+              <td><span style="background:${WL_STATUS_COLORS[l.status] || '#888'}22;color:${WL_STATUS_COLORS[l.status] || '#888'};border:1px solid ${WL_STATUS_COLORS[l.status] || '#888'}44;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;text-transform:uppercase">${l.status}</span></td>
+              <td>
+                <select onchange="updateWebsiteLead('${l.id}', this.value)" style="padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:11px">
+                  <option value="">Update…</option>
+                  <option value="contacted">✅ Contacted</option>
+                  <option value="converted">💰 Converted</option>
+                  <option value="closed">🚫 Close</option>
+                </select>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  } catch(err) {
+    document.getElementById('websiteLeadsTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+async function updateWebsiteLead(id, status) {
+  if (!status) return;
+  await fetch(`${API}/api/admin/website-leads/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  showToast('Lead updated → ' + status);
+  loadWebsiteLeads();
 }
 
 // Init — gate on auth, then load dashboard
