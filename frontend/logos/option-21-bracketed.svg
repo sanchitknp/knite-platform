@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 96" fill="none">
+  <text x="20" y="66"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="800" font-size="58" letter-spacing="-2"
+        fill="#0a1628">knite</text>
+
+  <!-- Bold cyan dot accent (replaces a tagline / period) -->
+  <circle cx="218" cy="62" r="10" fill="#00b4d8"/>
+  <ellipse cx="215" cy="58" rx="2" ry="3.5" fill="#ffffff" fill-opacity="0.55"/>
+</svg>

@@ -10,6 +10,8 @@ const cookieParser = require('cookie-parser');
 const db = require('./src/db');
 const webhook = require('./src/controllers/webhookController');
 const admin = require('./src/controllers/adminController');
+const shop  = require('./src/controllers/shopController');
+const shopAuth = require('./src/controllers/shopAuthController');
 const adminAuth = require('./src/controllers/adminAuthController');
 const { adminAuth: requireAdmin } = require('./src/middleware/adminAuth');
 const wa = require('./src/services/whatsappService');
@@ -22,6 +24,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(morgan('dev'));
 app.use(cookieParser());
+
+// Attach req.shopCustomer if a valid shop session cookie is present
+app.use((req, res, next) => shopAuth.attachShopCustomer(req, res, next));
 
 // ─────────────────────────────────────────────
 // WHATSAPP FLOW DATA EXCHANGE ENDPOINT
@@ -245,6 +250,28 @@ app.post('/api/website/lead', async (req, res) => {
   res.json({ ok: true, id: lead.id });
 });
 
+// ─────────────────────────────────────────────
+// SHOP / E-COMMERCE — public endpoints (no auth)
+// ─────────────────────────────────────────────
+app.get('/api/shop/products',          shop.listProducts);
+app.get('/api/shop/products/:slug',    shop.getProduct);
+app.post('/api/shop/cart/validate',    shop.validateCart);
+app.post('/api/shop/orders',           shop.placeOrder);
+app.get('/api/shop/orders/:id',        shop.getOrderForCustomer);
+
+// Shop customer auth — OTP via WhatsApp
+app.post('/api/shop/auth/send-otp',    shopAuth.sendOtp);
+app.post('/api/shop/auth/verify-otp',  shopAuth.verifyOtp);
+app.post('/api/shop/auth/logout',      shopAuth.logout);
+app.get ('/api/shop/me',               shopAuth.me);
+
+// Shop customer protected endpoints — require logged-in session
+app.patch('/api/shop/me',              shopAuth.requireShopCustomer, shopAuth.updateMe);
+app.get ('/api/shop/my-orders',        shopAuth.requireShopCustomer, shopAuth.myOrders);
+app.get ('/api/shop/my-addresses',     shopAuth.requireShopCustomer, shopAuth.listAddresses);
+app.post('/api/shop/my-addresses',     shopAuth.requireShopCustomer, shopAuth.addAddress);
+app.delete('/api/shop/my-addresses/:id', shopAuth.requireShopCustomer, shopAuth.deleteAddress);
+
 /**
  * GET /api/admin/website-leads — View all website enquiries (admin only)
  */
@@ -269,6 +296,55 @@ app.patch('/api/admin/website-leads/:id', requireAdmin, async (req, res) => {
     [status || null, notes || null, req.params.id]
   );
   res.json({ ok: true });
+});
+
+/**
+ * POST /api/admin/refresh-coverage — Regenerate /coverage-data.json from ro_service_leads.
+ * Used by the "Refresh Coverage Map" button on the admin panel.
+ */
+app.post('/api/admin/refresh-coverage', requireAdmin, async (req, res) => {
+  try {
+    const cities = await db.query(`
+      SELECT
+        city,
+        state,
+        ROUND(AVG(latitude)::numeric, 4)::float  AS lat,
+        ROUND(AVG(longitude)::numeric, 4)::float AS lng,
+        COUNT(*)::int AS count
+      FROM ro_service_leads
+      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+        AND city IS NOT NULL AND city != ''
+        AND state IS NOT NULL AND state != ''
+        AND latitude BETWEEN 6 AND 38
+        AND longitude BETWEEN 67 AND 98
+      GROUP BY city, state
+      ORDER BY COUNT(*) DESC
+    `);
+    const stats = await db.query(`
+      SELECT COUNT(DISTINCT city)::int    AS cities,
+             COUNT(DISTINCT state)::int   AS states,
+             COUNT(DISTINCT pincode)::int AS pincodes,
+             COUNT(*)::int                AS total
+      FROM ro_service_leads WHERE latitude IS NOT NULL
+    `);
+
+    const payload = {
+      generated_at: new Date().toISOString(),
+      stats: stats.rows[0],
+      cities: cities.rows,
+    };
+
+    const fs = require('fs');
+    const path = require('path');
+    const target = path.join(frontendPath, 'coverage-data.json');
+    fs.writeFileSync(target, JSON.stringify(payload));
+
+    console.log(`[COVERAGE] refreshed: ${cities.rows.length} cities, ${stats.rows[0].total} partners → ${target}`);
+    res.json({ ok: true, ...payload.stats, cities_written: cities.rows.length, generated_at: payload.generated_at });
+  } catch (err) {
+    console.error('[COVERAGE] refresh failed:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 // ─────────────────────────────────────────────
@@ -348,6 +424,48 @@ app.get('/api/admin/maintenance', admin.getMaintenanceSchedules);
 app.get('/api/admin/ledger', admin.getLedger);
 app.post('/api/admin/ledger/:techId/settle', admin.markSettled);
 app.get('/api/admin/customers', admin.getCustomers);
+
+// Shop admin endpoints
+app.get('/api/admin/shop/products',         shop.adminListProducts);
+app.patch('/api/admin/shop/products/:id',   shop.adminUpdateProduct);
+app.get('/api/admin/shop/orders',           shop.adminListOrders);
+app.get('/api/admin/shop/orders/:id',       shop.adminGetOrder);
+app.patch('/api/admin/shop/orders/:id',     shop.adminUpdateOrder);
+
+// Manually regenerate + resend invoice for an order (admin tool)
+app.post('/api/admin/shop/orders/:id/invoice', async (req, res) => {
+  try {
+    const invoiceGen = require('./src/services/invoiceGenerator');
+    const wa = require('./src/services/whatsappService');
+    const db = require('./src/db');
+
+    const oR = await db.query(`SELECT * FROM shop_orders WHERE id = $1`, [req.params.id]);
+    if (!oR.rows.length) return res.status(404).json({ error: 'Order not found' });
+    const o = oR.rows[0];
+
+    const inv = await invoiceGen.generateInvoiceForOrder(o.id);
+
+    // Optional: skip WhatsApp if ?send=0
+    if (req.query.send !== '0') {
+      await wa.sendDocument(
+        '91' + o.customer_phone,
+        inv.file_path,
+        {
+          filename: `Knite-Invoice-${o.order_number}.pdf`,
+          caption: `📄 *Tax Invoice — ${inv.invoice_number}*\n\nYour GST invoice for order ${o.order_number} is attached.\n\n— Team Knite`,
+          fallbackUrl: inv.invoice_url,
+        },
+        { line: 'service' }
+      );
+      await db.query(`UPDATE shop_orders SET invoice_sent_at = NOW() WHERE id = $1`, [o.id]);
+    }
+
+    res.json({ ok: true, ...inv });
+  } catch (err) {
+    console.error('[ADMIN invoice gen] failed:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Manual trigger for maintenance cron (testing)
 app.post('/api/admin/trigger/maintenance', async (req, res) => {

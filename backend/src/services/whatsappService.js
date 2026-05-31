@@ -363,6 +363,71 @@ async function sendLocationRequest(toPhone, bodyText, opts = {}) {
   }
 }
 
+/**
+ * Upload a local file to Meta's media endpoint and return the media_id.
+ */
+async function uploadMediaToMeta(filePath, mimeType, fromPhoneId) {
+  const fs = require('fs');
+  const path = require('path');
+  const url = `https://graph.facebook.com/v25.0/${fromPhoneId}/media`;
+  const buf = fs.readFileSync(filePath);
+  const blob = new Blob([buf], { type: mimeType });
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('type', mimeType);
+  form.append('file', blob, path.basename(filePath));
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok || !data.id) {
+    console.error('[META MEDIA UPLOAD ERROR]', JSON.stringify(data));
+    throw new Error('Media upload failed: ' + (data.error?.message || 'unknown'));
+  }
+  console.log(`[WA MEDIA] uploaded ${path.basename(filePath)} → media_id=${data.id}`);
+  return data.id;
+}
+
+/**
+ * Send a PDF (or other) document via WhatsApp.
+ * @param {string}  toPhone
+ * @param {string}  filePath    Absolute path to the local file
+ * @param {object}  meta        { filename, caption, mimeType? }
+ * @param {object}  opts        { line?: 'tech'|'service' }
+ */
+async function sendDocument(toPhone, filePath, meta = {}, opts = {}) {
+  const fromPhoneId = resolveFromPhoneId(opts);
+  const filename  = meta.filename || require('path').basename(filePath);
+  const caption   = meta.caption || '';
+  const mimeType  = meta.mimeType || 'application/pdf';
+  console.log(`[WA→${toPhone}] from=${fromPhoneId} DOC: ${filename} (${caption.substring(0, 60)})`);
+
+  if (MODE === 'production') {
+    try {
+      const mediaId = await uploadMediaToMeta(filePath, mimeType, fromPhoneId);
+      const result = await callMetaAPI({
+        to: toPhone,
+        type: 'document',
+        document: { id: mediaId, filename, caption },
+      }, fromPhoneId);
+      return result?.messages?.[0]?.id || null;
+    } catch (err) {
+      console.error('[WA sendDocument] failed:', err.message);
+      // Fallback: send a text with public URL if caption includes one
+      if (meta.fallbackUrl) {
+        await sendText(toPhone,
+          `${caption}\n\n📄 ${filename}\n${meta.fallbackUrl}`, opts);
+      }
+      return null;
+    }
+  } else {
+    await queueSimulator(toPhone, 'text', `[DOCUMENT: ${filename}]\n${caption}` + (meta.fallbackUrl ? `\n${meta.fallbackUrl}` : ''));
+    return null;
+  }
+}
+
 module.exports = {
   sendText,
   sendButtons,
@@ -371,6 +436,7 @@ module.exports = {
   sendLocation,
   sendLocationRequest,
   sendTemplate,
+  sendDocument,
   getPendingMessages,
   getAllRecentMessages,
   // Line routing helpers

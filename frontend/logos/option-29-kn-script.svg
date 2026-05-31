@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 150" fill="none">
+  <text x="120" y="90" text-anchor="middle"
+        font-family="Georgia, 'Cormorant Garamond', 'Playfair Display', serif"
+        font-style="italic" font-weight="700" font-size="90" letter-spacing="-2"
+        fill="#0a1628">kn</text>
+
+  <!-- Subtle cyan flourish underline -->
+  <path d="M50 102 Q120 114 190 102" stroke="#00b4d8" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <text x="120" y="130" text-anchor="middle"
+        font-family="Inter, system-ui, sans-serif"
+        font-weight="600" font-size="13" letter-spacing="9"
+        fill="#64748b">KNITE</text>
+</svg>

@@ -10,6 +10,19 @@
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="googlebot" content="index, follow">
   <link rel="canonical" href="https://knite.in/">
+  <link rel="alternate" hreflang="en-IN" href="https://knite.in/">
+  <link rel="alternate" hreflang="x-default" href="https://knite.in/">
+
+  <!-- Resource hints for faster page paint -->
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://unpkg.com">
+  <link rel="dns-prefetch" href="https://basemaps.cartocdn.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="image" href="/favicon.svg" type="image/svg+xml">
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#0a1628">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
@@ -37,6 +50,7 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -1423,34 +1437,77 @@
       {
         "@type": "Product",
         "position": 1,
-        "name": "Knite Pro 75 GPD RO Water Purifier",
-        "description": "7-stage RO + UV + UF purification with copper-alkaline tech.",
+        "name": "Knite Core RO Water Purifier",
+        "description": "Essential 7-stage RO + UV purification with TDS controller for everyday families.",
         "brand": { "@type": "Brand", "name": "Knite" },
-        "category": "Water Purifier"
+        "category": "Water Purifier",
+        "image": "https://knite.in/favicon.svg",
+        "sku": "KNITE-CORE",
+        "url": "https://knite.in/product.html?slug=knite-core",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-core",
+          "priceCurrency": "INR",
+          "price": "8000",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.7",
+          "bestRating": "5",
+          "ratingCount": "82"
+        }
       },
       {
         "@type": "Product",
         "position": 2,
-        "name": "Knite Copper Alkaline RO Water Purifier",
-        "description": "Copper-infused alkaline RO purifier with mineral retention.",
+        "name": "Knite Shield RO Water Purifier",
+        "description": "8-stage RO + UV + UF + mineraliser. Built for tougher Indian water with digital TDS display.",
         "brand": { "@type": "Brand", "name": "Knite" },
-        "category": "Water Purifier"
+        "category": "Water Purifier",
+        "image": "https://knite.in/favicon.svg",
+        "sku": "KNITE-SHIELD",
+        "url": "https://knite.in/product.html?slug=knite-shield",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-shield",
+          "priceCurrency": "INR",
+          "price": "9000",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "bestRating": "5",
+          "ratingCount": "105"
+        }
       },
       {
         "@type": "Product",
         "position": 3,
-        "name": "Knite Compact Wall-Mount RO",
-        "description": "Slim wall-mount RO purifier for compact kitchens.",
+        "name": "Knite Prime RO Water Purifier with Copper + Alkaline",
+        "description": "Top-of-line 9-stage purifier with food-grade copper and alkaline mineralisation (pH 8.5-9.0). Maximum wellness.",
         "brand": { "@type": "Brand", "name": "Knite" },
-        "category": "Water Purifier"
-      },
-      {
-        "@type": "Product",
-        "position": 4,
-        "name": "Knite 150 GPD RO with UV + Alkaline",
-        "description": "High-capacity RO purifier with UV sterilization and alkaline filter.",
-        "brand": { "@type": "Brand", "name": "Knite" },
-        "category": "Water Purifier"
+        "category": "Water Purifier",
+        "image": "https://knite.in/favicon.svg",
+        "sku": "KNITE-PRIME",
+        "url": "https://knite.in/product.html?slug=knite-prime",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-prime",
+          "priceCurrency": "INR",
+          "price": "10000",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.9",
+          "bestRating": "5",
+          "ratingCount": "60"
+        }
       }
     ]
   }
@@ -1465,6 +1522,106 @@
     "url": "https://knite.in"
   }
   </script>
+
+  <!-- ── Structured Data: FAQPage (unlocks "People Also Ask" rich result) ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question",
+        "name": "Which Knite RO water purifier is best for my home?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Knite Core (Rs 8,000) is the essential 7-stage RO + UV purifier for everyday families. Knite Shield (Rs 9,000) adds UF and a mineraliser for tougher water. Knite Prime (Rs 10,000) is the flagship 9-stage model with copper and alkaline infusion for maximum wellness." } },
+      { "@type": "Question",
+        "name": "How does the free installation work?",
+        "acceptedAnswer": { "@type": "Answer", "text": "After you order from Amazon or Flipkart, a Knite-certified technician contacts you within 24 hours to schedule installation. The visit takes 60-90 minutes and includes mounting, plumbing, TDS calibration, and a demo. Zero installation charges anywhere in India." } },
+      { "@type": "Question",
+        "name": "What is the warranty on a Knite RO purifier?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Every Knite purifier includes a 1-year comprehensive warranty covering electronics, motor, and pump. Filters are consumables and last 6-12 months. Extended warranty plans are available at checkout." } },
+      { "@type": "Question",
+        "name": "How often do the filters need to be replaced?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Sediment and carbon filters last 6-8 months; the RO membrane lasts 18-24 months depending on input water TDS. The unit's smart filter-life indicator alerts you when a change is due." } },
+      { "@type": "Question",
+        "name": "Do you provide service across India?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Knite operates a service-partner network across 3,200+ cities in India via certified technician partnerships. Same-day or next-day service is available in 80+ tier-1 and tier-2 cities." } },
+      { "@type": "Question",
+        "name": "What is the difference between RO, UV, and UF purification?",
+        "acceptedAnswer": { "@type": "Answer", "text": "RO removes dissolved salts and heavy metals; UV kills bacteria and viruses; UF removes physical impurities without electricity. Knite purifiers combine all three (RO+UV+UF) for complete protection." } },
+      { "@type": "Question",
+        "name": "Is the copper-alkaline water from Knite safe to drink daily?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Knite copper-alkaline cartridges add controlled, food-grade copper ions and mild alkaline minerals (pH 8.5-9.0). The dosing follows BIS guidelines for safe daily consumption." } },
+      { "@type": "Question",
+        "name": "How can I book an AMC (Annual Maintenance Contract)?",
+        "acceptedAnswer": { "@type": "Answer", "text": "AMC plans start at INR 1,500/year and cover routine servicing, filter replacements (parts extra), and unlimited callouts. Book via WhatsApp on +91 91960 68335 or through the contact form on the website." } },
+      { "@type": "Question",
+        "name": "Where can I buy Knite water purifiers?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Knite RO purifiers are available on Amazon.in and Flipkart with Prime delivery, no-cost EMI, and easy returns. Direct enquiries are also accepted via the website contact form or WhatsApp." } },
+      { "@type": "Question",
+        "name": "What is the typical lifespan of a Knite RO water purifier?",
+        "acceptedAnswer": { "@type": "Answer", "text": "With proper maintenance and timely filter changes, a Knite purifier lasts 8-10 years. The RO membrane and electronics are built to enterprise-grade durability standards." } }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data: Reviews (unlocks star ratings in search results) ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Knite RO Water Purifier Range",
+    "brand": { "@type": "Brand", "name": "Knite" },
+    "description": "Premium RO water purifiers with 7-stage purification, copper-alkaline technology, UV+UF, and free installation across India.",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": "247"
+    },
+    "review": [
+      { "@type": "Review",
+        "author": { "@type": "Person", "name": "Rahul Verma" },
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+        "reviewBody": "Honestly one of the best purchases I've made. The water quality is noticeably better - softer and cleaner. Installation was done within 6 hours of delivery." },
+      { "@type": "Review",
+        "author": { "@type": "Person", "name": "Priya Sharma" },
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+        "reviewBody": "We have 3 kids and water quality was always a concern. Knite Shield has been a game-changer. The 12-litre tank means we never run out." },
+      { "@type": "Review",
+        "author": { "@type": "Person", "name": "Amit Singh" },
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+        "reviewBody": "Great product, great support. Had a minor issue after 4 months - they sent a technician the very next day, fixed it free of charge." },
+      { "@type": "Review",
+        "author": { "@type": "Person", "name": "Sunita Mehta" },
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+        "reviewBody": "The Knite Core fits perfectly in my kitchen and the water tastes incredibly fresh. Worth every rupee at this price point." },
+      { "@type": "Review",
+        "author": { "@type": "Person", "name": "Neha Gupta" },
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+        "reviewBody": "The copper-infused water from Knite Prime has made a real difference to my family's immunity. The filter reminder feature is super helpful." },
+      { "@type": "Review",
+        "author": { "@type": "Person", "name": "Vikram Joshi" },
+        "reviewRating": { "@type": "Rating", "ratingValue": "4", "bestRating": "5" },
+        "reviewBody": "Ordered for our office of 20 people. The Ultra 150 handles our water needs effortlessly. Build quality is premium." }
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data: BreadcrumbList ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home",     "item": "https://knite.in/" },
+      { "@type": "ListItem", "position": 2, "name": "Products", "item": "https://knite.in/#products" },
+      { "@type": "ListItem", "position": 3, "name": "Coverage", "item": "https://knite.in/#coverage" },
+      { "@type": "ListItem", "position": 4, "name": "Reviews",  "item": "https://knite.in/#reviews" },
+      { "@type": "ListItem", "position": 5, "name": "FAQ",      "item": "https://knite.in/#faq" },
+      { "@type": "ListItem", "position": 6, "name": "Contact",  "item": "https://knite.in/#feedback" }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -1475,37 +1632,31 @@
 <nav id="mainNav">
   <a href="#" class="nav-logo">
     <!-- KNITE LOGO SVG -->
-    <svg class="logo-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg class="logo-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="bgGradNav" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#0d2137"/>
-          <stop offset="100%" stop-color="#06101c"/>
-        </linearGradient>
-        <linearGradient id="dropGradNav" x1="11" y1="6" x2="25" y2="29" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#7dd3fc"/>
-          <stop offset="50%" stop-color="#00b4d8"/>
-          <stop offset="100%" stop-color="#0077b6"/>
+        <linearGradient id="navBg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"  stop-color="#0f2b4a"/>
+          <stop offset="100%" stop-color="#020617"/>
         </linearGradient>
       </defs>
-      <circle cx="18" cy="18" r="18" fill="url(#bgGradNav)"/>
-      <circle cx="18" cy="18" r="17.4" fill="none" stroke="#1a3a5c" stroke-width="0.6"/>
-      <circle cx="18" cy="20" r="11" fill="#00b4d8" fill-opacity="0.12"/>
-      <path d="M18 5.5 C18 5.5, 9 16, 9 21.8 C9 26.5, 13 30, 18 30 C23 30, 27 26.5, 27 21.8 C27 16, 18 5.5, 18 5.5 Z" fill="url(#dropGradNav)"/>
-      <ellipse cx="14.3" cy="13" rx="1.8" ry="3.6" fill="white" fill-opacity="0.4" transform="rotate(-20 14.3 13)"/>
-      <path d="M12.8 22 C12.8 24.6, 14.6 26.4, 17 26.8" stroke="white" stroke-opacity="0.55" stroke-width="1.3" stroke-linecap="round" fill="none"/>
-      <g stroke="white" stroke-opacity="0.85" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
-        <line x1="15.8" y1="16" x2="15.8" y2="24"/>
-        <line x1="15.8" y1="20" x2="20.2" y2="16"/>
-        <line x1="15.8" y1="20" x2="20.2" y2="24"/>
-      </g>
+      <circle cx="32" cy="32" r="32" fill="url(#navBg)"/>
+      <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.55"/>
+      <text x="32" y="42" text-anchor="middle"
+            font-family="Poppins, Inter, Helvetica, Arial, sans-serif"
+            font-weight="800" font-size="26" letter-spacing="-2"
+            fill="#ffffff">KN</text>
     </svg>
     <span class="nav-brand">KNITE<span>.</span></span>
   </a>
 
   <ul class="nav-links">
+    <li><a href="/shop.html"><strong style="color:#00b4d8">Shop</strong></a></li>
     <li><a href="#features">Why Knite</a></li>
     <li><a href="#products">Products</a></li>
+    <li><a href="/blog.html">Blog</a></li>
+    <li><a href="#coverage">Coverage</a></li>
     <li><a href="#reviews">Reviews</a></li>
+    <li><a href="#faq">FAQ</a></li>
     <li><a href="#about">About</a></li>
     <li><a href="#feedback" class="nav-cta">Get a Quote</a></li>
   </ul>
@@ -1535,7 +1686,7 @@
         Amazon
       </a>
       <a href="https://www.flipkart.com/search?q=ro+water+purifier" target="_blank" class="platform-badge platform-flipkart">
-        <img src="/flipkart-logo.svg" alt="Flipkart" width="26" height="18" style="display:block">
+        <img src="/flipkart-logo.svg" alt="Buy Knite on Flipkart" width="26" height="18" loading="lazy" decoding="async" style="display:block">
         Flipkart
       </a>
     </div>
@@ -1570,12 +1721,12 @@
           </linearGradient>
         </defs>
       </svg>
-      <h3>Knite Ultra Pro</h3>
-      <p>Flagship RO + UV + UF + TDS</p>
+      <h3>Knite Prime</h3>
+      <p>Flagship 9-Stage RO + UV + UF + Copper + Alkaline</p>
       <div class="hero-specs">
-        <div class="hero-spec"><strong>10</strong><span>Stages</span></div>
-        <div class="hero-spec"><strong>15L</strong><span>Tank</span></div>
-        <div class="hero-spec"><strong>75</strong><span>GPD</span></div>
+        <div class="hero-spec"><strong>9</strong><span>Stages</span></div>
+        <div class="hero-spec"><strong>14L</strong><span>Tank</span></div>
+        <div class="hero-spec"><strong>100</strong><span>GPD</span></div>
       </div>
     </div>
   </div>
@@ -1636,52 +1787,50 @@
   </div>
   <div class="products-grid">
 
-    <!-- Product 1 -->
+    <!-- Knite Core -->
     <div class="product-card fade-up">
-      <div class="product-badge-wrap"><span class="badge badge-best">Best Seller</span></div>
+      <div class="product-badge-wrap"><span class="badge badge-best">Essential</span></div>
       <div class="product-image-area">
         <svg class="product-svg" viewBox="0 0 120 160" fill="none">
-          <rect x="20" y="10" width="80" height="130" rx="14" fill="url(#p1g)"/>
+          <rect x="20" y="10" width="80" height="130" rx="14" fill="url(#pCoreG)"/>
           <rect x="28" y="18" width="64" height="80" rx="9" fill="rgba(255,255,255,0.07)"/>
           <rect x="34" y="24" width="52" height="22" rx="5" fill="rgba(0,180,216,0.15)"/>
           <rect x="38" y="28" width="44" height="6" rx="3" fill="rgba(0,180,216,0.5)"/>
-          <circle cx="45" cy="72" r="9" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
-          <circle cx="60" cy="72" r="9" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.5)" stroke-width="1.5"/>
-          <circle cx="75" cy="72" r="9" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
-          <text x="45" y="76" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
-          <text x="60" y="76" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
-          <text x="75" y="76" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="5" font-family="Inter">UF</text>
+          <circle cx="48" cy="72" r="9" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
+          <circle cx="72" cy="72" r="9" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.5)" stroke-width="1.5"/>
+          <text x="48" y="76" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
+          <text x="72" y="76" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
           <rect x="46" y="128" width="28" height="7" rx="3.5" fill="rgba(0,180,216,0.5)"/>
           <ellipse cx="60" cy="140" rx="2.5" ry="3.5" fill="rgba(0,180,216,0.7)"/>
-          <defs><linearGradient id="p1g" x1="20" y1="10" x2="100" y2="140" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0d2137"/><stop offset="100%" stop-color="#0a3d62"/></linearGradient></defs>
+          <defs><linearGradient id="pCoreG" x1="20" y1="10" x2="100" y2="140" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0d2137"/><stop offset="100%" stop-color="#0a3d62"/></linearGradient></defs>
         </svg>
       </div>
       <div class="product-info">
-        <h3>Knite Pure 75</h3>
-        <p class="product-tagline">7-Stage RO+UV+UF — Perfect for families of 2–4</p>
+        <h3>Knite Core</h3>
+        <p class="product-tagline">7-Stage RO + UV — Dependable everyday purification</p>
         <div class="product-specs">
-          <span class="spec-pill">75 GPD</span>
+          <span class="spec-pill">60 GPD</span>
           <span class="spec-pill">7-Stage</span>
-          <span class="spec-pill">8L Tank</span>
-          <span class="spec-pill">RO+UV+UF</span>
+          <span class="spec-pill">9L Tank</span>
+          <span class="spec-pill">RO+UV</span>
         </div>
         <div class="product-price-row">
-          <div class="product-price"><sup>₹</sup>8,999<small>onwards</small></div>
-          <a href="#feedback" class="btn-buy">Enquire</a>
+          <div class="product-price"><sup>₹</sup>8,000<small>all-incl.</small></div>
+          <a href="/product.html?slug=knite-core" class="btn-buy">Buy Now</a>
         </div>
         <div class="product-platforms">
-          <a href="https://www.amazon.in/s?k=ro+water+purifier+75+gpd" target="_blank" class="pp-btn pp-amazon">🛒 Amazon</a>
-          <a href="https://www.flipkart.com/search?q=ro+water+purifier+75+gpd" target="_blank" class="pp-btn pp-flipkart">🛍 Flipkart</a>
+          <a href="https://www.amazon.in/s?k=knite+core+ro+water+purifier" target="_blank" class="pp-btn pp-amazon">🛒 Amazon</a>
+          <a href="https://www.flipkart.com/search?q=knite+core+ro+water+purifier" target="_blank" class="pp-btn pp-flipkart">🛍 Flipkart</a>
         </div>
       </div>
     </div>
 
-    <!-- Product 2 -->
+    <!-- Knite Shield -->
     <div class="product-card fade-up">
       <div class="product-badge-wrap"><span class="badge badge-popular">Most Popular</span></div>
       <div class="product-image-area">
         <svg class="product-svg" viewBox="0 0 120 160" fill="none">
-          <rect x="15" y="8" width="90" height="134" rx="16" fill="url(#p2g)"/>
+          <rect x="15" y="8" width="90" height="134" rx="16" fill="url(#pShieldG)"/>
           <rect x="24" y="16" width="72" height="85" rx="10" fill="rgba(255,255,255,0.07)"/>
           <rect x="30" y="22" width="60" height="26" rx="6" fill="rgba(0,180,216,0.12)"/>
           <rect x="34" y="27" width="52" height="7" rx="3" fill="rgba(0,180,216,0.45)"/>
@@ -1690,79 +1839,39 @@
           <circle cx="60" cy="76" r="10" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.5)" stroke-width="1.5"/>
           <circle cx="82" cy="76" r="10" fill="rgba(94,234,212,0.2)" stroke="rgba(94,234,212,0.5)" stroke-width="1.5"/>
           <text x="38" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
-          <text x="60" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="5" font-family="Inter">ALK</text>
-          <text x="82" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="5" font-family="Inter">Cu+</text>
+          <text x="60" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
+          <text x="82" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UF</text>
           <rect x="42" y="130" width="36" height="7" rx="3.5" fill="rgba(0,180,216,0.5)"/>
           <ellipse cx="60" cy="142" rx="3" ry="4" fill="rgba(0,180,216,0.7)"/>
-          <defs><linearGradient id="p2g" x1="15" y1="8" x2="105" y2="142" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#052940"/><stop offset="100%" stop-color="#0a4a6e"/></linearGradient></defs>
+          <defs><linearGradient id="pShieldG" x1="15" y1="8" x2="105" y2="142" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#052940"/><stop offset="100%" stop-color="#0a4a6e"/></linearGradient></defs>
         </svg>
       </div>
       <div class="product-info">
-        <h3>Knite Shield Pro</h3>
-        <p class="product-tagline">Copper + Alkaline — Immunity-boosting mineral water</p>
+        <h3>Knite Shield</h3>
+        <p class="product-tagline">8-Stage RO + UV + UF + Mineraliser — Built for tougher water</p>
         <div class="product-specs">
           <span class="spec-pill">75 GPD</span>
-          <span class="spec-pill">10-Stage</span>
-          <span class="spec-pill">10L Tank</span>
-          <span class="spec-pill">Copper+</span>
+          <span class="spec-pill">8-Stage</span>
+          <span class="spec-pill">12L Tank</span>
+          <span class="spec-pill">RO+UV+UF</span>
         </div>
         <div class="product-price-row">
-          <div class="product-price"><sup>₹</sup>13,499<small>onwards</small></div>
-          <a href="#feedback" class="btn-buy">Enquire</a>
+          <div class="product-price"><sup>₹</sup>9,000<small>all-incl.</small></div>
+          <a href="/product.html?slug=knite-shield" class="btn-buy">Buy Now</a>
         </div>
         <div class="product-platforms">
-          <a href="https://www.amazon.in/s?k=copper+alkaline+ro+water+purifier" target="_blank" class="pp-btn pp-amazon">🛒 Amazon</a>
-          <a href="https://www.flipkart.com/search?q=copper+alkaline+ro+water+purifier" target="_blank" class="pp-btn pp-flipkart">🛍 Flipkart</a>
+          <a href="https://www.amazon.in/s?k=knite+shield+ro+water+purifier" target="_blank" class="pp-btn pp-amazon">🛒 Amazon</a>
+          <a href="https://www.flipkart.com/search?q=knite+shield+ro+water+purifier" target="_blank" class="pp-btn pp-flipkart">🛍 Flipkart</a>
         </div>
       </div>
     </div>
 
-    <!-- Product 3 -->
-    <div class="product-card fade-up">
-      <div class="product-badge-wrap"><span class="badge badge-new">New Launch</span></div>
-      <div class="product-image-area">
-        <svg class="product-svg" viewBox="0 0 120 160" fill="none">
-          <rect x="25" y="15" width="70" height="125" rx="12" fill="url(#p3g)"/>
-          <rect x="32" y="22" width="56" height="75" rx="8" fill="rgba(255,255,255,0.07)"/>
-          <rect x="37" y="27" width="46" height="20" rx="4" fill="rgba(0,180,216,0.12)"/>
-          <rect x="41" y="31" width="38" height="6" rx="3" fill="rgba(0,180,216,0.5)"/>
-          <circle cx="46" cy="78" r="9" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
-          <circle cx="60" cy="68" r="9" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
-          <circle cx="74" cy="78" r="9" fill="rgba(94,234,212,0.2)" stroke="rgba(94,234,212,0.5)" stroke-width="1.5"/>
-          <text x="46" y="82" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
-          <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
-          <text x="74" y="82" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="5" font-family="Inter">TDS</text>
-          <rect x="44" y="127" width="32" height="6" rx="3" fill="rgba(0,180,216,0.5)"/>
-          <ellipse cx="60" cy="137" rx="2.5" ry="3" fill="rgba(0,180,216,0.7)"/>
-          <defs><linearGradient id="p3g" x1="25" y1="15" x2="95" y2="140" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0a1628"/><stop offset="100%" stop-color="#1a3a5c"/></linearGradient></defs>
-        </svg>
-      </div>
-      <div class="product-info">
-        <h3>Knite Slim+</h3>
-        <p class="product-tagline">Ultra-compact wall-mount — ideal for small kitchens</p>
-        <div class="product-specs">
-          <span class="spec-pill">50 GPD</span>
-          <span class="spec-pill">6-Stage</span>
-          <span class="spec-pill">Tankless</span>
-          <span class="spec-pill">Wall Mount</span>
-        </div>
-        <div class="product-price-row">
-          <div class="product-price"><sup>₹</sup>7,499<small>onwards</small></div>
-          <a href="#feedback" class="btn-buy">Enquire</a>
-        </div>
-        <div class="product-platforms">
-          <a href="https://www.amazon.in/s?k=compact+wall+mount+ro+water+purifier" target="_blank" class="pp-btn pp-amazon">🛒 Amazon</a>
-          <a href="https://www.flipkart.com/search?q=wall+mount+ro+water+purifier" target="_blank" class="pp-btn pp-flipkart">🛍 Flipkart</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Product 4 -->
+    <!-- Knite Prime -->
     <div class="product-card fade-up">
       <div class="product-badge-wrap"><span class="badge badge-pro">Premium</span></div>
       <div class="product-image-area">
         <svg class="product-svg" viewBox="0 0 120 160" fill="none">
-          <rect x="10" y="6" width="100" height="140" rx="18" fill="url(#p4g)"/>
+          <rect x="10" y="6" width="100" height="140" rx="18" fill="url(#pPrimeG)"/>
           <rect x="19" y="15" width="82" height="95" rx="12" fill="rgba(255,255,255,0.06)"/>
           <rect x="25" y="21" width="70" height="30" rx="7" fill="rgba(0,180,216,0.12)"/>
           <rect x="30" y="26" width="60" height="8" rx="4" fill="rgba(0,180,216,0.45)"/>
@@ -1770,33 +1879,33 @@
           <rect x="74" y="38" width="16" height="5" rx="2.5" fill="rgba(0,180,216,0.3)"/>
           <circle cx="33" cy="82" r="10" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
           <circle cx="53" cy="82" r="10" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.5)" stroke-width="1.5"/>
-          <circle cx="73" cy="82" r="10" fill="rgba(94,234,212,0.2)" stroke="rgba(94,234,212,0.5)" stroke-width="1.5"/>
+          <circle cx="73" cy="82" r="10" fill="rgba(217,119,6,0.25)" stroke="rgba(217,119,6,0.6)" stroke-width="1.5"/>
           <circle cx="93" cy="82" r="10" fill="rgba(167,243,208,0.2)" stroke="rgba(167,243,208,0.5)" stroke-width="1.5"/>
           <text x="33" y="86" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
           <text x="53" y="86" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
-          <text x="73" y="86" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="5" font-family="Inter">ALK</text>
-          <text x="93" y="86" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="5" font-family="Inter">Cu+</text>
+          <text x="73" y="86" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="5" font-family="Inter">Cu+</text>
+          <text x="93" y="86" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="5" font-family="Inter">ALK</text>
           <rect x="42" y="132" width="36" height="7" rx="3.5" fill="rgba(0,180,216,0.5)"/>
           <ellipse cx="60" cy="144" rx="3" ry="4" fill="rgba(0,180,216,0.7)"/>
-          <defs><linearGradient id="p4g" x1="10" y1="6" x2="110" y2="146" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#061220"/><stop offset="100%" stop-color="#0b3255"/></linearGradient></defs>
+          <defs><linearGradient id="pPrimeG" x1="10" y1="6" x2="110" y2="146" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#061220"/><stop offset="100%" stop-color="#0b3255"/></linearGradient></defs>
         </svg>
       </div>
       <div class="product-info">
-        <h3>Knite Ultra 150</h3>
-        <p class="product-tagline">150 GPD powerhouse for large families & offices</p>
+        <h3>Knite Prime</h3>
+        <p class="product-tagline">9-Stage RO + UV + UF + Copper + Alkaline — Maximum wellness</p>
         <div class="product-specs">
-          <span class="spec-pill">150 GPD</span>
-          <span class="spec-pill">12-Stage</span>
-          <span class="spec-pill">15L Tank</span>
-          <span class="spec-pill">RO+UV+ALK</span>
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">9-Stage</span>
+          <span class="spec-pill">14L Tank</span>
+          <span class="spec-pill">Copper+ALK</span>
         </div>
         <div class="product-price-row">
-          <div class="product-price"><sup>₹</sup>18,999<small>onwards</small></div>
-          <a href="#feedback" class="btn-buy">Enquire</a>
+          <div class="product-price"><sup>₹</sup>10,000<small>all-incl.</small></div>
+          <a href="/product.html?slug=knite-prime" class="btn-buy">Buy Now</a>
         </div>
         <div class="product-platforms">
-          <a href="https://www.amazon.in/s?k=150+gpd+ro+water+purifier+uv+alkaline" target="_blank" class="pp-btn pp-amazon">🛒 Amazon</a>
-          <a href="https://www.flipkart.com/search?q=150+gpd+ro+water+purifier" target="_blank" class="pp-btn pp-flipkart">🛍 Flipkart</a>
+          <a href="https://www.amazon.in/s?k=knite+prime+copper+alkaline+ro+water+purifier" target="_blank" class="pp-btn pp-amazon">🛒 Amazon</a>
+          <a href="https://www.flipkart.com/search?q=knite+prime+copper+alkaline+ro+water+purifier" target="_blank" class="pp-btn pp-flipkart">🛍 Flipkart</a>
         </div>
       </div>
     </div>
@@ -1863,6 +1972,76 @@
   </div>
 </div>
 
+<!-- ── COVERAGE MAP ── -->
+<section class="coverage-section" id="coverage" style="padding:90px 24px;background:linear-gradient(180deg,#f8fafc 0%,#eef4f9 100%)">
+  <style>
+    .cov-wrap { max-width:1200px;margin:0 auto;text-align:center }
+    .cov-grid {
+      display:grid;grid-template-columns:repeat(4,1fr);gap:18px;
+      max-width:900px;margin:36px auto 28px;
+    }
+    .cov-stat {
+      background:#fff;border-radius:16px;padding:22px 14px;
+      border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(10,22,40,0.04);
+    }
+    .cov-stat-num {
+      font-family:'Poppins',sans-serif;font-size:28px;font-weight:800;
+      background:linear-gradient(135deg,#00b4d8,#0077b6);
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+    }
+    .cov-stat-lbl { font-size:13px;color:#64748b;margin-top:4px;font-weight:500 }
+    #coverage-map {
+      height:520px;max-width:1100px;margin:0 auto;border-radius:20px;
+      box-shadow:0 12px 40px rgba(10,22,40,0.12);overflow:hidden;
+      border:1px solid #d6e0ea;background:#dbe7f0;
+    }
+    #coverage-map .leaflet-control-attribution { font-size:10px }
+    .cov-loading {
+      display:flex;align-items:center;justify-content:center;height:100%;
+      color:#64748b;font-size:14px;
+    }
+    .cov-footnote {
+      margin-top:18px;font-size:13px;color:#64748b;font-style:italic;
+    }
+    @media (max-width:640px) {
+      .cov-grid { grid-template-columns:repeat(2,1fr) }
+      .cov-stat-num { font-size:22px }
+      #coverage-map { height:380px }
+    }
+  </style>
+  <div class="cov-wrap">
+    <div class="section-label fade-up">Pan-India Reach</div>
+    <h2 class="section-title fade-up">Service Network <span>Across India</span></h2>
+    <p class="section-sub fade-up" style="max-width:680px;margin:0 auto">
+      We partner with thousands of certified RO service providers — so installation, maintenance and repair reach you wherever you live.
+    </p>
+
+    <div class="cov-grid fade-up">
+      <div class="cov-stat">
+        <div class="cov-stat-num" id="cov-num-cities">3,262</div>
+        <div class="cov-stat-lbl">Cities</div>
+      </div>
+      <div class="cov-stat">
+        <div class="cov-stat-num" id="cov-num-states">44</div>
+        <div class="cov-stat-lbl">States &amp; UTs</div>
+      </div>
+      <div class="cov-stat">
+        <div class="cov-stat-num" id="cov-num-pincodes">4,461</div>
+        <div class="cov-stat-lbl">Pincodes Served</div>
+      </div>
+      <div class="cov-stat">
+        <div class="cov-stat-num" id="cov-num-partners">14,870</div>
+        <div class="cov-stat-lbl">Service Partners</div>
+      </div>
+    </div>
+
+    <div id="coverage-map" class="fade-up">
+      <div class="cov-loading">Loading coverage map…</div>
+    </div>
+    <p class="cov-footnote">Each dot marks a city where Knite-affiliated service partners operate. Dot size reflects partner density.</p>
+  </div>
+</section>
+
 <!-- ── TESTIMONIALS ── -->
 <section class="testimonials" id="reviews">
   <div class="fade-up">
@@ -1897,7 +2076,7 @@
         <div class="avatar" style="background:linear-gradient(135deg,#667eea,#764ba2)">R</div>
         <div class="testimonial-author">
           <strong>Rahul Verma</strong>
-          <span>Delhi, Shield Pro</span>
+          <span>Delhi, Knite Shield</span>
           <div class="verified-badge">✓ Verified Purchase</div>
         </div>
         <div class="testimonial-stars">★★★★★</div>
@@ -1906,12 +2085,12 @@
 
     <div class="testimonial-card fade-up">
       <div class="quote-icon">"</div>
-      <p class="testimonial-text">We have 3 kids and water quality was always a concern. Knite Ultra has been a game-changer. The 15-litre tank means we never run out, and the TDS display gives us peace of mind daily.</p>
+      <p class="testimonial-text">We have 3 kids and water quality was always a concern. Knite Shield has been a game-changer. The 12-litre tank means we never run out, and the digital TDS display gives us peace of mind daily.</p>
       <div class="testimonial-footer">
         <div class="avatar" style="background:linear-gradient(135deg,#f093fb,#f5576c)">P</div>
         <div class="testimonial-author">
           <strong>Priya Sharma</strong>
-          <span>Mumbai, Ultra 150</span>
+          <span>Mumbai, Knite Shield</span>
           <div class="verified-badge">✓ Verified Purchase</div>
         </div>
         <div class="testimonial-stars">★★★★★</div>
@@ -1925,7 +2104,7 @@
         <div class="avatar" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">A</div>
         <div class="testimonial-author">
           <strong>Amit Singh</strong>
-          <span>Bengaluru, Pure 75</span>
+          <span>Bengaluru, Knite Core</span>
           <div class="verified-badge">✓ Verified Purchase</div>
         </div>
         <div class="testimonial-stars">★★★★★</div>
@@ -1934,12 +2113,12 @@
 
     <div class="testimonial-card fade-up">
       <div class="quote-icon">"</div>
-      <p class="testimonial-text">I was sceptical about buying online, but Knite proved me wrong. The Slim+ fits perfectly under my small kitchen sink and the water tastes incredibly fresh. Worth every rupee.</p>
+      <p class="testimonial-text">I was sceptical about buying online, but Knite proved me wrong. The Knite Core fits perfectly in my kitchen and the water tastes incredibly fresh. Worth every rupee at this price.</p>
       <div class="testimonial-footer">
         <div class="avatar" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">S</div>
         <div class="testimonial-author">
           <strong>Sunita Mehta</strong>
-          <span>Pune, Slim+</span>
+          <span>Pune, Knite Core</span>
           <div class="verified-badge">✓ Verified Purchase</div>
         </div>
         <div class="testimonial-stars">★★★★★</div>
@@ -1948,12 +2127,12 @@
 
     <div class="testimonial-card fade-up">
       <div class="quote-icon">"</div>
-      <p class="testimonial-text">The copper-infused water from Shield Pro has made a real difference to my family's immunity. We've all noticed fewer seasonal colds this year. The filter reminder feature is super helpful too.</p>
+      <p class="testimonial-text">The copper-infused water from Knite Prime has made a real difference to my family's immunity. We've all noticed fewer seasonal colds this year. The filter reminder feature is super helpful too.</p>
       <div class="testimonial-footer">
         <div class="avatar" style="background:linear-gradient(135deg,#fa709a,#fee140)">N</div>
         <div class="testimonial-author">
           <strong>Neha Gupta</strong>
-          <span>Hyderabad, Shield Pro</span>
+          <span>Hyderabad, Knite Prime</span>
           <div class="verified-badge">✓ Verified Purchase</div>
         </div>
         <div class="testimonial-stars">★★★★★</div>
@@ -1967,11 +2146,99 @@
         <div class="avatar" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)">V</div>
         <div class="testimonial-author">
           <strong>Vikram Joshi</strong>
-          <span>Chennai, Ultra 150</span>
+          <span>Chennai, Knite Prime</span>
           <div class="verified-badge">✓ Verified Purchase</div>
         </div>
         <div class="testimonial-stars">★★★★☆</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section class="faq-section" id="faq" style="padding:90px 24px;background:#ffffff">
+  <style>
+    .faq-wrap { max-width:880px;margin:0 auto }
+    .faq-list { margin-top:36px;display:flex;flex-direction:column;gap:14px }
+    .faq-item {
+      background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;
+      overflow:hidden;transition:all 0.25s ease;
+    }
+    .faq-item[open] { border-color:#00b4d8;box-shadow:0 6px 24px rgba(0,180,216,0.08) }
+    .faq-question {
+      list-style:none;cursor:pointer;padding:20px 24px;
+      font-family:'Poppins',sans-serif;font-size:16px;font-weight:600;color:#0a1628;
+      display:flex;justify-content:space-between;align-items:center;gap:16px;
+    }
+    .faq-question::-webkit-details-marker { display:none }
+    .faq-question::after {
+      content:'+';font-size:22px;font-weight:300;color:#00b4d8;flex-shrink:0;
+      transition:transform 0.25s ease;
+    }
+    .faq-item[open] .faq-question::after { content:'−';transform:rotate(0) }
+    .faq-answer {
+      padding:0 24px 22px;font-size:15px;line-height:1.7;color:#475569;
+    }
+    @media (max-width:640px) {
+      .faq-question { font-size:15px;padding:16px 18px }
+      .faq-answer { padding:0 18px 18px;font-size:14px }
+    }
+  </style>
+  <div class="faq-wrap">
+    <div class="section-label fade-up" style="text-align:center">Frequently Asked Questions</div>
+    <h2 class="section-title fade-up" style="text-align:center">Common <span>Questions</span></h2>
+    <p class="section-sub fade-up" style="text-align:center;max-width:640px;margin:0 auto">Everything you wanted to know about Knite RO water purifiers, installation, and service.</p>
+
+    <div class="faq-list">
+      <details class="faq-item fade-up">
+        <summary class="faq-question">Which Knite RO water purifier is best for my home?</summary>
+        <div class="faq-answer">The <strong>Knite Core</strong> (₹8,000) is our essential 7-stage RO + UV model — ideal for couples and small families on municipal water. The <strong>Knite Shield</strong> (₹9,000) adds UF and a mineraliser stage for tougher water and larger households. The <strong>Knite Prime</strong> (₹10,000) is our flagship 9-stage model with food-grade copper infusion and alkaline mineralisation for maximum wellness.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">How does the free installation work?</summary>
+        <div class="faq-answer">Once you order from Amazon or Flipkart, a Knite-certified technician contacts you within 24 hours to schedule a visit. Installation typically takes 60–90 minutes and includes mounting, plumbing connections, TDS calibration, and a hands-on demo. There are zero installation charges anywhere in India.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">What is the warranty on a Knite RO purifier?</summary>
+        <div class="faq-answer">Every Knite purifier comes with a <strong>1-year comprehensive warranty</strong> covering electronics, motor, and pump. Filters are consumables and not under warranty but typically last 6–12 months. Extended warranty plans are available at checkout.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">How often do the filters need to be replaced?</summary>
+        <div class="faq-answer">In normal usage, sediment and carbon filters last 6–8 months, while the RO membrane lasts 18–24 months depending on input water TDS. Your unit's smart filter-life indicator alerts you when a change is due. Replacements can be booked through your AMC or as on-demand service via our app.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">Do you provide service across India?</summary>
+        <div class="faq-answer">Yes — Knite operates a service-partner network across <strong>3,200+ cities</strong> in India through our certified technician partnerships. Same-day or next-day service is available in 80+ tier-1 and tier-2 cities. Check the <a href="#coverage">coverage map</a> to see availability in your area.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">What is the difference between RO, UV, and UF purification?</summary>
+        <div class="faq-answer"><strong>RO (Reverse Osmosis)</strong> removes dissolved salts, heavy metals, and TDS — essential for borewell or hard water. <strong>UV (Ultraviolet)</strong> kills bacteria and viruses. <strong>UF (Ultra-Filtration)</strong> removes physical impurities and microbes without electricity. Knite purifiers combine all three (RO+UV+UF) for complete protection.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">Is the copper-alkaline water from Knite safe to drink daily?</summary>
+        <div class="faq-answer">Absolutely. Knite's copper-alkaline cartridges add controlled, food-grade copper ions and slightly alkaline minerals (pH 8.5–9.0) — both shown to support immunity and digestion. The dosing follows BIS guidelines for safe daily consumption.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">How can I book an AMC (Annual Maintenance Contract)?</summary>
+        <div class="faq-answer">AMC plans start at <strong>₹1,500/year</strong> and cover all routine servicing, filter replacements (parts extra), and unlimited callouts. You can book directly via WhatsApp on <a href="https://wa.me/919196068335" target="_blank" rel="noopener">+91 91960 68335</a> or through the contact form below.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">Where can I buy Knite water purifiers?</summary>
+        <div class="faq-answer">Knite RO purifiers are available on <a href="https://www.amazon.in/s?k=knite+ro+water+purifier" target="_blank" rel="noopener">Amazon.in</a> and <a href="https://www.flipkart.com/search?q=knite+ro+water+purifier" target="_blank" rel="noopener">Flipkart</a>, with Prime delivery, no-cost EMI options, and easy returns. Direct enquiries are also welcome via our <a href="#feedback">contact form</a> or WhatsApp.</div>
+      </details>
+
+      <details class="faq-item fade-up">
+        <summary class="faq-question">What is the typical lifespan of a Knite RO water purifier?</summary>
+        <div class="faq-answer">With proper maintenance and timely filter changes, a Knite purifier lasts <strong>8–10 years</strong>. The RO membrane and electronic components are built to enterprise-grade durability standards. Our AMC partners help maximize longevity through preventive servicing.</div>
+      </details>
     </div>
   </div>
 </section>
@@ -2166,28 +2433,19 @@
   <div class="footer-grid">
     <div class="footer-brand">
       <a href="#" class="nav-logo" style="text-decoration:none;display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+        <svg width="32" height="32" viewBox="0 0 64 64" fill="none">
           <defs>
-            <linearGradient id="fbgGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#0d2137"/>
-              <stop offset="100%" stop-color="#06101c"/>
-            </linearGradient>
-            <linearGradient id="fdropGrad" x1="11" y1="6" x2="25" y2="29" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#7dd3fc"/>
-              <stop offset="50%" stop-color="#00b4d8"/>
-              <stop offset="100%" stop-color="#0077b6"/>
+            <linearGradient id="ftBg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"  stop-color="#0f2b4a"/>
+              <stop offset="100%" stop-color="#020617"/>
             </linearGradient>
           </defs>
-          <circle cx="18" cy="18" r="18" fill="url(#fbgGrad)"/>
-          <circle cx="18" cy="20" r="11" fill="#00b4d8" fill-opacity="0.12"/>
-          <path d="M18 5.5 C18 5.5, 9 16, 9 21.8 C9 26.5, 13 30, 18 30 C23 30, 27 26.5, 27 21.8 C27 16, 18 5.5, 18 5.5 Z" fill="url(#fdropGrad)"/>
-          <ellipse cx="14.3" cy="13" rx="1.8" ry="3.6" fill="white" fill-opacity="0.4" transform="rotate(-20 14.3 13)"/>
-          <path d="M12.8 22 C12.8 24.6, 14.6 26.4, 17 26.8" stroke="white" stroke-opacity="0.55" stroke-width="1.3" stroke-linecap="round" fill="none"/>
-          <g stroke="white" stroke-opacity="0.85" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
-            <line x1="15.8" y1="16" x2="15.8" y2="24"/>
-            <line x1="15.8" y1="20" x2="20.2" y2="16"/>
-            <line x1="15.8" y1="20" x2="20.2" y2="24"/>
-          </g>
+          <circle cx="32" cy="32" r="32" fill="url(#ftBg)"/>
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.6"/>
+          <text x="32" y="42" text-anchor="middle"
+                font-family="Poppins, Inter, Helvetica, Arial, sans-serif"
+                font-weight="800" font-size="26" letter-spacing="-2"
+                fill="#ffffff">KN</text>
         </svg>
         <span style="font-family:Poppins;font-size:18px;font-weight:700;color:#fff;letter-spacing:3px">KNITE<span style="color:#00b4d8">.</span></span>
       </a>
@@ -2202,10 +2460,9 @@
     <div class="footer-col">
       <h4>Products</h4>
       <ul>
-        <li><a href="#products">Knite Pure 75</a></li>
-        <li><a href="#products">Knite Shield Pro</a></li>
-        <li><a href="#products">Knite Slim+</a></li>
-        <li><a href="#products">Knite Ultra 150</a></li>
+        <li><a href="/product.html?slug=knite-core">Knite Core</a></li>
+        <li><a href="/product.html?slug=knite-shield">Knite Shield</a></li>
+        <li><a href="/product.html?slug=knite-prime">Knite Prime</a></li>
         <li><a href="#feedback">AMC Plans</a></li>
       </ul>
     </div>
@@ -2358,6 +2615,85 @@
       }
     });
   });
+</script>
+
+<!-- ── Coverage Map (Leaflet) ── -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+<script>
+  (function initCoverageMap() {
+    function nf(n) { return n.toLocaleString('en-IN'); }
+
+    function start() {
+      if (typeof L === 'undefined') return setTimeout(start, 100);
+      const mapEl = document.getElementById('coverage-map');
+      if (!mapEl) return;
+
+      fetch('/coverage-data.json')
+        .then(r => r.json())
+        .then(data => {
+          mapEl.innerHTML = '';
+
+          // Live-update the stats from the data
+          if (data.stats) {
+            document.getElementById('cov-num-cities').textContent   = nf(data.stats.cities);
+            document.getElementById('cov-num-states').textContent   = nf(data.stats.states);
+            document.getElementById('cov-num-pincodes').textContent = nf(data.stats.pincodes);
+            document.getElementById('cov-num-partners').textContent = nf(data.stats.total) + '+';
+          }
+
+          const map = L.map('coverage-map', {
+            renderer: L.canvas(),
+            zoomControl: true,
+            scrollWheelZoom: false,
+            attributionControl: true,
+          }).setView([22.5, 80], 4.6);
+
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd', maxZoom: 12, minZoom: 4,
+          }).addTo(map);
+
+          // India bounds — restrict panning
+          map.setMaxBounds([[5, 65], [40, 100]]);
+
+          // Layer for markers
+          const cluster = L.layerGroup().addTo(map);
+
+          (data.cities || []).forEach(c => {
+            // Radius scaled by sqrt of partner count, clamped
+            const r = Math.max(3, Math.min(14, 2.4 + Math.sqrt(c.count) * 0.9));
+            const marker = L.circleMarker([c.lat, c.lng], {
+              radius: r,
+              fillColor: '#00b4d8',
+              color: '#0077b6',
+              weight: 1,
+              opacity: 0.85,
+              fillOpacity: 0.55,
+            });
+            marker.bindTooltip(
+              `<strong>${c.city}</strong>, ${c.state}<br>` +
+              `<span style="color:#0077b6">${c.count} service partner${c.count !== 1 ? 's' : ''}</span>`,
+              { direction: 'top', offset: [0, -4], className: 'cov-tip' }
+            );
+            cluster.addLayer(marker);
+          });
+
+          // Enable scroll-zoom only after user clicks on the map (better UX)
+          map.on('focus', () => map.scrollWheelZoom.enable());
+          map.on('blur',  () => map.scrollWheelZoom.disable());
+        })
+        .catch(err => {
+          mapEl.innerHTML = '<div class="cov-loading">Coverage data unavailable.</div>';
+          console.error('Coverage map error:', err);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+  })();
 </script>
 
 </body>

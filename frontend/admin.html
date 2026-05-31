@@ -194,6 +194,9 @@
     <div class="nav-item" onclick="showSection('ledger')"><span class="icon">💰</span> Ledger</div>
     <div class="nav-item" onclick="showSection('zones')"><span class="icon">🗺️</span> Zones</div>
     <div class="nav-item" onclick="showSection('website-leads')"><span class="icon">🌐</span> Website Leads</div>
+    <div class="nav-item" onclick="showSection('coverage')"><span class="icon">🗺️</span> Coverage Map</div>
+    <div class="nav-item" onclick="showSection('shop-products')"><span class="icon">📦</span> Shop Products</div>
+    <div class="nav-item" onclick="showSection('shop-orders')"><span class="icon">🛒</span> Shop Orders</div>
     <div class="nav-item" onclick="showSection('users')"><span class="icon">🔐</span> Admin Users</div>
   </nav>
   <div class="sidebar-footer">
@@ -303,6 +306,64 @@
     <div class="card">
       <div class="card-header"><span class="title" id="wl-count">Website Leads</span></div>
       <div class="card-body" id="websiteLeadsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- COVERAGE MAP -->
+  <div class="section" id="section-coverage">
+    <div class="page-title">Service Coverage Map</div>
+    <div class="page-subtitle">Refresh the public website's coverage map after onboarding new service partners or leads.</div>
+    <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-primary" id="btn-refresh-coverage" onclick="refreshCoverage()">🔄 Refresh Coverage Map</button>
+      <a class="btn btn-secondary" href="https://knite.in/#coverage" target="_blank" rel="noopener">↗ View on knite.in</a>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title">Current Coverage Snapshot</span></div>
+      <div class="card-body" id="coverageStats" style="padding:18px">
+        <div class="loading">Loading…</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-header"><span class="title">Activity Log</span></div>
+      <div class="card-body" id="coverageLog" style="padding:18px;font-family:monospace;font-size:12px;color:#9ec1d8;min-height:60px">
+        <div style="color:#6a8aa8">No refreshes this session.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHOP PRODUCTS -->
+  <div class="section" id="section-shop-products">
+    <div class="page-title">Shop Products</div>
+    <div class="page-subtitle">Manage the Knite e-commerce catalogue</div>
+    <div class="refresh-bar" style="display:flex;gap:10px;margin-bottom:14px">
+      <button class="btn btn-secondary" onclick="loadShopProducts()">🔄 Refresh</button>
+      <a class="btn btn-secondary" href="/shop.html" target="_blank" rel="noopener">↗ View Shop</a>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title" id="sp-count">Products</span></div>
+      <div class="card-body" id="shopProductsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SHOP ORDERS -->
+  <div class="section" id="section-shop-orders">
+    <div class="page-title">Shop Orders</div>
+    <div class="page-subtitle">All customer orders placed via knite.in</div>
+    <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-secondary" onclick="loadShopOrders()">🔄 Refresh</button>
+      <select id="so-filter" onchange="loadShopOrders()" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="processing">Processing</option>
+        <option value="shipped">Shipped</option>
+        <option value="delivered">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title" id="so-count">Orders</span></div>
+      <div class="card-body" id="shopOrdersTable"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
@@ -432,6 +493,9 @@ function showSection(name) {
     zones: loadZones,
     users: loadUsers,
     'website-leads': loadWebsiteLeads,
+    coverage: loadCoverage,
+    'shop-products': loadShopProducts,
+    'shop-orders': loadShopOrders,
   };
   if (loaders[name]) loaders[name]();
 }
@@ -1257,6 +1321,286 @@ async function updateWebsiteLead(id, status) {
   });
   showToast('Lead updated → ' + status);
   loadWebsiteLeads();
+}
+
+// ── Coverage Map ──
+function fmtCoverageStats(s, generated_at) {
+  const ts = generated_at ? new Date(generated_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  return `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
+      <div style="background:#0d1f2d;padding:16px;border-radius:8px;border:1px solid #1a3a5c">
+        <div style="font-size:11px;color:#6a8aa8;letter-spacing:1px;text-transform:uppercase">Cities</div>
+        <div style="font-size:22px;font-weight:700;color:#00d4aa;margin-top:4px">${(s?.cities ?? 0).toLocaleString('en-IN')}</div>
+      </div>
+      <div style="background:#0d1f2d;padding:16px;border-radius:8px;border:1px solid #1a3a5c">
+        <div style="font-size:11px;color:#6a8aa8;letter-spacing:1px;text-transform:uppercase">States &amp; UTs</div>
+        <div style="font-size:22px;font-weight:700;color:#00d4aa;margin-top:4px">${(s?.states ?? 0).toLocaleString('en-IN')}</div>
+      </div>
+      <div style="background:#0d1f2d;padding:16px;border-radius:8px;border:1px solid #1a3a5c">
+        <div style="font-size:11px;color:#6a8aa8;letter-spacing:1px;text-transform:uppercase">Pincodes</div>
+        <div style="font-size:22px;font-weight:700;color:#00d4aa;margin-top:4px">${(s?.pincodes ?? 0).toLocaleString('en-IN')}</div>
+      </div>
+      <div style="background:#0d1f2d;padding:16px;border-radius:8px;border:1px solid #1a3a5c">
+        <div style="font-size:11px;color:#6a8aa8;letter-spacing:1px;text-transform:uppercase">Service Partners</div>
+        <div style="font-size:22px;font-weight:700;color:#00d4aa;margin-top:4px">${(s?.total ?? 0).toLocaleString('en-IN')}</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:12px;color:#6a8aa8">Last generated: ${ts}</div>
+  `;
+}
+
+async function loadCoverage() {
+  const wrap = document.getElementById('coverageStats');
+  wrap.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const res = await fetch('/coverage-data.json?_=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    wrap.innerHTML = fmtCoverageStats(data.stats, data.generated_at);
+  } catch (err) {
+    wrap.innerHTML = '<div style="color:#e57373">Could not load coverage data: ' + err.message + '</div>';
+  }
+}
+
+function appendCoverageLog(line) {
+  const log = document.getElementById('coverageLog');
+  const ts = new Date().toLocaleTimeString('en-IN');
+  if (log.querySelector('div[style*="6a8aa8"]')) log.innerHTML = '';
+  const row = document.createElement('div');
+  row.textContent = '[' + ts + '] ' + line;
+  log.prepend(row);
+}
+
+async function refreshCoverage() {
+  const btn = document.getElementById('btn-refresh-coverage');
+  if (!btn) return;
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Refreshing…';
+  appendCoverageLog('Refresh started…');
+  try {
+    const res = await fetch(`${API}/api/admin/refresh-coverage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    const body = await res.json();
+    if (!res.ok || body.ok === false) throw new Error(body.error || 'HTTP ' + res.status);
+    appendCoverageLog(`✅ Done — ${body.cities_written.toLocaleString('en-IN')} cities, ${body.total.toLocaleString('en-IN')} partners, ${body.states} states, ${body.pincodes.toLocaleString('en-IN')} pincodes`);
+    showToast('Coverage map refreshed');
+    await loadCoverage();
+  } catch (err) {
+    appendCoverageLog('❌ Failed — ' + err.message);
+    showToast('Refresh failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+// ── Shop Products ──
+async function loadShopProducts() {
+  const wrap = document.getElementById('shopProductsTable');
+  wrap.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const r = await fetch(`${API}/api/admin/shop/products`, { credentials:'include' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const products = await r.json();
+    document.getElementById('sp-count').textContent = `Products (${products.length})`;
+    const FMT = n => '₹' + Number(n).toLocaleString('en-IN');
+    wrap.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="text-align:left;color:#9ec1d8;font-size:11px;letter-spacing:1px;text-transform:uppercase">
+            <th style="padding:10px 8px">SKU</th>
+            <th style="padding:10px 8px">Name</th>
+            <th style="padding:10px 8px">MRP</th>
+            <th style="padding:10px 8px">Sell</th>
+            <th style="padding:10px 8px;text-align:center">Stock</th>
+            <th style="padding:10px 8px;text-align:center">Active</th>
+            <th style="padding:10px 8px;text-align:center">Featured</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${products.map(p => `
+            <tr style="border-top:1px solid #1a3a5c">
+              <td style="padding:12px 8px;color:#6a8aa8;font-family:monospace;font-size:11px">${p.sku}</td>
+              <td style="padding:12px 8px">${p.name}</td>
+              <td style="padding:12px 8px;color:#9ec1d8">${FMT(p.mrp)}</td>
+              <td style="padding:12px 8px;font-weight:600">
+                <input type="number" value="${p.selling_price}" min="0" step="0.01"
+                       onblur="updateProductField(${p.id},'selling_price',this.value)"
+                       style="width:90px;padding:4px 8px;background:#0d1f2d;border:1px solid #1a3a5c;border-radius:4px;color:#e0e0e0;font-size:12px"/>
+              </td>
+              <td style="padding:12px 8px;text-align:center">
+                <input type="number" value="${p.stock}" min="0"
+                       onblur="updateProductField(${p.id},'stock',this.value)"
+                       style="width:60px;padding:4px 8px;text-align:center;background:#0d1f2d;border:1px solid #1a3a5c;border-radius:4px;color:#e0e0e0;font-size:12px"/>
+              </td>
+              <td style="padding:12px 8px;text-align:center">
+                <input type="checkbox" ${p.is_active?'checked':''} onchange="updateProductField(${p.id},'is_active',this.checked)"/>
+              </td>
+              <td style="padding:12px 8px;text-align:center">
+                <input type="checkbox" ${p.is_featured?'checked':''} onchange="updateProductField(${p.id},'is_featured',this.checked)"/>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    wrap.innerHTML = '<div style="color:#e57373">Could not load: ' + err.message + '</div>';
+  }
+}
+
+async function updateProductField(id, field, value) {
+  try {
+    if (field === 'is_active' || field === 'is_featured') {
+      // value is boolean already
+    } else {
+      value = Number(value);
+    }
+    const r = await fetch(`${API}/api/admin/shop/products/${id}`, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({ [field]: value })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showToast('Product updated');
+  } catch (e) {
+    showToast('Update failed: ' + e.message);
+  }
+}
+
+// ── Shop Orders ──
+async function loadShopOrders() {
+  const wrap = document.getElementById('shopOrdersTable');
+  wrap.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const status = document.getElementById('so-filter').value;
+    const url = `${API}/api/admin/shop/orders${status ? '?status=' + encodeURIComponent(status) : ''}`;
+    const r = await fetch(url, { credentials:'include' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const orders = await r.json();
+    document.getElementById('so-count').textContent = `Orders (${orders.length})`;
+    if (!orders.length) {
+      wrap.innerHTML = '<div style="padding:30px;text-align:center;color:#6a8aa8">No orders yet.</div>';
+      return;
+    }
+    const FMT = n => '₹' + Number(n).toLocaleString('en-IN');
+    const statusColors = {
+      pending:'#fbbf24', confirmed:'#3b82f6', processing:'#8b5cf6',
+      shipped:'#0ea5e9', delivered:'#10b981', cancelled:'#ef4444'
+    };
+
+    wrap.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="text-align:left;color:#9ec1d8;font-size:11px;letter-spacing:1px;text-transform:uppercase">
+            <th style="padding:10px 8px">Order #</th>
+            <th style="padding:10px 8px">Customer</th>
+            <th style="padding:10px 8px">Total</th>
+            <th style="padding:10px 8px">Payment</th>
+            <th style="padding:10px 8px">Status</th>
+            <th style="padding:10px 8px">Date</th>
+            <th style="padding:10px 8px">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr style="border-top:1px solid #1a3a5c">
+              <td style="padding:12px 8px;font-family:monospace;font-size:11px;color:#00d4aa">${o.order_number}</td>
+              <td style="padding:12px 8px">
+                <div>${o.customer_name}</div>
+                <div style="color:#6a8aa8;font-size:11px">+91 ${o.customer_phone} · ${o.customer_email}</div>
+              </td>
+              <td style="padding:12px 8px;font-weight:600">${FMT(o.total_amount)}</td>
+              <td style="padding:12px 8px;color:#9ec1d8">
+                ${o.payment_method.toUpperCase()}
+                <div style="font-size:10px;color:#6a8aa8">${o.payment_status}</div>
+              </td>
+              <td style="padding:12px 8px">
+                <select onchange="updateOrderStatus(${o.id},'status',this.value)"
+                        style="background:#0d1f2d;border:1px solid ${statusColors[o.status]||'#1a3a5c'};border-radius:6px;color:${statusColors[o.status]||'#e0e0e0'};padding:4px 8px;font-size:11px">
+                  <option value="pending"    ${o.status==='pending'?'selected':''}>Pending</option>
+                  <option value="confirmed"  ${o.status==='confirmed'?'selected':''}>Confirmed</option>
+                  <option value="processing" ${o.status==='processing'?'selected':''}>Processing</option>
+                  <option value="shipped"    ${o.status==='shipped'?'selected':''}>Shipped</option>
+                  <option value="delivered"  ${o.status==='delivered'?'selected':''}>Delivered</option>
+                  <option value="cancelled"  ${o.status==='cancelled'?'selected':''}>Cancelled</option>
+                </select>
+              </td>
+              <td style="padding:12px 8px;color:#6a8aa8;font-size:11px">${new Date(o.created_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</td>
+              <td style="padding:12px 8px">
+                <button onclick="viewShopOrder(${o.id})" style="background:#1a3a5c;border:none;color:#e0e0e0;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer">View</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    wrap.innerHTML = '<div style="color:#e57373">Could not load: ' + err.message + '</div>';
+  }
+}
+
+async function updateOrderStatus(id, field, value) {
+  try {
+    const body = { [field]: value };
+    if (field === 'status' && value === 'shipped') {
+      const trk = prompt('Tracking number (optional)');
+      const carrier = trk ? (prompt('Carrier name (e.g. Delhivery, BlueDart)') || 'Courier') : null;
+      if (trk) { body.tracking_number = trk; body.shipping_carrier = carrier; }
+    }
+    const r = await fetch(`${API}/api/admin/shop/orders/${id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      credentials:'include', body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showToast('Order updated → ' + value);
+    loadShopOrders();
+  } catch (e) {
+    showToast('Failed: ' + e.message);
+  }
+}
+
+async function viewShopOrder(id) {
+  try {
+    const r = await fetch(`${API}/api/admin/shop/orders/${id}`, { credentials:'include' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const o = await r.json();
+    const FMT = n => '₹' + Number(n).toLocaleString('en-IN');
+    const addr = o.shipping_address || {};
+    const itemsTxt = (o.items||[]).map(i => `• ${i.product_name} × ${i.quantity} = ${FMT(i.line_total)}`).join('\n');
+    alert(
+`Order ${o.order_number}
+─────────────────────────
+Customer: ${o.customer_name}
+Phone: +91 ${o.customer_phone}
+Email: ${o.customer_email}
+
+Items:
+${itemsTxt}
+
+Subtotal: ${FMT(o.subtotal)}
+GST:      ${FMT(o.tax_amount)}
+Total:    ${FMT(o.total_amount)}
+
+Status: ${o.status} / ${o.payment_status}
+Payment: ${o.payment_method.toUpperCase()}
+${o.tracking_number ? '\nTracking: ' + o.tracking_number + ' (' + o.shipping_carrier + ')' : ''}
+
+Address:
+${addr.line1 || ''}${addr.line2 ? ', '+addr.line2 : ''}
+${addr.city || ''}, ${addr.state || ''} ${addr.pincode || ''}
+
+Placed: ${new Date(o.created_at).toLocaleString('en-IN')}
+Notes: ${o.notes || '—'}`
+    );
+  } catch (e) {
+    showToast('Failed: ' + e.message);
+  }
 }
 
 // Init — gate on auth, then load dashboard

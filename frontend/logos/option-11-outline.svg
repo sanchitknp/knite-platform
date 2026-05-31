@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" fill="none">
+  <text x="20" y="68"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="800" font-size="58" letter-spacing="6"
+        fill="none"
+        stroke="#0a1628" stroke-width="2" stroke-linejoin="round"
+        paint-order="stroke">KNITE</text>
+  <!-- Cyan dot accent (lower-right) -->
+  <circle cx="295" cy="62" r="6" fill="#00b4d8"/>
+  <text x="20" y="88"
+        font-family="Inter, system-ui, sans-serif"
+        font-weight="500" font-size="9" letter-spacing="4"
+        fill="#64748b">PURE WATER · PURE LIFE</text>
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <clipPath id="rounded">
+      <rect x="2" y="2" width="60" height="60" rx="12"/>
+    </clipPath>
+  </defs>
+
+  <!-- 5 horizontal filter strata = the 5 purification stages -->
+  <g clip-path="url(#rounded)">
+    <rect x="0" y="0"  width="64" height="13" fill="#bae6fd"/>
+    <rect x="0" y="13" width="64" height="13" fill="#7dd3fc"/>
+    <rect x="0" y="26" width="64" height="13" fill="#38bdf8"/>
+    <rect x="0" y="39" width="64" height="13" fill="#0ea5e9"/>
+    <rect x="0" y="52" width="64" height="13" fill="#0369a1"/>
+    <!-- subtle horizontal seams to emphasize "layers" -->
+    <line x1="0" y1="13" x2="64" y2="13" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.5"/>
+    <line x1="0" y1="26" x2="64" y2="26" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.5"/>
+    <line x1="0" y1="39" x2="64" y2="39" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.5"/>
+    <line x1="0" y1="52" x2="64" y2="52" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.5"/>
+  </g>
+
+  <!-- Outer rounded frame -->
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="none" stroke="#0a1628" stroke-width="2"/>
+
+  <!-- White K cut on top of the strata -->
+  <g fill="#ffffff">
+    <path d="M19 14 L25 14 L25 50 L19 50 Z"/>
+    <path d="M25 32 L25 26 L37 14 L45 14 L30 32 Z"/>
+    <path d="M25 32 L25 38 L37 50 L45 50 L30 32 Z"/>
+  </g>
+</svg>

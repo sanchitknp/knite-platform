@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 150" fill="none">
+  <text x="110" y="88" text-anchor="middle"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="900" font-size="92" letter-spacing="-12"
+        fill="#0a1628">KN</text>
+
+  <rect x="40" y="100" width="140" height="3" fill="#00b4d8"/>
+
+  <text x="110" y="128" text-anchor="middle"
+        font-family="Inter, system-ui, sans-serif"
+        font-weight="700" font-size="14" letter-spacing="10"
+        fill="#64748b">KNITE</text>
+</svg>

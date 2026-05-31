@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="o7grad" x1="0" y1="6" x2="0" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <!-- Vertical stem with slight inset corners -->
+  <path d="M10 6 L22 6 L22 58 L10 58 Z" fill="url(#o7grad)"/>
+  <!-- Upper arm: sharp triangular cut -->
+  <path d="M22 32 L22 24 L44 6 L56 6 L31 32 Z" fill="url(#o7grad)"/>
+  <!-- Lower arm: mirror -->
+  <path d="M22 32 L22 40 L44 58 L56 58 L31 32 Z" fill="url(#o7grad)"/>
+  <!-- Tiny accent dot at junction -->
+  <circle cx="29" cy="32" r="1.6" fill="#00b4d8"/>
+</svg>

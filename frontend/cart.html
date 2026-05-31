@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart — Knite</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0a1628;line-height:1.55}
+    a{color:inherit;text-decoration:none}
+
+    .nav{position:sticky;top:0;background:#0a1628;color:#fff;padding:14px 24px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+    .nav-wrap{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-family:Poppins;font-weight:800;font-size:20px;letter-spacing:3px}
+    .nav-links{display:flex;gap:24px;font-size:14px}
+
+    .wrap{max-width:1100px;margin:0 auto;padding:40px 24px 80px}
+    h1{font-family:Poppins;font-size:32px;font-weight:800;margin-bottom:24px}
+
+    .layout{display:grid;grid-template-columns:1fr 360px;gap:32px}
+    @media(max-width:880px){.layout{grid-template-columns:1fr}}
+
+    .items{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden}
+    .item{display:grid;grid-template-columns:90px 1fr auto;gap:16px;padding:18px;border-bottom:1px solid #f1f5f9;align-items:center}
+    .item:last-child{border-bottom:none}
+    .item-img{background:linear-gradient(135deg,#dbeafe,#e0f2fe);border-radius:10px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
+    .item-img svg{width:60%}
+    .item-name{font-family:Poppins;font-weight:700;font-size:15px;margin-bottom:4px}
+    .item-name a:hover{color:#00b4d8}
+    .item-meta{font-size:12px;color:#94a3b8}
+    .item-price{font-family:Poppins;font-weight:700;color:#0a1628;font-size:15px;margin-top:6px}
+    .qty-box{display:flex;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-top:10px;width:fit-content}
+    .qty-btn{background:transparent;border:none;width:32px;height:32px;font-size:14px;cursor:pointer;color:#0a1628}
+    .qty-btn:hover{background:#e2e8f0}
+    .qty-input{width:40px;text-align:center;border:none;background:transparent;font-weight:600;font-size:13px}
+    .qty-input:focus{outline:none}
+    .item-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+    .remove-btn{background:transparent;border:none;color:#94a3b8;font-size:12px;cursor:pointer;padding:0}
+    .remove-btn:hover{color:#dc2626}
+    .line-total{font-family:Poppins;font-weight:800;color:#0a1628;font-size:18px}
+
+    .summary{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;align-self:start;position:sticky;top:90px}
+    .summary h3{font-family:Poppins;font-size:14px;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px}
+    .row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px;color:#475569}
+    .row.total{font-family:Poppins;font-weight:800;font-size:20px;color:#0a1628;border-top:1px solid #e2e8f0;margin-top:8px;padding-top:14px}
+
+    .checkout-btn{width:100%;background:#0a1628;color:#fff;padding:14px;border-radius:10px;border:none;font-weight:700;font-size:15px;margin-top:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+    .checkout-btn:hover{background:#0369a1}
+    .checkout-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+    .empty{background:#fff;border-radius:16px;padding:80px 24px;text-align:center;border:1px solid #e2e8f0}
+    .empty p{color:#64748b;margin-bottom:18px;font-size:15px}
+    .btn-primary{background:#0a1628;color:#fff;padding:12px 28px;border-radius:10px;display:inline-block;font-weight:600}
+
+    .secure{font-size:11px;color:#94a3b8;text-align:center;margin-top:10px;letter-spacing:0.5px}
+
+    .loading{padding:80px;text-align:center;color:#94a3b8}
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-wrap">
+    <a href="/" class="nav-brand">
+      <svg width="32" height="32" viewBox="0 0 64 64" fill="none">
+        <defs><linearGradient id="b1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2b4a"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs>
+        <circle cx="32" cy="32" r="32" fill="url(#b1)"/>
+        <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.55"/>
+        <text x="32" y="42" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="26" letter-spacing="-2" fill="#fff">KN</text>
+      </svg>
+      KNITE<span style="color:#00b4d8">.</span>
+    </a>
+    <div class="nav-links" style="display:flex;gap:16px;align-items:center">
+      <a href="/shop.html">Continue Shopping</a>
+      <a id="account-link" href="/login.html" style="background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:8px;display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:13px">👤 <span id="account-label">Sign in</span></a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>Your Cart</h1>
+  <div id="root"><div class="loading">Loading cart…</div></div>
+</div>
+
+<script>
+const FMT = n => '₹' + Number(n).toLocaleString('en-IN');
+const CART_KEY = 'knite_cart_v1';
+function getCart(){try{return JSON.parse(localStorage.getItem(CART_KEY))||[]}catch{return[]}}
+function setCart(c){localStorage.setItem(CART_KEY,JSON.stringify(c));render()}
+
+const PRODUCT_SVG = `
+<svg viewBox="0 0 140 180" fill="none">
+  <rect x="35" y="20" width="70" height="140" rx="8" fill="#fff" stroke="#0a1628" stroke-width="2"/>
+  <rect x="48" y="35" width="44" height="60" rx="6" fill="url(#wf)"/>
+  <circle cx="70" cy="115" r="12" fill="#0a1628"/>
+  <text x="70" y="120" text-anchor="middle" fill="#fff" font-family="Inter" font-weight="700" font-size="10">KN</text>
+  <defs><linearGradient id="wf" x1="0" y1="0" x2="0" y2="60" gradientUnits="userSpaceOnUse">
+    <stop offset="0%" stop-color="#7dd3fc"/><stop offset="100%" stop-color="#0369a1"/></linearGradient></defs>
+</svg>`;
+
+async function render(){
+  const root = document.getElementById('root');
+  const cart = getCart();
+
+  if(!cart.length){
+    root.innerHTML = `<div class="empty">
+      <h2 style="font-family:Poppins;margin-bottom:8px">Your cart is empty</h2>
+      <p>Add a Knite purifier to get started.</p>
+      <a class="btn-primary" href="/shop.html">Browse Products</a>
+    </div>`;
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/shop/cart/validate', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ items: cart })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if (!data.items || !data.items.length) {
+      setCart([]);  // server says no valid items
+      return;
+    }
+
+    root.innerHTML = `
+      <div class="layout">
+        <div class="items">
+          ${data.items.map(i => `
+            <div class="item">
+              <div class="item-img">${PRODUCT_SVG}</div>
+              <div>
+                <div class="item-name"><a href="/product.html?slug=${i.slug}">${i.name}</a></div>
+                <div class="item-meta">SKU: ${i.sku} · ${i.in_stock ? 'In stock' : 'Out of stock'}</div>
+                <div class="item-price">${FMT(i.unit_price)}</div>
+                <div class="qty-box">
+                  <button class="qty-btn" onclick="updateQty('${i.slug}',-1)">−</button>
+                  <input class="qty-input" value="${i.quantity}" readonly>
+                  <button class="qty-btn" onclick="updateQty('${i.slug}',1)">+</button>
+                </div>
+              </div>
+              <div class="item-right">
+                <div class="line-total">${FMT(i.line_total)}</div>
+                <button class="remove-btn" onclick="removeItem('${i.slug}')">Remove</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="summary">
+          <h3>Order Summary</h3>
+          <div class="row"><span>Subtotal</span><span>${FMT(data.subtotal)}</span></div>
+          <div class="row"><span>GST (18%)</span><span>${FMT(data.tax)}</span></div>
+          <div class="row"><span>Shipping</span><span>${data.shipping > 0 ? FMT(data.shipping) : 'FREE'}</span></div>
+          <div class="row total"><span>Total</span><span>${FMT(data.total)}</span></div>
+          <button class="checkout-btn" onclick="goCheckout()">Proceed to Checkout →</button>
+          <div class="secure">🔒 Secure · Free Installation · 1-Yr Warranty</div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    root.innerHTML = '<div class="empty">Could not load cart: ' + err.message + '</div>';
+  }
+}
+
+function updateQty(slug, delta){
+  const cart = getCart();
+  const item = cart.find(i => i.slug === slug);
+  if(!item) return;
+  const next = item.quantity + delta;
+  if(next < 1){ removeItem(slug); return; }
+  if(next > 5){ return; }
+  item.quantity = next;
+  setCart(cart);
+}
+function removeItem(slug){
+  setCart(getCart().filter(i => i.slug !== slug));
+}
+function goCheckout(){
+  window.location.href = '/checkout.html';
+}
+
+render();
+
+// Auth-aware nav chip
+fetch('/api/shop/me').then(r => r.json()).then(d => {
+  if (d.logged_in) {
+    document.getElementById('account-link').href = '/account.html';
+    document.getElementById('account-label').textContent = d.customer.name ? d.customer.name.split(' ')[0] : 'Account';
+  }
+}).catch(()=>{});
+</script>
+</body>
+</html>

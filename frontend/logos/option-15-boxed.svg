@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 96" fill="none">
+  <defs>
+    <linearGradient id="boxBg" x1="0" y1="14" x2="0" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#0f2b4a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer dark box -->
+  <rect x="14" y="14" width="272" height="68" fill="url(#boxBg)"/>
+
+  <!-- Top cyan accent stripe -->
+  <rect x="14" y="14" width="272" height="4" fill="#00b4d8"/>
+  <!-- Bottom cyan accent stripe -->
+  <rect x="14" y="78" width="272" height="4" fill="#00b4d8"/>
+
+  <!-- KNITE wordmark inside -->
+  <text x="150" y="58" text-anchor="middle"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="800" font-size="36" letter-spacing="10"
+        fill="#ffffff">KNITE</text>
+
+  <!-- Small tagline beneath -->
+  <text x="150" y="74" text-anchor="middle"
+        font-family="Inter, system-ui, sans-serif"
+        font-weight="500" font-size="7" letter-spacing="5"
+        fill="#7dd3fc">PURE WATER · PURE LIFE</text>
+</svg>

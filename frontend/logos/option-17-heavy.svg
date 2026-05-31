@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" fill="none">
+  <text x="20" y="76"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="900" font-size="78" letter-spacing="-3"
+        fill="#0a1628">KNITE</text>
+
+  <!-- Cyan square accent after the wordmark -->
+  <rect x="306" y="56" width="14" height="14" fill="#00b4d8"/>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 150" fill="none">
+  <!-- Large KN monogram -->
+  <text x="110" y="84" text-anchor="middle"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="900" font-size="84" letter-spacing="-6"
+        fill="#0a1628">KN</text>
+
+  <!-- Thin cyan separator -->
+  <line x1="82" y1="98" x2="138" y2="98" stroke="#00b4d8" stroke-width="2"/>
+
+  <!-- KNITE wordmark below -->
+  <text x="110" y="124" text-anchor="middle"
+        font-family="Inter, system-ui, sans-serif"
+        font-weight="600" font-size="13" letter-spacing="9"
+        fill="#64748b">KNITE</text>
+</svg>

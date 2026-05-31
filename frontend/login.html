@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Knite</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0a1628;line-height:1.55;min-height:100vh;display:flex;flex-direction:column}
+    a{color:inherit;text-decoration:none}
+
+    .nav{background:#0a1628;color:#fff;padding:14px 24px}
+    .nav-wrap{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-family:Poppins;font-weight:800;font-size:20px;letter-spacing:3px}
+
+    .center{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:36px;max-width:420px;width:100%;box-shadow:0 8px 30px rgba(10,22,40,0.06)}
+
+    .logo-mark{width:54px;height:54px;margin:0 auto 18px;display:block}
+
+    h1{font-family:Poppins;font-size:24px;font-weight:800;text-align:center;margin-bottom:6px}
+    .sub{text-align:center;color:#64748b;font-size:14px;margin-bottom:24px}
+
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:12px;color:#475569;font-weight:600;margin-bottom:6px}
+    .field input{width:100%;padding:13px 14px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:15px;font-family:inherit;letter-spacing:0.5px}
+    .field input:focus{outline:none;border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,0.15)}
+
+    .otp-field input{font-size:24px;font-weight:700;letter-spacing:8px;text-align:center;font-family:Poppins}
+
+    .phone-prefix{display:flex;align-items:center;border:1.5px solid #cbd5e1;border-radius:10px;overflow:hidden}
+    .phone-prefix span{padding:13px 14px;background:#f1f5f9;color:#475569;font-weight:600;font-size:15px;border-right:1.5px solid #cbd5e1}
+    .phone-prefix input{border:none !important;flex:1}
+    .phone-prefix:focus-within{border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,0.15)}
+
+    .btn{width:100%;background:#0a1628;color:#fff;padding:14px;border-radius:10px;border:none;font-weight:700;font-size:15px;cursor:pointer;margin-top:6px;font-family:inherit}
+    .btn:hover{background:#0369a1}
+    .btn:disabled{opacity:0.6;cursor:not-allowed}
+
+    .err{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+    .ok{background:#dcfce7;border:1px solid #86efac;color:#065f46;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+
+    .resend{text-align:center;margin-top:14px;font-size:13px;color:#64748b}
+    .resend a{color:#0369a1;font-weight:600;cursor:pointer}
+    .resend .timer{color:#94a3b8}
+
+    .back{text-align:center;margin-top:18px;font-size:13px}
+    .back a{color:#64748b}
+    .back a:hover{color:#0369a1}
+
+    .perks{margin-top:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:11px;color:#64748b}
+    .perks .ic{font-size:18px;display:block;margin-bottom:3px}
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-wrap">
+    <a href="/" class="nav-brand">
+      <svg width="32" height="32" viewBox="0 0 64 64" fill="none">
+        <defs><linearGradient id="b1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2b4a"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs>
+        <circle cx="32" cy="32" r="32" fill="url(#b1)"/>
+        <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.55"/>
+        <text x="32" y="42" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="26" letter-spacing="-2" fill="#fff">KN</text>
+      </svg>
+      KNITE<span style="color:#00b4d8">.</span>
+    </a>
+    <div><a href="/shop.html" style="color:#fff;font-size:13px">Shop</a></div>
+  </div>
+</nav>
+
+<main class="center">
+  <div class="card">
+    <svg class="logo-mark" viewBox="0 0 64 64" fill="none">
+      <defs><linearGradient id="lb" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2b4a"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs>
+      <circle cx="32" cy="32" r="32" fill="url(#lb)"/>
+      <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.55"/>
+      <text x="32" y="42" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="26" letter-spacing="-2" fill="#fff">KN</text>
+    </svg>
+
+    <div id="err" class="err"></div>
+    <div id="ok"  class="ok"></div>
+
+    <!-- STEP 1: PHONE -->
+    <form id="phone-form" onsubmit="sendOtp(event)">
+      <h1>Sign in to Knite</h1>
+      <div class="sub">We'll send you an OTP on WhatsApp</div>
+      <div class="field">
+        <label>Phone Number</label>
+        <div class="phone-prefix">
+          <span>+91</span>
+          <input type="tel" id="phone" name="phone" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile">
+        </div>
+      </div>
+      <button type="submit" class="btn" id="send-btn">Send OTP →</button>
+      <div class="perks">
+        <div><span class="ic">📦</span>Track orders</div>
+        <div><span class="ic">📍</span>Saved addresses</div>
+        <div><span class="ic">🛡️</span>1-Yr warranty</div>
+      </div>
+    </form>
+
+    <!-- STEP 2: OTP -->
+    <form id="otp-form" onsubmit="verifyOtp(event)" style="display:none">
+      <h1>Verify OTP</h1>
+      <div class="sub">Enter the 6-digit code sent to <strong id="phone-display"></strong></div>
+      <div class="field otp-field">
+        <label>OTP Code</label>
+        <input type="text" inputmode="numeric" id="otp" name="otp" required pattern="[0-9]{6}" maxlength="6" placeholder="••••••" autocomplete="one-time-code">
+      </div>
+      <div class="field" id="name-field" style="display:none">
+        <label>Your Name (first time only)</label>
+        <input type="text" id="name" name="name" placeholder="As on your address">
+      </div>
+      <div class="field" id="email-field" style="display:none">
+        <label>Email (first time only)</label>
+        <input type="email" id="email" name="email" placeholder="for order receipts">
+      </div>
+      <button type="submit" class="btn" id="verify-btn">Verify & Sign In →</button>
+      <div class="resend">
+        <span class="timer" id="resend-timer">Resend OTP in <span id="seconds">30</span>s</span>
+        <a id="resend-link" style="display:none" onclick="resendOtp()">Resend OTP</a>
+      </div>
+      <div class="back"><a onclick="goBack()">← Use a different number</a></div>
+    </form>
+  </div>
+</main>
+
+<script>
+let currentPhone = null;
+let resendTimer = null;
+const params = new URLSearchParams(window.location.search);
+const redirectTo = params.get('next') || '/account.html';
+
+// If already logged in, redirect immediately
+(async () => {
+  try {
+    const r = await fetch('/api/shop/me');
+    const data = await r.json();
+    if (data.logged_in) window.location.replace(redirectTo);
+  } catch {}
+})();
+
+function showErr(msg) {
+  const el = document.getElementById('err');
+  el.textContent = '⚠️ ' + msg; el.style.display = 'block';
+  document.getElementById('ok').style.display = 'none';
+}
+function showOk(msg) {
+  const el = document.getElementById('ok');
+  el.textContent = '✓ ' + msg; el.style.display = 'block';
+  document.getElementById('err').style.display = 'none';
+}
+
+async function sendOtp(e) {
+  e.preventDefault();
+  const phone = document.getElementById('phone').value.trim();
+  if (!/^[0-9]{10}$/.test(phone)) { showErr('Enter a valid 10-digit number'); return; }
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true; btn.textContent = 'Sending OTP…';
+  try {
+    const r = await fetch('/api/shop/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.error || 'Failed to send OTP');
+    currentPhone = phone;
+
+    // Show OTP step
+    document.getElementById('phone-form').style.display = 'none';
+    document.getElementById('otp-form').style.display = 'block';
+    document.getElementById('phone-display').textContent = '+91 ' + phone;
+    document.getElementById('otp').focus();
+    showOk('OTP sent on WhatsApp');
+    startResendTimer();
+  } catch (err) {
+    showErr(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Send OTP →';
+  }
+}
+
+async function verifyOtp(e) {
+  e.preventDefault();
+  const otp = document.getElementById('otp').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const btn = document.getElementById('verify-btn');
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  try {
+    const r = await fetch('/api/shop/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ phone: currentPhone, otp, name, email })
+    });
+    const body = await r.json();
+    if (!r.ok) {
+      // If first-time user, server may need name — show those fields
+      if (!name && r.status === 200) {} // (no-op; we always include if provided)
+      throw new Error(body.error || 'Verification failed');
+    }
+    // If new customer (no name yet), prompt for it before going to account
+    if (!body.customer.name && !name) {
+      document.getElementById('name-field').style.display = 'block';
+      document.getElementById('email-field').style.display = 'block';
+      document.getElementById('name').required = true;
+      showErr('One last step — tell us your name');
+      btn.disabled = false; btn.textContent = 'Complete Sign In →';
+      return;
+    }
+    // If customer just provided name/email mid-flow, update server
+    if (name || email) {
+      await fetch('/api/shop/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: name || undefined, email: email || undefined })
+      });
+    }
+    showOk('Signed in! Redirecting…');
+    setTimeout(() => window.location.replace(redirectTo), 600);
+  } catch (err) {
+    showErr(err.message);
+    btn.disabled = false; btn.textContent = 'Verify & Sign In →';
+  }
+}
+
+function startResendTimer() {
+  let s = 30;
+  document.getElementById('seconds').textContent = s;
+  document.getElementById('resend-timer').style.display = 'inline';
+  document.getElementById('resend-link').style.display = 'none';
+  clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    s--;
+    document.getElementById('seconds').textContent = s;
+    if (s <= 0) {
+      clearInterval(resendTimer);
+      document.getElementById('resend-timer').style.display = 'none';
+      document.getElementById('resend-link').style.display = 'inline';
+    }
+  }, 1000);
+}
+
+async function resendOtp() {
+  if (!currentPhone) return;
+  try {
+    const r = await fetch('/api/shop/auth/send-otp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentPhone })
+    });
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.error || 'Failed');
+    showOk('OTP resent');
+    startResendTimer();
+  } catch (err) {
+    showErr(err.message);
+  }
+}
+
+function goBack() {
+  document.getElementById('otp-form').style.display = 'none';
+  document.getElementById('phone-form').style.display = 'block';
+  document.getElementById('err').style.display = 'none';
+  document.getElementById('ok').style.display = 'none';
+  clearInterval(resendTimer);
+}
+</script>
+</body>
+</html>

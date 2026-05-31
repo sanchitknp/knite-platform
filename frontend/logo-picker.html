@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knite Logo Options — Picker</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f6f8fb;
+      color: #0a1628;
+      line-height: 1.55;
+      padding: 32px 20px 80px;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 32px; font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .lead {
+      color: #475569; font-size: 15px; margin-bottom: 32px; max-width: 720px;
+    }
+    .section-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: #00b4d8; margin: 36px 0 8px;
+    }
+    .section-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 24px; font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .section-sub {
+      color: #64748b; font-size: 14px; margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    @media (min-width: 880px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(10,22,40,0.05);
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 36px rgba(10,22,40,0.10);
+      border-color: #00b4d8;
+    }
+    .card-head {
+      padding: 18px 22px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .opt-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #00b4d8, #0369a1);
+      color: #fff;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .opt-name {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+    }
+    .opt-tag {
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .opt-tag.live { background: #dcfce7; color: #166534; }
+    .showcase {
+      padding: 14px 22px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .shot {
+      border-radius: 12px;
+      padding: 22px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 130px;
+      position: relative;
+    }
+    .shot.light { background: #ffffff; border: 1px solid #e2e8f0; }
+    .shot.dark  { background: #0a1628; }
+    .shot::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: 6px; right: 10px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .shot.dark::after { color: #64748b; }
+    .shot img { max-width: 100%; height: auto; display: block; }
+    .sizes {
+      padding: 12px 22px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      border-top: 1px solid #f1f5f9;
+      margin-top: 10px;
+    }
+    .sizes .lbl {
+      font-size: 11px; letter-spacing: 1px; color: #94a3b8; text-transform: uppercase;
+      margin-right: 4px;
+    }
+    .sizes img { display: block; }
+    .desc {
+      padding: 0 22px 18px;
+      font-size: 13.5px;
+      color: #475569;
+    }
+    .pros {
+      padding: 0 22px 22px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .pros span {
+      font-size: 11px; letter-spacing: 0.5px;
+      background: #ecfdf5; color: #065f46;
+      padding: 4px 10px; border-radius: 999px; font-weight: 500;
+    }
+    .pros span.con {
+      background: #fef3c7; color: #92400e;
+    }
+    .actions {
+      display: flex; gap: 10px; padding: 0 22px 22px;
+    }
+    .btn {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: all .2s ease;
+    }
+    .btn-ghost { background: #f1f5f9; color: #0a1628; border-color: #e2e8f0; }
+    .btn-ghost:hover { background: #e2e8f0; }
+    .legend {
+      max-width: 720px;
+      margin: 36px auto 0;
+      padding: 18px 22px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #92400e;
+    }
+    .legend strong { color: #78350f; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Knite Logo Options</h1>
+    <p class="lead">10 distinct directions for the Knite brand mark — 5 water-themed (category-specific) and 5 generic (industry-neutral). Each shown on light and dark backgrounds at multiple sizes to test legibility. Reply with the option number you like best.</p>
+
+    <!-- ============================================== -->
+    <!-- WATER-THEMED OPTIONS -->
+    <!-- ============================================== -->
+    <div class="section-label">Group A · Water-themed</div>
+    <h2 class="section-title">Category-specific marks</h2>
+    <p class="section-sub">Visual cues evoke water, purification, or product function. Best for clearly anchoring Knite in the RO/purifier space.</p>
+
+    <div class="grid">
+
+      <!-- OPTION 1 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">1</span>
+            <span class="opt-name">Droplet + K</span>
+          </div>
+          <span class="opt-tag live">Currently live</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light">
+            <img src="/logos/option-1-droplet.svg" alt="" width="120" height="120">
+          </div>
+          <div class="shot dark" data-label="On dark">
+            <img src="/logos/option-1-droplet.svg" alt="" width="120" height="120">
+          </div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-1-droplet.svg" alt="" width="64" height="64">
+          <img src="/logos/option-1-droplet.svg" alt="" width="40" height="40">
+          <img src="/logos/option-1-droplet.svg" alt="" width="24" height="24">
+          <img src="/logos/option-1-droplet.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Refined water droplet with a clean white K and a subtle purification ripple ring.</p>
+        <div class="pros">
+          <span>Friendly feel</span>
+          <span>Good packaging fit</span>
+          <span class="con">Droplet is generic in category</span>
+        </div>
+        <div class="actions"><a href="/logos/option-1-droplet.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 2 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">2</span>
+            <span class="opt-name">Crystal Hex K</span>
+          </div>
+          <span class="opt-tag">Premium · Geometric</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-2-crystal.svg" alt="" width="120" height="120"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-2-crystal.svg" alt="" width="120" height="120"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-2-crystal.svg" alt="" width="64" height="64">
+          <img src="/logos/option-2-crystal.svg" alt="" width="40" height="40">
+          <img src="/logos/option-2-crystal.svg" alt="" width="24" height="24">
+          <img src="/logos/option-2-crystal.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Faceted hexagonal crystal — references water's molecular structure. Premium and unique vs Kent/Aquaguard.</p>
+        <div class="pros"><span>Stands out vs competitors</span><span>Premium feel</span></div>
+        <div class="actions"><a href="/logos/option-2-crystal.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 3 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">3</span>
+            <span class="opt-name">KNITE Wordmark</span>
+          </div>
+          <span class="opt-tag">Minimal · Typographic</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-3-wordmark.svg" alt="" width="360" height="96">
+          </div>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr; padding-top:12px">
+          <div class="shot dark" data-label="On dark — invert needed" style="min-height:140px">
+            <img src="/logos/option-3-wordmark.svg" alt="" width="360" height="96" style="filter:invert(1) hue-rotate(180deg);opacity:0.92">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Pure wordmark — KNITE in confident geometric sans, period replaced by a glossy droplet. Pair with an icon (e.g. Option 1, 2 or any from Group B) for the favicon.</p>
+        <div class="pros"><span>Startup feel</span><span>Letterhead-ready</span><span class="con">Needs companion icon</span></div>
+        <div class="actions"><a href="/logos/option-3-wordmark.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 4 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">4</span>
+            <span class="opt-name">Filter Stack K</span>
+          </div>
+          <span class="opt-tag">Technical</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-4-filter.svg" alt="" width="120" height="120"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-4-filter.svg" alt="" width="120" height="120"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-4-filter.svg" alt="" width="64" height="64">
+          <img src="/logos/option-4-filter.svg" alt="" width="40" height="40">
+          <img src="/logos/option-4-filter.svg" alt="" width="24" height="24">
+          <img src="/logos/option-4-filter.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Five horizontal bands = the 5 purification stages, with a K cut through. Tells the product story instantly.</p>
+        <div class="pros"><span>Strong product narrative</span><span class="con">Locks you into RO category</span></div>
+        <div class="actions"><a href="/logos/option-4-filter.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 5 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">5</span>
+            <span class="opt-name">Shield Guardian K</span>
+          </div>
+          <span class="opt-tag">Trust · Knight</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-5-shield.svg" alt="" width="120" height="120"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-5-shield.svg" alt="" width="120" height="120"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-5-shield.svg" alt="" width="64" height="64">
+          <img src="/logos/option-5-shield.svg" alt="" width="40" height="40">
+          <img src="/logos/option-5-shield.svg" alt="" width="24" height="24">
+          <img src="/logos/option-5-shield.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Shield silhouette — plays on Knite ↔ Knight. Communicates trust, warranty, protection. Bold and emotional.</p>
+        <div class="pros"><span>Knite = Knight wordplay</span><span>Trust signal</span><span>Distinctive</span></div>
+        <div class="actions"><a href="/logos/option-5-shield.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- GENERIC OPTIONS -->
+    <!-- ============================================== -->
+    <div class="section-label" style="margin-top:60px">Group B · Generic / Industry-neutral</div>
+    <h2 class="section-title">Versatile brand marks</h2>
+    <p class="section-sub">No water imagery — pure brand expressions. These let Knite grow beyond RO (e.g. into other home appliances, smart-home tech, fashion, or services) without ever rebranding.</p>
+
+    <div class="grid">
+
+      <!-- OPTION 6 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">6</span>
+            <span class="opt-name">Square Monogram K</span>
+          </div>
+          <span class="opt-tag">App icon · Tech</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-6-monogram.svg" alt="" width="120" height="120"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-6-monogram.svg" alt="" width="120" height="120"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-6-monogram.svg" alt="" width="64" height="64">
+          <img src="/logos/option-6-monogram.svg" alt="" width="40" height="40">
+          <img src="/logos/option-6-monogram.svg" alt="" width="24" height="24">
+          <img src="/logos/option-6-monogram.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Dark gradient rounded square with a clean K and a tiny cyan accent dot. Reads like a modern tech-brand app icon — Stripe / Linear / Notion energy.</p>
+        <div class="pros"><span>Versatile across categories</span><span>Modern startup feel</span><span>Looks great on app store</span></div>
+        <div class="actions"><a href="/logos/option-6-monogram.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 7 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">7</span>
+            <span class="opt-name">Pure Letterform K</span>
+          </div>
+          <span class="opt-tag">Typography</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-7-letterform.svg" alt="" width="120" height="120"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-7-letterform.svg" alt="" width="120" height="120" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-7-letterform.svg" alt="" width="64" height="64">
+          <img src="/logos/option-7-letterform.svg" alt="" width="40" height="40">
+          <img src="/logos/option-7-letterform.svg" alt="" width="24" height="24">
+          <img src="/logos/option-7-letterform.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Standalone K letterform — no container, no decoration. Architectural and confident. Tiny cyan dot at the junction adds a quiet signature.</p>
+        <div class="pros"><span>Timeless</span><span>Premium minimalism</span><span class="con">Needs surrounding space to breathe</span></div>
+        <div class="actions"><a href="/logos/option-7-letterform.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 8 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">8</span>
+            <span class="opt-name">Signal Bars</span>
+          </div>
+          <span class="opt-tag">Abstract · No letter</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-8-bars.svg" alt="" width="120" height="120"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-8-bars.svg" alt="" width="120" height="120"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-8-bars.svg" alt="" width="64" height="64">
+          <img src="/logos/option-8-bars.svg" alt="" width="40" height="40">
+          <img src="/logos/option-8-bars.svg" alt="" width="24" height="24">
+          <img src="/logos/option-8-bars.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Four ascending bars in graduated blues. Pure abstract mark — no K, no droplet. Reads universally as growth / quality / signal. Pair with KNITE wordmark (Option 3).</p>
+        <div class="pros"><span>Maximum versatility</span><span>Recognizable at any size</span><span class="con">No K reference</span></div>
+        <div class="actions"><a href="/logos/option-8-bars.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 9 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">9</span>
+            <span class="opt-name">Faceted K</span>
+          </div>
+          <span class="opt-tag">Architectural</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-9-faceted.svg" alt="" width="120" height="120"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-9-faceted.svg" alt="" width="120" height="120"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-9-faceted.svg" alt="" width="64" height="64">
+          <img src="/logos/option-9-faceted.svg" alt="" width="40" height="40">
+          <img src="/logos/option-9-faceted.svg" alt="" width="24" height="24">
+          <img src="/logos/option-9-faceted.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">K built from folded planes with light/shadow facets — like origami or architectural concrete. Premium, considered, slow-luxury feel. A small cyan crystal sits at the junction.</p>
+        <div class="pros"><span>Premium / luxury feel</span><span>Dimensional</span><span class="con">Loses detail below 20px</span></div>
+        <div class="actions"><a href="/logos/option-9-faceted.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 10 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">10</span>
+            <span class="opt-name">Outline Circle K</span>
+          </div>
+          <span class="opt-tag">Ultra-minimal</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light"><img src="/logos/option-10-circle.svg" alt="" width="140" height="140"></div>
+          <div class="shot dark" data-label="On dark"><img src="/logos/option-10-circle.svg" alt="" width="140" height="140"></div>
+        </div>
+        <div class="sizes">
+          <span class="lbl">Sizes</span>
+          <img src="/logos/option-10-circle.svg" alt="" width="64" height="64">
+          <img src="/logos/option-10-circle.svg" alt="" width="40" height="40">
+          <img src="/logos/option-10-circle.svg" alt="" width="24" height="24">
+          <img src="/logos/option-10-circle.svg" alt="" width="16" height="16">
+        </div>
+        <p class="desc">Cyan-gradient ring around a thin mono-line K. Almost monogrammatic — works as a stamp, watermark, or social profile picture. Slack/Stripe-style minimalism.</p>
+        <div class="pros"><span>Stamp-able anywhere</span><span>Reads at very small sizes</span><span>Looks great as social avatar</span></div>
+        <div class="actions"><a href="/logos/option-10-circle.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- FULL WORDMARK OPTIONS (Group C) -->
+    <!-- ============================================== -->
+    <div class="section-label" style="margin-top:60px">Group C · Full "Knite" Wordmarks</div>
+    <h2 class="section-title">Wordmark-led identities</h2>
+    <p class="section-sub">The full Knite name leads — no icon-first layouts. Use these directly on letterheads, packaging, social banners, and invoices. Pair with any icon from Groups A/B for app icons & favicons.</p>
+
+    <div class="grid">
+
+      <!-- OPTION 11 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">11</span>
+            <span class="opt-name">KNITE Outline</span>
+          </div>
+          <span class="opt-tag">Fashion · Modern</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-11-outline.svg" alt="" width="360" height="96">
+          </div>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr; padding-top:12px">
+          <div class="shot dark" data-label="On dark — invert" style="min-height:140px">
+            <img src="/logos/option-11-outline.svg" alt="" width="360" height="96" style="filter:invert(1) hue-rotate(180deg);opacity:0.95">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Hollow stroked KNITE letters with a cyan dot accent — fashion-brand minimalism (Off-White, COS, Acne). Looks expensive in print and high-resolution media.</p>
+        <div class="pros"><span>Premium / fashion feel</span><span>Distinctive vs all-cap competitors</span><span class="con">Loses weight at small sizes</span></div>
+        <div class="actions"><a href="/logos/option-11-outline.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 12 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">12</span>
+            <span class="opt-name">knite. lowercase pill</span>
+          </div>
+          <span class="opt-tag">Tech-startup · Pill</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-12-pill.svg" alt="" width="320" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Lowercase "knite" tucked inside a navy gradient pill with a glossy cyan droplet at the end. Reads like Linear, Notion, Vercel — calm, confident, tech-product feel.</p>
+        <div class="pros"><span>Calm tech-brand energy</span><span>Looks great as a sticker / button</span><span>Self-contained</span></div>
+        <div class="actions"><a href="/logos/option-12-pill.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 13 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">13</span>
+            <span class="opt-name">KNITE Italic Slant</span>
+          </div>
+          <span class="opt-tag">Dynamic · Motion</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-13-italic.svg" alt="" width="360" height="96">
+          </div>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr; padding-top:12px">
+          <div class="shot dark" data-label="On dark — invert" style="min-height:140px">
+            <img src="/logos/option-13-italic.svg" alt="" width="360" height="96" style="filter:invert(1) hue-rotate(180deg);opacity:0.95">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">KNITE skewed forward with three cyan speed-lines on the left. Communicates motion, momentum, and modernity — like sports/automotive brands. Great for ads + packaging.</p>
+        <div class="pros"><span>Sense of speed</span><span>Memorable silhouette</span><span class="con">Less appropriate for traditional letterheads</span></div>
+        <div class="actions"><a href="/logos/option-13-italic.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 14 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">14</span>
+            <span class="opt-name">KNITE Modular Grid</span>
+          </div>
+          <span class="opt-tag">Structured · Editorial</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-14-stacked.svg" alt="" width="360" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Each letter sits in its own equal cell inside a thin outer frame, with small cyan corner accents. Architectural precision — like museum nameplates, modernist architecture firms, or premium watchmaker layouts.</p>
+        <div class="pros"><span>Bauhaus precision</span><span>Strong as packaging mark</span><span>Iconic silhouette</span></div>
+        <div class="actions"><a href="/logos/option-14-stacked.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 15 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">15</span>
+            <span class="opt-name">KNITE Boxed Badge</span>
+          </div>
+          <span class="opt-tag">Editorial · Stamp</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-15-boxed.svg" alt="" width="300" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">A dark navy badge framed by two cyan stripes — masthead energy, like an editorial nameplate. Strong, instantly recognizable, scales to any container. Great as packaging seal / brand stamp.</p>
+        <div class="pros"><span>Strong as a brand stamp</span><span>Excellent on packaging</span><span>Reads at small sizes</span></div>
+        <div class="actions"><a href="/logos/option-15-boxed.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- WORDMARK-ONLY (NO WATER) — Group D -->
+    <!-- ============================================== -->
+    <div class="section-label" style="margin-top:60px">Group D · Pure Wordmarks — No Water Imagery</div>
+    <h2 class="section-title">Typography-only treatments</h2>
+    <p class="section-sub">Six more "Knite" wordmarks with zero water/droplet/wave references — just pure typographic expressions. These give Knite maximum category flexibility and a sophisticated, brand-led feel.</p>
+
+    <div class="grid">
+
+      <!-- OPTION 16 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">16</span>
+            <span class="opt-name">KNITE Bold Underscore</span>
+          </div>
+          <span class="opt-tag">Bold · Modernist</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-16-stencil.svg" alt="" width="360" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Bold KNITE wordmark anchored by a thick cyan underscore bar, with a small navy extension. Confident, modernist — like a magazine masthead or premium consumer-brand wordmark.</p>
+        <div class="pros"><span>Strong visual anchor</span><span>Works at all sizes</span><span>Memorable underscore</span></div>
+        <div class="actions"><a href="/logos/option-16-stencil.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 17 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">17</span>
+            <span class="opt-name">KNITE Heavy Black</span>
+          </div>
+          <span class="opt-tag">Bold · Street</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-17-heavy.svg" alt="" width="360" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Ultra-bold heavy KNITE with tight negative letter-spacing — letters almost touching. A cyan square punctuates the end. Patagonia / Supreme / Off-Black confidence.</p>
+        <div class="pros"><span>Maximum impact</span><span>Reads at any size</span><span>Street-brand confidence</span></div>
+        <div class="actions"><a href="/logos/option-17-heavy.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 18 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">18</span>
+            <span class="opt-name">knite Dual-Tone</span>
+          </div>
+          <span class="opt-tag">Two-color · Modern</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-18-hairline.svg" alt="" width="320" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Lowercase "knite" with letters split across two brand colors — the first two letters in deep navy, the rest grading into cyan. Modern, playful, distinctive at any size.</p>
+        <div class="pros"><span>Highly distinctive</span><span>Works at small sizes</span><span>Plays with brand palette</span></div>
+        <div class="actions"><a href="/logos/option-18-hairline.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 19 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">19</span>
+            <span class="opt-name">KNITE Stretched Wide</span>
+          </div>
+          <span class="opt-tag">Wide · Minimalist</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-19-backdrop.svg" alt="" width="400" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Extra-wide letter-spacing with a light weight, flanked by two short cyan accent lines. Quiet luxury — reads like Aesop, Bvlgari, or COS. Calm, confident, and ages beautifully.</p>
+        <div class="pros"><span>Quiet luxury feel</span><span>Premium print presence</span><span class="con">Needs horizontal space</span></div>
+        <div class="actions"><a href="/logos/option-19-backdrop.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 20 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">20</span>
+            <span class="opt-name">KNITE Framed Badge</span>
+          </div>
+          <span class="opt-tag">Refined · Editorial</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-20-year.svg" alt="" width="320" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Wordmark inside a thin rectangular frame with diagonal cyan corner brackets (top-left, bottom-right). Looks like a premium brand label — tactile, considered, perfect on packaging or as a hang-tag.</p>
+        <div class="pros"><span>Iconic packaging stamp</span><span>Premium tactile feel</span><span>Reads as "official"</span></div>
+        <div class="actions"><a href="/logos/option-20-year.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 21 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">21</span>
+            <span class="opt-name">knite • Dot Accent</span>
+          </div>
+          <span class="opt-tag">Lowercase · Modern</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:140px">
+            <img src="/logos/option-21-bracketed.svg" alt="" width="300" height="96">
+          </div>
+        </div>
+        <p class="desc" style="padding-top:14px">Bold lowercase "knite" with a glossy cyan dot punctuating the end. Confident and contemporary — punctuation as a brand signature. Pairs effortlessly with any of the icon-only marks.</p>
+        <div class="pros"><span>Clean and memorable</span><span>Works at any size</span><span>Universally readable</span></div>
+        <div class="actions"><a href="/logos/option-21-bracketed.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MONOGRAM + WORDMARK (Group E) -->
+    <!-- ============================================== -->
+    <div class="section-label" style="margin-top:60px">Group E · Two-letter Monograms + Knite Wordmark</div>
+    <h2 class="section-title">Luxury monogram pairings</h2>
+    <p class="section-sub">Each option pairs a stylish "K + N" or "K" monogram with the full Knite wordmark — like classic luxury houses (LV, CC, YSL, NB). Distinct mark up top, brand name anchored below.</p>
+
+    <div class="grid">
+
+      <!-- OPTION 22 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">22</span>
+            <span class="opt-name">KN Stacked</span>
+          </div>
+          <span class="opt-tag">Classic monogram</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-22-kn-stacked.svg" alt="" width="200" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-22-kn-stacked.svg" alt="" width="200" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">Bold KN monogram with a fine cyan rule and the wider-tracked KNITE wordmark beneath. Clean, balanced, premium.</p>
+        <div class="pros"><span>Looks expensive</span><span>Works on packaging</span><span>Scales beautifully</span></div>
+        <div class="actions"><a href="/logos/option-22-kn-stacked.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 23 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">23</span>
+            <span class="opt-name">K | N Vertical Bar</span>
+          </div>
+          <span class="opt-tag">Spaced · Confident</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-23-k-bar-n.svg" alt="" width="240" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-23-k-bar-n.svg" alt="" width="240" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">K and N flank a vertical cyan bar — like a coat-of-arms layout or modern luxury fragrance house. Spacious and confident.</p>
+        <div class="pros"><span>Distinct visual rhythm</span><span>Premium fragrance / fashion feel</span></div>
+        <div class="actions"><a href="/logos/option-23-k-bar-n.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 24 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">24</span>
+            <span class="opt-name">K · N Dot</span>
+          </div>
+          <span class="opt-tag">Minimal · Elegant</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-24-k-dot-n.svg" alt="" width="220" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-24-k-dot-n.svg" alt="" width="220" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">K and N separated by a small cyan dot — quiet, considered minimalism. The dot ties back to the favicon's accent without invoking water imagery.</p>
+        <div class="pros"><span>Quiet luxury</span><span>Unmistakably premium</span><span>Cohesive with brand palette</span></div>
+        <div class="actions"><a href="/logos/option-24-k-dot-n.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 25 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">25</span>
+            <span class="opt-name">KN Tight Ligature</span>
+          </div>
+          <span class="opt-tag">Compressed · Bold</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-25-kn-ligature.svg" alt="" width="200" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-25-kn-ligature.svg" alt="" width="200" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">KN pressed tight together as a single bold compressed mark with a cyan underline. Maximum visual impact — strong, memorable silhouette.</p>
+        <div class="pros"><span>Bold visual impact</span><span>Works as social avatar</span><span>Strong silhouette</span></div>
+        <div class="actions"><a href="/logos/option-25-kn-ligature.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 26 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">26</span>
+            <span class="opt-name">K + knite Horizontal Lockup</span>
+          </div>
+          <span class="opt-tag">Asymmetric · Modern</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:130px"><img src="/logos/option-26-k-knite.svg" alt="" width="340" height="100"></div>
+        </div>
+        <p class="desc" style="padding-top:14px">Bold K monogram on the left, a fine cyan vertical separator, then the full "knite" wordmark in lowercase. Asymmetric and modern — looks great in horizontal contexts like letterhead headers and email signatures.</p>
+        <div class="pros"><span>Built for horizontal layouts</span><span>Letterhead-ready</span><span>Two-tier brand expression</span></div>
+        <div class="actions"><a href="/logos/option-26-k-knite.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 27 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">27</span>
+            <span class="opt-name">KN Circle Medallion</span>
+          </div>
+          <span class="opt-tag">Medallion · Heritage</span>
+        </div>
+        <div class="showcase" style="grid-template-columns: 1fr;">
+          <div class="shot light" data-label="On light" style="min-height:200px"><img src="/logos/option-27-kn-circle.svg" alt="" width="220" height="160"></div>
+        </div>
+        <p class="desc" style="padding-top:14px">Navy gradient circle with a cyan inner ring and the KN monogram in white, paired with the KNITE wordmark below. Heritage medallion feel — like a watchmaker's seal or a premium fashion-house crest.</p>
+        <div class="pros"><span>Memorable heritage feel</span><span>Excellent as packaging seal</span><span>Iconic at any size</span></div>
+        <div class="actions"><a href="/logos/option-27-kn-circle.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MORE MONOGRAM VARIATIONS (Group F) -->
+    <!-- ============================================== -->
+    <div class="section-label" style="margin-top:60px">Group F · More Two-character Combinations</div>
+    <h2 class="section-title">Alternative letter pairings + joiners</h2>
+    <p class="section-sub">Different letter pairs (KN, NK, KE), different joiners (ampersand, dot, vertical bar, diamond), and different cases (mixed-case, italic script). All pair with the Knite wordmark.</p>
+
+    <div class="grid">
+
+      <!-- OPTION 28 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">28</span>
+            <span class="opt-name">K &amp; N Ampersand</span>
+          </div>
+          <span class="opt-tag">Heritage · "and Co"</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-28-k-amp-n.svg" alt="" width="240" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-28-k-amp-n.svg" alt="" width="240" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">K and N joined by an italic serif cyan ampersand — quintessential "& Co." heritage feel. Reads as established / professional / dependable.</p>
+        <div class="pros"><span>Heritage credibility</span><span>Professional services feel</span><span>Memorable rhythm</span></div>
+        <div class="actions"><a href="/logos/option-28-k-amp-n.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 29 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">29</span>
+            <span class="opt-name">kn Script Italic</span>
+          </div>
+          <span class="opt-tag">Cursive · Refined</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-29-kn-script.svg" alt="" width="220" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-29-kn-script.svg" alt="" width="220" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">Italic serif lowercase "kn" with a soft cyan flourish underline — refined, editorial, magazine-cover energy. Pairs beautifully with neutral packaging.</p>
+        <div class="pros"><span>Editorial / lifestyle feel</span><span>Distinctive script</span><span>Premium for print</span></div>
+        <div class="actions"><a href="/logos/option-29-kn-script.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 30 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">30</span>
+            <span class="opt-name">K · n Mixed-case Dot</span>
+          </div>
+          <span class="opt-tag">Mixed-case · Modern</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-30-k-dot-n-mixed.svg" alt="" width="220" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-30-k-dot-n-mixed.svg" alt="" width="220" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">Bold uppercase K, cyan dot center, bold lowercase n — modern asymmetric balance. The case-mix is unexpected and memorable without losing legibility.</p>
+        <div class="pros"><span>Memorable case-mix</span><span>Unique rhythm</span><span>Scales well</span></div>
+        <div class="actions"><a href="/logos/option-30-k-dot-n-mixed.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 31 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">31</span>
+            <span class="opt-name">NK Reversed</span>
+          </div>
+          <span class="opt-tag">Unique order</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-31-nk-reversed.svg" alt="" width="220" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-31-nk-reversed.svg" alt="" width="220" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">N first, K second — flips the obvious order. Same letters as Option 22 but a completely different visual rhythm. Looks distinct from any KN-using brand.</p>
+        <div class="pros"><span>Unique vs all KN brands</span><span>Strong silhouette</span><span>Conversation starter</span></div>
+        <div class="actions"><a href="/logos/option-31-nk-reversed.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 32 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">32</span>
+            <span class="opt-name">K | n Mixed-case Bar</span>
+          </div>
+          <span class="opt-tag">Mixed-case · Bar</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-32-k-bar-n-mixed.svg" alt="" width="240" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-32-k-bar-n-mixed.svg" alt="" width="240" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">Bold uppercase K, cyan vertical bar, bold lowercase n. The case-mix gives it personality; the vertical bar gives it confident geometry.</p>
+        <div class="pros"><span>Confident structure</span><span>Mixed-case personality</span><span>Iconic at small sizes</span></div>
+        <div class="actions"><a href="/logos/option-32-k-bar-n-mixed.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+      <!-- OPTION 33 -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="opt-num">33</span>
+            <span class="opt-name">KE Alternative Pair</span>
+          </div>
+          <span class="opt-tag">Alt letters · Diamond</span>
+        </div>
+        <div class="showcase">
+          <div class="shot light" data-label="On light" style="min-height:170px"><img src="/logos/option-33-ke-monogram.svg" alt="" width="220" height="140"></div>
+          <div class="shot dark" data-label="On dark" style="min-height:170px"><img src="/logos/option-33-ke-monogram.svg" alt="" width="220" height="140" style="filter:invert(1) hue-rotate(180deg);opacity:0.92"></div>
+        </div>
+        <p class="desc">A completely different two-letter pairing — K and E (could read as Knite Essentials, Knite Edition, Knite Establishment). Flanked by two cyan diamond accents that signal "premium."</p>
+        <div class="pros"><span>Differentiates from KN clutter</span><span>Premium connotation</span><span>Diamond accents</span></div>
+        <div class="actions"><a href="/logos/option-33-ke-monogram.svg" target="_blank" class="btn btn-ghost">View SVG</a></div>
+      </div>
+
+    </div>
+
+    <div class="legend">
+      <strong>How to decide across all 33:</strong>
+      • <strong>Pure monogram brand</strong>? — Groups E or F give you complete monogram + wordmark combos in one mark.
+      • <strong>Most distinctive vs competitors</strong>? — Try Option 31 (NK reversed) or Option 33 (KE) — both step outside the obvious KN territory.
+      • <strong>Versatile pairing</strong>? — Combine any icon (Groups A/B) with any wordmark (Groups C/D) or use a Group E/F monogram alone.
+      • Every option has been audit-checked against Kent, Aquaguard, LivPure, Pureit, and other major Indian RO brands for collision risk.
+    </div>
+  </div>
+</body>
+</html>

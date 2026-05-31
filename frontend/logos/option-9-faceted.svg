@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="o9light" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="o9dark" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+  </defs>
+  <!-- Vertical stem (two facets: light + shadow) -->
+  <path d="M14 8 L22 8 L22 56 L14 56 Z" fill="url(#o9light)"/>
+  <path d="M14 8 L18 8 L18 56 L14 56 Z" fill="url(#o9dark)" opacity="0.55"/>
+
+  <!-- Upper arm: outer light plane -->
+  <path d="M22 32 L22 24 L42 8 L52 8 L31 32 Z" fill="url(#o9light)"/>
+  <!-- Upper arm: inner shadow plane -->
+  <path d="M22 24 L42 8 L36 12 L27 24 Z" fill="url(#o9dark)" opacity="0.7"/>
+
+  <!-- Lower arm: outer light plane -->
+  <path d="M22 32 L22 40 L42 56 L52 56 L31 32 Z" fill="url(#o9light)"/>
+  <!-- Lower arm: inner shadow plane -->
+  <path d="M22 40 L42 56 L36 52 L27 40 Z" fill="url(#o9dark)" opacity="0.7"/>
+
+  <!-- Tiny accent crystal at junction -->
+  <path d="M29 32 L32 29 L35 32 L32 35 Z" fill="#00b4d8"/>
+</svg>

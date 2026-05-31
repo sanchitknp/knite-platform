@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" fill="none">
+  <defs>
+    <linearGradient id="dotGrad" x1="278" y1="44" x2="304" y2="76" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#7dd3fc"/>
+      <stop offset="60%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- KNITE wordmark — tighter letter-spacing + mixed-case to be clearly distinct from KENT's bold all-caps -->
+  <text x="20" y="64"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="700" font-size="58" letter-spacing="-1.5"
+        fill="#0a1628">knite</text>
+
+  <!-- Water droplet replacing the period -->
+  <path d="M271 42
+           C271 42, 260 56, 260 66
+           C260 71, 264.5 75, 271 75
+           C277.5 75, 282 71, 282 66
+           C282 56, 271 42, 271 42 Z"
+        fill="url(#dotGrad)"/>
+  <ellipse cx="267" cy="60" rx="2" ry="4" fill="#ffffff" fill-opacity="0.5" transform="rotate(-20 267 60)"/>
+
+  <!-- Tagline -->
+  <text x="20" y="88"
+        font-family="Inter, system-ui, sans-serif"
+        font-weight="500" font-size="10" letter-spacing="4"
+        fill="#64748b">PURE WATER · PURE LIFE</text>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" fill="none">
+  <defs>
+    <linearGradient id="pillBg" x1="0" y1="0" x2="320" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="pillDot" x1="246" y1="50" x2="266" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded pill background -->
+  <rect x="8" y="14" width="304" height="68" rx="34" fill="url(#pillBg)"/>
+  <rect x="8.6" y="14.6" width="302.8" height="66.8" rx="33.5" fill="none" stroke="#1e293b" stroke-width="0.6"/>
+
+  <!-- "knite" lowercase wordmark -->
+  <text x="40" y="64"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="700" font-size="40" letter-spacing="-1"
+        fill="#ffffff">knite</text>
+
+  <!-- Glossy droplet dot -->
+  <circle cx="256" cy="60" r="9" fill="url(#pillDot)"/>
+  <ellipse cx="253" cy="56" rx="2" ry="3.5" fill="#ffffff" fill-opacity="0.55"/>
+</svg>

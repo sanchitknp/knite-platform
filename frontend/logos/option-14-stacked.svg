@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" fill="none">
+  <!-- Outer rectangle frame -->
+  <rect x="20" y="22" width="320" height="52" fill="none" stroke="#0a1628" stroke-width="1.2"/>
+
+  <!-- 4 vertical dividers -->
+  <line x1="84"  y1="22" x2="84"  y2="74" stroke="#0a1628" stroke-width="0.8"/>
+  <line x1="148" y1="22" x2="148" y2="74" stroke="#0a1628" stroke-width="0.8"/>
+  <line x1="212" y1="22" x2="212" y2="74" stroke="#0a1628" stroke-width="0.8"/>
+  <line x1="276" y1="22" x2="276" y2="74" stroke="#0a1628" stroke-width="0.8"/>
+
+  <!-- Letters centered in each cell -->
+  <text x="52"  y="62" text-anchor="middle" font-family="Poppins, Inter, sans-serif" font-weight="700" font-size="36" fill="#0a1628">K</text>
+  <text x="116" y="62" text-anchor="middle" font-family="Poppins, Inter, sans-serif" font-weight="700" font-size="36" fill="#0a1628">N</text>
+  <text x="180" y="62" text-anchor="middle" font-family="Poppins, Inter, sans-serif" font-weight="700" font-size="36" fill="#0a1628">I</text>
+  <text x="244" y="62" text-anchor="middle" font-family="Poppins, Inter, sans-serif" font-weight="700" font-size="36" fill="#0a1628">T</text>
+  <text x="308" y="62" text-anchor="middle" font-family="Poppins, Inter, sans-serif" font-weight="700" font-size="36" fill="#0a1628">E</text>
+
+  <!-- Cyan corner accents -->
+  <rect x="20" y="22" width="18" height="2.5" fill="#00b4d8"/>
+  <rect x="322" y="71.5" width="18" height="2.5" fill="#00b4d8"/>
+</svg>

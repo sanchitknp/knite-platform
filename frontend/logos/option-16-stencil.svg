@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" fill="none">
+  <text x="20" y="58"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="800" font-size="52" letter-spacing="4"
+        fill="#0a1628">KNITE</text>
+
+  <!-- Thick cyan underscore bar -->
+  <rect x="20" y="68" width="220" height="10" rx="1" fill="#00b4d8"/>
+  <!-- Trailing thin extension to add edge -->
+  <rect x="244" y="71" width="40" height="4" fill="#0a1628"/>
+</svg>

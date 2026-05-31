@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="hex2" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#7dd3fc"/>
+      <stop offset="40%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#0c4a6e"/>
+    </linearGradient>
+    <linearGradient id="hex2top" x1="0" y1="0" x2="0" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Hexagon body -->
+  <path d="M32 3 L57 17.5 L57 46.5 L32 61 L7 46.5 L7 17.5 Z"
+        fill="url(#hex2)" stroke="#0c4a6e" stroke-width="1.2" stroke-linejoin="round"/>
+
+  <!-- Top facet highlight -->
+  <path d="M32 3 L57 17.5 L32 32 L7 17.5 Z" fill="url(#hex2top)"/>
+
+  <!-- Crystal seam lines (inner facets) -->
+  <path d="M32 3 L32 32 M7 17.5 L32 32 M57 17.5 L32 32"
+        stroke="#ffffff" stroke-opacity="0.18" stroke-width="0.8"/>
+
+  <!-- K letterform -->
+  <g fill="#ffffff">
+    <path d="M22 21 L27 21 L27 43 L22 43 Z"/>
+    <path d="M27 32 L27 28 L36 21 L42 21 L31 32 Z"/>
+    <path d="M27 32 L27 36 L36 43 L42 43 L31 32 Z"/>
+  </g>
+</svg>

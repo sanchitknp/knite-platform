@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 150" fill="none">
+  <text x="60" y="88" text-anchor="middle"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="900" font-size="80"
+        fill="#0a1628">K</text>
+
+  <text x="140" y="82" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-style="italic" font-weight="400" font-size="58"
+        fill="#00b4d8">&amp;</text>
+
+  <text x="220" y="88" text-anchor="middle"
+        font-family="Poppins, Inter, system-ui, sans-serif"
+        font-weight="900" font-size="80"
+        fill="#0a1628">N</text>
+
+  <text x="140" y="128" text-anchor="middle"
+        font-family="Inter, system-ui, sans-serif"
+        font-weight="600" font-size="13" letter-spacing="9"
+        fill="#64748b">KNITE</text>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="none">
+  <text x="200" y="56" text-anchor="middle"
+        font-family="Inter, Poppins, system-ui, sans-serif"
+        font-weight="500" font-size="40" letter-spacing="22"
+        fill="#0a1628">KNITE</text>
+
+  <!-- Thin cyan accents either side of letter run -->
+  <line x1="40"  y1="50" x2="76"  y2="50" stroke="#00b4d8" stroke-width="1.5"/>
+  <line x1="324" y1="50" x2="360" y2="50" stroke="#00b4d8" stroke-width="1.5"/>
+</svg>
