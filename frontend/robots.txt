@@ -1,8 +1,38 @@
-# robots.txt for Knite RO Water Purifiers
+# robots.txt for Knite RO Water Purifiers — https://knite.in
 User-agent: *
 Allow: /
-Disallow: /admin.html
-Disallow: /api/
 
-# Sitemap location
+# Private / transactional pages — never index
+Disallow: /admin.html
+Disallow: /shop.html
+Disallow: /cart.html
+Disallow: /checkout.html
+Disallow: /order.html
+Disallow: /login.html
+Disallow: /account.html
+Disallow: /api/
+Disallow: /uploads/invoices/
+Disallow: /logos/
+Disallow: /logo-picker.html
+
+# Block parameterized URLs that duplicate content
+Disallow: /*?ref=
+Disallow: /*?utm_
+Disallow: /*?fbclid=
+
+# Allow Googlebot to crawl JS/CSS for proper rendering
+User-agent: Googlebot
+Allow: /*.js$
+Allow: /*.css$
+Allow: /*.svg$
+Allow: /*.png$
+Allow: /*.jpg$
+
+# Sitemap
 Sitemap: https://knite.in/sitemap.xml
+
+# Crawl-delay (relaxed for major bots)
+User-agent: AhrefsBot
+Crawl-delay: 10
+User-agent: SemrushBot
+Crawl-delay: 10

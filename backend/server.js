@@ -12,6 +12,7 @@ const webhook = require('./src/controllers/webhookController');
 const admin = require('./src/controllers/adminController');
 const shop  = require('./src/controllers/shopController');
 const shopAuth = require('./src/controllers/shopAuthController');
+const reviews = require('./src/controllers/reviewsController');
 const adminAuth = require('./src/controllers/adminAuthController');
 const { adminAuth: requireAdmin } = require('./src/middleware/adminAuth');
 const wa = require('./src/services/whatsappService');
@@ -255,8 +256,13 @@ app.post('/api/website/lead', async (req, res) => {
 // ─────────────────────────────────────────────
 app.get('/api/shop/products',          shop.listProducts);
 app.get('/api/shop/products/:slug',    shop.getProduct);
+
+// Reviews — public list + eligibility check + create (requires login + delivered purchase)
+app.get ('/api/shop/products/:slug/reviews',            reviews.listReviews);
+app.get ('/api/shop/products/:slug/review-eligibility', reviews.getEligibility);
+app.post('/api/shop/products/:slug/reviews',            shopAuth.requireShopCustomer, reviews.createReview);
 app.post('/api/shop/cart/validate',    shop.validateCart);
-app.post('/api/shop/orders',           shop.placeOrder);
+app.post('/api/shop/orders',           shopAuth.requireShopCustomer, shop.placeOrder);
 app.get('/api/shop/orders/:id',        shop.getOrderForCustomer);
 
 // Shop customer auth — OTP via WhatsApp
@@ -548,6 +554,19 @@ app.get('/api/health', async (req, res) => {
   } catch (err) {
     res.status(500).json({ status: 'error', db: 'disconnected', error: err.message });
   }
+});
+
+// ─────────────────────────────────────────────
+// 404 — serve custom 404.html for unknown HTML routes (good SEO)
+// ─────────────────────────────────────────────
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  // Send the custom 404 page with proper 404 status
+  res.status(404).sendFile(path.join(frontendPath, '404.html'), (err) => {
+    if (err) res.status(404).send('Not Found');
+  });
 });
 
 // ─────────────────────────────────────────────

@@ -1,23 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Core pages -->
-  <url><loc>https://knite.in/</loc>                            <lastmod>2026-06-01</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://knite.in/shop.html</loc>                   <lastmod>2026-06-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://knite.in/blog.html</loc>                   <lastmod>2026-06-01</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
-  <!-- Products -->
-  <url><loc>https://knite.in/product.html?slug=knite-core</loc>             <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://knite.in/product.html?slug=knite-shield</loc>           <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://knite.in/product.html?slug=knite-prime</loc>            <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <!-- ── Core pages ── -->
+  <url>
+    <loc>https://knite.in/</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://knite.in/og-image.png</image:loc>
+      <image:title>Knite RO Water Purifier — Pure Water, Pure Life</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://knite.in/blog.html</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
 
-  <!-- Blog posts -->
-  <url><loc>https://knite.in/blog/how-ro-water-purifier-works.html</loc>    <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/ro-vs-uv-vs-uf.html</loc>                 <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/understanding-tds-in-water.html</loc>     <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/ro-for-borewell-water.html</loc>          <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/copper-water-benefits.html</loc>          <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/alkaline-water-benefits.html</loc>        <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/ro-maintenance-guide.html</loc>           <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/when-to-replace-ro-filters.html</loc>     <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://knite.in/blog/hard-water-vs-soft-water.html</loc>       <lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <!-- ── Product pages ── -->
+  <url>
+    <loc>https://knite.in/product.html?slug=knite-core</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://knite.in/product.html?slug=knite-shield</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://knite.in/product.html?slug=knite-prime</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ── Blog posts ── -->
+  <url><loc>https://knite.in/blog/how-ro-water-purifier-works.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/ro-vs-uv-vs-uf.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/understanding-tds-in-water.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/ro-for-borewell-water.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/copper-water-benefits.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/alkaline-water-benefits.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/ro-maintenance-guide.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/when-to-replace-ro-filters.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://knite.in/blog/hard-water-vs-soft-water.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+
 </urlset>

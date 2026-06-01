@@ -64,7 +64,9 @@ async function sendOtp(req, res) {
       `Your verification code is:\n*${otp}*\n\n` +
       `Valid for ${OTP_EXPIRY_MIN} minutes. Do not share this with anyone.\n\n` +
       `If you didn't request this, ignore this message.`;
-    await wa.sendText('91' + phone, msg, { line: 'service' })
+    // Send via the TECH line (real Indian business number +91 91960 68335)
+    // so users recognise the sender. The SERVICE line is the US test number.
+    await wa.sendText('91' + phone, msg, { line: 'tech' })
       .catch(e => console.error('[SHOP-AUTH] WA send failed:', e.message));
 
     console.log(`[SHOP-AUTH] OTP sent to ${phone} (dev=${process.env.NODE_ENV === 'development' ? otp : '***'})`);

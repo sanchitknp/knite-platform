@@ -20,12 +20,19 @@ async function listProducts(req, res) {
     const { featured } = req.query;
     const filter = featured === '1' ? 'AND is_featured = TRUE' : '';
     const r = await db.query(
-      `SELECT id, slug, sku, name, short_desc, brand, category,
-              mrp, selling_price, gst_rate, capacity_litres, warranty_months,
-              features, specs, images, stock, is_featured
-       FROM products
-       WHERE is_active = TRUE ${filter}
-       ORDER BY sort_order ASC, id ASC`
+      `SELECT p.id, p.slug, p.sku, p.name, p.short_desc, p.brand, p.category,
+              p.mrp, p.selling_price, p.gst_rate, p.capacity_litres, p.warranty_months,
+              p.features, p.specs, p.images, p.stock, p.is_featured,
+              COALESCE(rv.cnt,0)::int  AS review_count,
+              COALESCE(rv.avg,0)::float AS rating_avg
+       FROM products p
+       LEFT JOIN (
+         SELECT product_id, COUNT(*) cnt, ROUND(AVG(rating)::numeric, 2) avg
+         FROM shop_reviews WHERE status='published'
+         GROUP BY product_id
+       ) rv ON rv.product_id = p.id
+       WHERE p.is_active = TRUE ${filter}
+       ORDER BY p.sort_order ASC, p.id ASC`
     );
     res.json(r.rows);
   } catch (err) {
@@ -38,7 +45,16 @@ async function listProducts(req, res) {
 async function getProduct(req, res) {
   try {
     const r = await db.query(
-      `SELECT * FROM products WHERE slug = $1 AND is_active = TRUE LIMIT 1`,
+      `SELECT p.*,
+              COALESCE(rv.cnt,0)::int   AS review_count,
+              COALESCE(rv.avg,0)::float AS rating_avg
+       FROM products p
+       LEFT JOIN (
+         SELECT product_id, COUNT(*) cnt, ROUND(AVG(rating)::numeric, 2) avg
+         FROM shop_reviews WHERE status='published'
+         GROUP BY product_id
+       ) rv ON rv.product_id = p.id
+       WHERE p.slug = $1 AND p.is_active = TRUE LIMIT 1`,
       [req.params.slug]
     );
     if (!r.rows.length) return res.status(404).json({ error: 'Product not found' });

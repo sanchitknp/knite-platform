@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
   <title>Checkout — Knite</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="https://knite.in/favicon.ico">
+  <link rel="icon" type="image/png" sizes="48x48" href="https://knite.in/favicon-48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="https://knite.in/favicon-96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="https://knite.in/favicon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="https://knite.in/icon-512.png">
+  <link rel="icon" type="image/svg+xml" href="https://knite.in/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://knite.in/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -64,26 +70,11 @@
 
     .err-bar{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
   </style>
+  <script src="/nav.js" defer></script>
 </head>
 <body>
 
-<nav class="nav">
-  <div class="nav-wrap">
-    <a href="/" class="nav-brand">
-      <svg width="32" height="32" viewBox="0 0 64 64" fill="none">
-        <defs><linearGradient id="b1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2b4a"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs>
-        <circle cx="32" cy="32" r="32" fill="url(#b1)"/>
-        <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.55"/>
-        <text x="32" y="42" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="26" letter-spacing="-2" fill="#fff">KN</text>
-      </svg>
-      KNITE<span style="color:#00b4d8">.</span>
-    </a>
-    <div style="display:flex;gap:14px;align-items:center">
-      <a href="/cart.html" style="color:#fff;font-size:13px">← Edit Cart</a>
-      <a id="account-link" href="/login.html?next=/checkout.html" style="background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:8px;display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:13px">👤 <span id="account-label">Sign in</span></a>
-    </div>
-  </div>
-</nav>
+<div id="knite-nav"></div>
 
 <div class="wrap">
   <h1>Checkout</h1>
@@ -111,25 +102,32 @@ async function init(){
   const cart = getCart();
   if(!cart.length){ window.location.href = '/cart.html'; return; }
 
-  // Fire in parallel: cart validation + session check + addresses (if logged in)
+  // Sign-in is mandatory to checkout
   try {
-    const [vR, meR] = await Promise.all([
+    const meR = await fetch('/api/shop/me', { credentials:'include' });
+    const meData = await meR.json();
+    if (!meData.logged_in) {
+      window.location.href = '/login.html?next=' + encodeURIComponent('/checkout.html');
+      return;
+    }
+    LOGGED_IN_CUSTOMER = meData.customer;
+  } catch (e) {
+    window.location.href = '/login.html?next=' + encodeURIComponent('/checkout.html');
+    return;
+  }
+
+  // Cart validation + saved addresses
+  try {
+    const [vR, aR] = await Promise.all([
       fetch('/api/shop/cart/validate', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({ items: cart })
       }),
-      fetch('/api/shop/me', { credentials:'include' }),
+      fetch('/api/shop/my-addresses', { credentials:'include' }),
     ]);
     if(!vR.ok) throw new Error('HTTP '+vR.status);
     cartData = await vR.json();
-    const meData = await meR.json();
-    if (meData.logged_in) {
-      LOGGED_IN_CUSTOMER = meData.customer;
-      try {
-        const aR = await fetch('/api/shop/my-addresses', { credentials:'include' });
-        if (aR.ok) SAVED_ADDRESSES = await aR.json();
-      } catch {}
-    }
+    if (aR.ok) SAVED_ADDRESSES = await aR.json();
     if(!cartData.items.length){ window.location.href = '/cart.html'; return; }
     render();
     autoFill();
@@ -169,16 +167,45 @@ function autoFill() {
 }
 
 function render(){
+  // Show name/email fields only if missing on the customer record; otherwise show a compact "ordering as" summary.
+  const c = LOGGED_IN_CUSTOMER || {};
+  const hasName  = !!(c.name  && c.name.trim());
+  const hasEmail = !!(c.email && c.email.trim());
+  const hasPhone = !!c.phone;
+  const showContactFields = !(hasName && hasEmail && hasPhone);
+
   document.getElementById('root').innerHTML = `
     <div class="layout">
       <form id="checkout-form" onsubmit="placeOrder(event)">
         <div class="card">
           <h2><span class="num">1</span>Contact</h2>
-          <div class="row">
-            <div class="field"><label>Full Name *</label><input name="name" required placeholder="As on your address"></div>
-            <div class="field"><label>Phone (WhatsApp) *</label><input name="phone" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile"></div>
-          </div>
-          <div class="field"><label>Email *</label><input name="email" type="email" required placeholder="for order updates"></div>
+          ${!showContactFields ? `
+            <div id="contact-summary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+              <div style="font-size:14px;line-height:1.7">
+                <div style="font-weight:600;color:#0a1628">${escHtml(c.name)}</div>
+                <div style="color:#64748b">+91 ${escHtml(c.phone)} · ${escHtml(c.email)}</div>
+              </div>
+              <a href="#" onclick="event.preventDefault();editContact()" style="color:#0369a1;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">Edit ↻</a>
+              <!-- hidden inputs so form.serialize works -->
+              <input type="hidden" name="name"  value="${escAttr(c.name)}">
+              <input type="hidden" name="phone" value="${escAttr(c.phone)}">
+              <input type="hidden" name="email" value="${escAttr(c.email)}">
+            </div>
+            <div id="contact-fields" style="display:none">
+              <div class="row">
+                <div class="field"><label>Full Name *</label><input name="name_edit" placeholder="As on your address" value="${escAttr(c.name)}"></div>
+                <div class="field"><label>Phone (WhatsApp)</label><input value="${escAttr(c.phone)}" disabled></div>
+              </div>
+              <div class="field"><label>Email *</label><input name="email_edit" type="email" value="${escAttr(c.email)}"></div>
+            </div>
+          ` : `
+            <div class="row">
+              <div class="field"><label>Full Name *</label><input name="name" required placeholder="As on your address" value="${escAttr(c.name || '')}"></div>
+              <div class="field"><label>Phone (WhatsApp) *</label><input name="phone" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile" value="${escAttr(c.phone || '')}" ${hasPhone ? 'readonly' : ''}></div>
+            </div>
+            <div class="field"><label>Email *</label><input name="email" type="email" required placeholder="for order updates" value="${escAttr(c.email || '')}"></div>
+            <p style="font-size:12px;color:#94a3b8;margin-top:6px">We'll save these for your next order so you don't have to re-enter.</p>
+          `}
         </div>
 
         <div class="card">
@@ -248,6 +275,14 @@ function selectPay(input){
   input.closest('.pay-opt').classList.add('selected');
 }
 
+// ── helpers + edit toggle ──
+function escHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function escAttr(s){return escHtml(s)}
+function editContact(){
+  document.getElementById('contact-summary').style.display='none';
+  document.getElementById('contact-fields').style.display='';
+}
+
 async function placeOrder(e){
   e.preventDefault();
   const form = document.getElementById('checkout-form');
@@ -256,12 +291,29 @@ async function placeOrder(e){
   const err = document.getElementById('err-bar');
   err.style.display = 'none';
 
+  // If user opened the Edit panel, prefer those values
+  const editedName  = data.get('name_edit');
+  const editedEmail = data.get('email_edit');
+  const finalName  = (editedName && String(editedName).trim()) || data.get('name');
+  const finalEmail = (editedEmail && String(editedEmail).trim()) || data.get('email');
+  const finalPhone = data.get('phone');
+
+  // If logged-in customer's name/email differ from what they just typed, persist them
+  if (LOGGED_IN_CUSTOMER) {
+    const patches = {};
+    if (finalName  && finalName  !== LOGGED_IN_CUSTOMER.name)  patches.name  = finalName;
+    if (finalEmail && finalEmail !== LOGGED_IN_CUSTOMER.email) patches.email = finalEmail;
+    if (Object.keys(patches).length) {
+      fetch('/api/shop/me', { method:'PATCH', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patches) }).catch(()=>{});
+    }
+  }
+
   const payload = {
     items: getCart(),
     customer: {
-      name: data.get('name'),
-      email: data.get('email'),
-      phone: data.get('phone'),
+      name: finalName,
+      email: finalEmail,
+      phone: finalPhone,
     },
     shipping_address: {
       line1: data.get('line1'),
@@ -280,14 +332,20 @@ async function placeOrder(e){
   try {
     const r = await fetch('/api/shop/orders', {
       method:'POST',
+      credentials:'include',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload)
     });
+    if (r.status === 401) {
+      window.location.href = '/login.html?next=' + encodeURIComponent('/checkout.html');
+      return;
+    }
     const body = await r.json();
     if(!r.ok || !body.ok) throw new Error(body.error || 'Order failed');
 
     // Clear cart
     localStorage.removeItem(CART_KEY);
+    if (window.kniteUpdateCart) window.kniteUpdateCart();
     window.location.href = `/order.html?id=${body.order_id}&phone=${payload.customer.phone.replace(/[^0-9]/g,'').slice(-10)}&new=1`;
   } catch (e) {
     err.textContent = '⚠️ ' + e.message;
