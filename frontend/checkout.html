@@ -37,7 +37,7 @@
     .field{margin-bottom:14px}
     .field label{display:block;font-size:12px;color:#475569;font-weight:600;margin-bottom:6px}
     .field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:#0a1628}
-    .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,0.15)}
+    .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#c07a4a;box-shadow:0 0 0 3px rgba(192,122,74,0.15)}
     .field-error{color:#dc2626;font-size:11px;margin-top:4px;display:none}
 
     .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -45,7 +45,7 @@
 
     .payment-options{display:grid;gap:10px}
     .pay-opt{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer;transition:all .15s ease}
-    .pay-opt.selected{border-color:#00b4d8;background:#f0f9ff}
+    .pay-opt.selected{border-color:#c07a4a;background:#f0f9ff}
     .pay-opt input{margin:0}
     .pay-opt-info{flex:1}
     .pay-opt-info strong{display:block;font-size:14px}
@@ -70,7 +70,9 @@
 
     .err-bar{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
   </style>
-  <script src="/nav.js" defer></script>
+  <script src="/nav.js?v=20260619" defer></script>
+  <!-- Cashfree Checkout JS SDK -->
+  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 </head>
 <body>
 
@@ -232,14 +234,9 @@ function render(){
           <h2><span class="num">3</span>Payment Method</h2>
           <div class="payment-options">
             <label class="pay-opt selected">
-              <input type="radio" name="payment_method" value="cod" checked onchange="selectPay(this)">
-              <div class="pay-opt-info"><strong>Cash on Delivery</strong><span>Pay when your order arrives</span></div>
-              <span class="pay-opt-badge">Available</span>
-            </label>
-            <label class="pay-opt" style="opacity:0.5;cursor:not-allowed" title="Coming soon">
-              <input type="radio" name="payment_method" value="razorpay" disabled>
-              <div class="pay-opt-info"><strong>Online (UPI / Card / Wallet)</strong><span>Coming soon — secure Razorpay checkout</span></div>
-              <span class="pay-opt-badge" style="background:#f1f5f9;color:#64748b">Soon</span>
+              <input type="radio" name="payment_method" value="online" checked>
+              <div class="pay-opt-info"><strong>Pay Online (UPI / Card / Netbanking / Wallet)</strong><span>Secure payment via Cashfree — encrypted &amp; instant</span></div>
+              <span class="pay-opt-badge">Secure</span>
             </label>
           </div>
         </div>
@@ -343,9 +340,41 @@ async function placeOrder(e){
     const body = await r.json();
     if(!r.ok || !body.ok) throw new Error(body.error || 'Order failed');
 
-    // Clear cart
+    // Clear cart (we have the order in DB now)
     localStorage.removeItem(CART_KEY);
     if (window.kniteUpdateCart) window.kniteUpdateCart();
+
+    // ── ONLINE PAYMENT branch ──
+    if (payload.payment_method === 'online') {
+      btn.textContent = 'Redirecting to payment…';
+      try {
+        const cR = await fetch('/api/shop/payment/create-order', {
+          method:'POST', credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ order_id: body.order_id })
+        });
+        const cBody = await cR.json();
+        if (!cR.ok || !cBody.payment_session_id) throw new Error(cBody.error || 'Could not start payment');
+
+        // Open Cashfree hosted checkout
+        if (typeof Cashfree !== 'function') throw new Error('Payment SDK failed to load');
+        const cashfree = await Cashfree({ mode: cBody.mode === 'production' ? 'production' : 'sandbox' });
+        await cashfree.checkout({
+          paymentSessionId: cBody.payment_session_id,
+          redirectTarget: '_self',  // full-page redirect (mobile-friendly + iOS-safe)
+        });
+        // On _self, Cashfree replaces the page; this code path won't execute further.
+        return;
+      } catch (e) {
+        err.textContent = '⚠️ Payment could not be initiated: ' + e.message + ' — your order is saved, you can pay later.';
+        err.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Retry Payment';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
+    // ── COD branch ──
     window.location.href = `/order.html?id=${body.order_id}&phone=${payload.customer.phone.replace(/[^0-9]/g,'').slice(-10)}&new=1`;
   } catch (e) {
     err.textContent = '⚠️ ' + e.message;

@@ -21,24 +21,15 @@
   </url>
 
   <!-- ── Product pages ── -->
-  <url>
-    <loc>https://knite.in/product.html?slug=knite-core</loc>
-    <lastmod>2026-06-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://knite.in/product.html?slug=knite-shield</loc>
-    <lastmod>2026-06-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://knite.in/product.html?slug=knite-prime</loc>
-    <lastmod>2026-06-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
+  <url><loc>https://knite.in/product.html?slug=knite-core</loc><lastmod>2026-06-14</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-flux</loc><lastmod>2026-06-14</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-flux-white</loc><lastmod>2026-06-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-prime-white</loc><lastmod>2026-06-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-prime-black</loc><lastmod>2026-06-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-shield-copper</loc><lastmod>2026-06-14</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-shield-silver</loc><lastmod>2026-06-14</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-edge-black</loc><lastmod>2026-06-14</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://knite.in/product.html?slug=knite-edge-silver</loc><lastmod>2026-06-14</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
 
   <!-- ── Blog posts ── -->
   <url><loc>https://knite.in/blog/how-ro-water-purifier-works.html</loc><lastmod>2026-06-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>

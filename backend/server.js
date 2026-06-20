@@ -13,6 +13,7 @@ const admin = require('./src/controllers/adminController');
 const shop  = require('./src/controllers/shopController');
 const shopAuth = require('./src/controllers/shopAuthController');
 const reviews = require('./src/controllers/reviewsController');
+const payment = require('./src/controllers/paymentController');
 const adminAuth = require('./src/controllers/adminAuthController');
 const { adminAuth: requireAdmin } = require('./src/middleware/adminAuth');
 const wa = require('./src/services/whatsappService');
@@ -37,7 +38,11 @@ app.use((req, res, next) => shopAuth.attachShopCustomer(req, res, next));
 app.get('/api/flow-exchange', (req, res) => res.json({ data: { status: 'active' } }));
 app.post('/api/flow-exchange', express.json(), handleFlowExchange);
 
-app.use(express.json({ limit: '10mb' }));
+// JSON body parser — also capture raw body for webhook signature verification
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => { req.rawBody = buf.toString('utf8'); },
+}));
 
 // Serve frontend files (mounted at /app/frontend in Docker, or ../frontend locally)
 const frontendPath = process.env.FRONTEND_PATH || path.join(__dirname, 'frontend');
@@ -265,6 +270,11 @@ app.post('/api/shop/cart/validate',    shop.validateCart);
 app.post('/api/shop/orders',           shopAuth.requireShopCustomer, shop.placeOrder);
 app.get('/api/shop/orders/:id',        shop.getOrderForCustomer);
 
+// Payments (Cashfree)
+app.post('/api/shop/payment/create-order', shopAuth.requireShopCustomer, payment.createOrder);
+app.post('/api/shop/payment/verify',       shopAuth.requireShopCustomer, payment.verifyPayment);
+app.post('/api/webhooks/cashfree',         payment.cashfreeWebhook);
+
 // Shop customer auth — OTP via WhatsApp
 app.post('/api/shop/auth/send-otp',    shopAuth.sendOtp);
 app.post('/api/shop/auth/verify-otp',  shopAuth.verifyOtp);
@@ -274,6 +284,7 @@ app.get ('/api/shop/me',               shopAuth.me);
 // Shop customer protected endpoints — require logged-in session
 app.patch('/api/shop/me',              shopAuth.requireShopCustomer, shopAuth.updateMe);
 app.get ('/api/shop/my-orders',        shopAuth.requireShopCustomer, shopAuth.myOrders);
+app.get ('/api/shop/my-orders/:id/invoice', shopAuth.requireShopCustomer, shopAuth.myOrderInvoice);
 app.get ('/api/shop/my-addresses',     shopAuth.requireShopCustomer, shopAuth.listAddresses);
 app.post('/api/shop/my-addresses',     shopAuth.requireShopCustomer, shopAuth.addAddress);
 app.delete('/api/shop/my-addresses/:id', shopAuth.requireShopCustomer, shopAuth.deleteAddress);

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Visiting Cards — Knite</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',system-ui,sans-serif;background:#f1f5f9;color:#0a1628;min-height:100vh;padding:32px 16px}
+
+  /* Toolbar */
+  .toolbar{max-width:980px;margin:0 auto 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .toolbar h1{font-family:'Poppins',sans-serif;font-size:22px;font-weight:700}
+  .toolbar .actions{display:flex;gap:10px}
+  .toolbar button{background:#0a1628;color:#fff;border:none;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+  .toolbar button.secondary{background:#fff;color:#0a1628;border:1px solid #cbd5e1}
+  .toolbar button:hover{transform:translateY(-1px)}
+
+  .stack{max-width:980px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:36px}
+
+  .person{display:flex;flex-direction:column;align-items:center;gap:18px}
+  .person h2{font-family:'Poppins',sans-serif;font-size:14px;text-transform:uppercase;letter-spacing:2px;color:#64748b}
+
+  /* Standard business card: 89mm × 51mm (3.5 × 2 inch) */
+  .card{
+    width:89mm; height:51mm;
+    border-radius:5mm;
+    overflow:hidden;
+    box-shadow:0 18px 40px rgba(10,22,40,0.18), 0 0 0 1px rgba(10,22,40,0.06);
+    position:relative;
+    background:#fff;
+  }
+
+  /* ── FRONT ── */
+  .card.front{
+    display:grid; grid-template-columns:6mm 1fr;
+  }
+  .card.front .stripe{
+    background:linear-gradient(180deg,#00b4d8,#0369a1);
+  }
+  .card.front .body{
+    padding:5mm 6mm 5mm 5mm;
+    display:flex; flex-direction:column; justify-content:space-between;
+    position:relative;
+  }
+  .card.front .brand{
+    display:flex; align-items:center; gap:2.5mm;
+  }
+  .card.front .brand .medallion{
+    width:9mm; height:9mm; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #0f2b4a 0%, #020617 100%);
+    display:flex; align-items:center; justify-content:center; position:relative;
+    box-shadow:inset 0 0 0 0.4mm rgba(0,180,216,0.55);
+  }
+  .card.front .brand .medallion span{
+    font-family:'Poppins',sans-serif; font-weight:800; font-size:3mm; color:#fff;
+    letter-spacing:-0.3mm;
+  }
+  .card.front .brand .wordmark{
+    font-family:'Poppins',sans-serif; font-weight:700;
+    font-size:3.6mm; letter-spacing:0.8mm; color:#0a1628;
+  }
+  .card.front .brand .wordmark .dot{color:#00b4d8}
+
+  .card.front .name{
+    font-family:'Poppins',sans-serif; font-weight:800;
+    font-size:5.6mm; color:#0a1628; line-height:1.1;
+    letter-spacing:-0.1mm;
+  }
+  .card.front .designation{
+    font-family:'Poppins',sans-serif; font-weight:600;
+    font-size:2.4mm; text-transform:uppercase; letter-spacing:1.4mm;
+    color:#00b4d8; margin-top:1mm;
+  }
+
+  .card.front .contacts{
+    display:grid; gap:1.4mm;
+    font-family:'Inter',sans-serif; font-size:2.7mm; color:#334155;
+  }
+  .card.front .contacts .row{display:flex; align-items:center; gap:2mm}
+  .card.front .contacts .ic{
+    width:4mm; height:4mm; border-radius:50%;
+    background:#f1f5f9;
+    display:flex; align-items:center; justify-content:center;
+    font-size:2mm;
+  }
+  .card.front .contacts .row strong{font-weight:500; color:#0a1628}
+
+  /* ── BACK ── */
+  .card.back{
+    background:
+      radial-gradient(circle at 80% 20%, rgba(0,180,216,0.18) 0%, transparent 60%),
+      linear-gradient(135deg,#0a1628 0%, #0d2137 50%, #0a3d62 100%);
+    color:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:5mm; text-align:center;
+    position:relative;
+  }
+  .card.back::before{
+    content:''; position:absolute; top:-12mm; right:-12mm;
+    width:30mm; height:30mm; border-radius:50%;
+    background:radial-gradient(circle, rgba(0,180,216,0.20) 0%, transparent 70%);
+  }
+  .card.back .big-medallion{
+    width:13mm; height:13mm; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #0f2b4a 0%, #020617 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:inset 0 0 0 0.5mm rgba(0,180,216,0.7);
+    margin-bottom:3mm;
+  }
+  .card.back .big-medallion span{
+    font-family:'Poppins',sans-serif; font-weight:800; font-size:5mm; color:#fff;
+    letter-spacing:-0.5mm;
+  }
+  .card.back .big-wordmark{
+    font-family:'Poppins',sans-serif; font-weight:800;
+    font-size:7mm; letter-spacing:2.2mm; color:#fff;
+    margin-bottom:1.4mm;
+  }
+  .card.back .big-wordmark .dot{color:#00b4d8}
+  .card.back .tagline{
+    font-family:'Inter',sans-serif; font-style:italic;
+    font-size:2.6mm; color:rgba(255,255,255,0.7);
+    letter-spacing:0.3mm;
+    margin-bottom:4mm;
+  }
+  .card.back .company{
+    font-family:'Inter',sans-serif; font-size:2.4mm;
+    color:rgba(255,255,255,0.85); line-height:1.5;
+  }
+  .card.back .company strong{font-weight:600; color:#fff}
+  .card.back .gstin{
+    margin-top:1.5mm; font-size:2.2mm; color:rgba(255,255,255,0.55);
+    letter-spacing:0.3mm;
+  }
+
+  /* ── PRINT ── */
+  @page {
+    size: 89mm 51mm;
+    margin: 0;
+  }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none; }
+    .stack { display: block; }
+    .person { display: block; margin: 0; }
+    .person h2 { display: none; }
+    .card { box-shadow: none; border-radius: 0; page-break-after: always; margin: 0; }
+    .card:last-child { page-break-after: auto; }
+  }
+
+  /* Hint chip */
+  .hint{max-width:980px;margin:0 auto 20px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;font-size:13px;color:#475569;line-height:1.6}
+  .hint strong{color:#0a1628}
+  .hint code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>📇 Visiting Cards — Knite (Axios Enterprise LLP)</h1>
+  <div class="actions">
+    <button class="secondary" onclick="printOne('sanchit')">Print Sanchit's</button>
+    <button class="secondary" onclick="printOne('anmol')">Print Anmol's</button>
+    <button onclick="window.print()">🖨 Print All / Save as PDF</button>
+  </div>
+</div>
+
+<div class="hint">
+  <strong>How to use:</strong>
+  Click <em>Print All / Save as PDF</em> → in the print dialog choose <strong>Save as PDF</strong> as destination → make sure paper size is <code>89 × 51 mm</code> (or "Custom" → 89×51mm) → margins set to <strong>None</strong> → save.<br>
+  Take that PDF to any local print shop in Delhi. Standard print run for 100 cards on 300 gsm matte/glossy art card = ₹150–250.
+</div>
+
+<div class="stack" id="cards">
+
+  <!-- ─────────── SANCHIT ─────────── -->
+  <div class="person" id="card-sanchit">
+    <h2>Sanchit Agarwal — Front</h2>
+    <div class="card front">
+      <div class="stripe"></div>
+      <div class="body">
+        <div class="brand">
+          <div class="medallion"><span>KN</span></div>
+          <div class="wordmark">KNITE<span class="dot">.</span></div>
+        </div>
+        <div>
+          <div class="name">Sanchit Agarwal</div>
+          <div class="designation">Director</div>
+        </div>
+        <div class="contacts">
+          <div class="row"><span class="ic">📞</span><strong>+91 81770 10445</strong></div>
+          <div class="row"><span class="ic">✉</span><strong>sanchit@knite.in</strong></div>
+          <div class="row"><span class="ic">🌐</span><strong>knite.in</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Sanchit Agarwal — Back</h2>
+    <div class="card back">
+      <div class="big-medallion"><span>KN</span></div>
+      <div class="big-wordmark">KNITE<span class="dot">.</span></div>
+      <div class="tagline">Pure Water, Pure Life.</div>
+      <div class="company">
+        <strong>Axios Enterprise LLP</strong><br>
+        16, Basement, New Malviya Nagar Market<br>
+        New Delhi — 110017
+      </div>
+      <div class="gstin">GSTIN: 07ACOFA0039R1ZY</div>
+    </div>
+  </div>
+
+  <!-- ─────────── ANMOL ─────────── -->
+  <div class="person" id="card-anmol">
+    <h2>Anmol Kumar Srivastava — Front</h2>
+    <div class="card front">
+      <div class="stripe"></div>
+      <div class="body">
+        <div class="brand">
+          <div class="medallion"><span>KN</span></div>
+          <div class="wordmark">KNITE<span class="dot">.</span></div>
+        </div>
+        <div>
+          <div class="name">Anmol Kumar<br>Srivastava</div>
+          <div class="designation">Director</div>
+        </div>
+        <div class="contacts">
+          <div class="row"><span class="ic">📞</span><strong>+91 89628 13928</strong></div>
+          <div class="row"><span class="ic">✉</span><strong>anmol@knite.in</strong></div>
+          <div class="row"><span class="ic">🌐</span><strong>knite.in</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Anmol Kumar Srivastava — Back</h2>
+    <div class="card back">
+      <div class="big-medallion"><span>KN</span></div>
+      <div class="big-wordmark">KNITE<span class="dot">.</span></div>
+      <div class="tagline">Pure Water, Pure Life.</div>
+      <div class="company">
+        <strong>Axios Enterprise LLP</strong><br>
+        16, Basement, New Malviya Nagar Market<br>
+        New Delhi — 110017
+      </div>
+      <div class="gstin">GSTIN: 07ACOFA0039R1ZY</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Print just one person's pair of cards
+  function printOne(who) {
+    document.body.classList.add('printing-' + who);
+    // Hide the other person via inline style for this print
+    const others = document.querySelectorAll('.person');
+    others.forEach(p => { p.style.display = (p.id === 'card-' + who) ? '' : 'none'; });
+    window.print();
+    // Restore
+    setTimeout(() => { others.forEach(p => p.style.display = ''); }, 500);
+  }
+</script>
+
+</body>
+</html>

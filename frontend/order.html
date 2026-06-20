@@ -40,8 +40,8 @@
     .step::before{content:'';position:absolute;left:-22px;top:4px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid #cbd5e1}
     .step.done::before{background:#16a34a;border-color:#16a34a}
     .step.done::after{content:'✓';position:absolute;left:-19px;top:1px;color:#fff;font-size:9px;font-weight:800}
-    .step.active::before{background:#00b4d8;border-color:#00b4d8;animation:pulse 2s infinite}
-    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,180,216,0.4)}50%{box-shadow:0 0 0 6px rgba(0,180,216,0)}}
+    .step.active::before{background:#c07a4a;border-color:#c07a4a;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,122,74,0.4)}50%{box-shadow:0 0 0 6px rgba(192,122,74,0)}}
     .step-title{font-family:Poppins;font-weight:600;font-size:14px;color:#0a1628}
     .step-date{font-size:11px;color:#94a3b8;margin-top:2px}
     .step.future .step-title{color:#94a3b8}
@@ -69,7 +69,7 @@
     .field{margin-bottom:14px}
     .field label{display:block;font-size:12px;color:#475569;font-weight:600;margin-bottom:6px}
     .field input{width:100%;padding:11px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}
-    .field input:focus{outline:none;border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,0.15)}
+    .field input:focus{outline:none;border-color:#c07a4a;box-shadow:0 0 0 3px rgba(192,122,74,0.15)}
     .btn-track{background:#0a1628;color:#fff;padding:12px 20px;border-radius:8px;border:none;font-weight:600;cursor:pointer;width:100%}
 
     .new-banner{background:linear-gradient(135deg,#dcfce7,#f0fdf4);border:1px solid #86efac;color:#065f46;padding:14px 18px;border-radius:12px;margin-bottom:18px;font-size:14px}
@@ -77,7 +77,7 @@
     .loading{padding:60px;text-align:center;color:#94a3b8}
     .error{padding:40px;text-align:center;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:14px}
   </style>
-  <script src="/nav.js" defer></script>
+  <script src="/nav.js?v=20260619" defer></script>
 </head>
 <body>
 
@@ -101,11 +101,26 @@ async function init(){
   const id = params.get('id');
   const phone = params.get('phone');
   const isNew = params.get('new') === '1';
+  const fromPay = params.get('pay') === '1';
 
   if(!id || !phone){
     renderLookup();
     return;
   }
+
+  // If we came back from Cashfree checkout, verify payment server-side first
+  if (fromPay) {
+    document.getElementById('root').innerHTML = '<div class="loading">Verifying your payment…</div>';
+    try {
+      await fetch('/api/shop/payment/verify', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: parseInt(id, 10) }),
+      });
+    } catch {}
+  }
+
   try {
     const r = await fetch(`/api/shop/orders/${id}?phone=${phone}`);
     if(!r.ok){
@@ -113,7 +128,7 @@ async function init(){
       throw new Error(e.error || 'Order not found');
     }
     const data = await r.json();
-    render(data, isNew);
+    render(data, isNew || fromPay);
   } catch (err) {
     document.getElementById('root').innerHTML = '<div class="error">' + err.message + '</div>';
   }
@@ -192,16 +207,23 @@ function render(order, isNew){
       </div>
     </div>
 
-    ${order.invoice_url ? `
+    ${(order.invoice_url || order.payment_status === 'paid' || status === 'delivered') ? `
       <div class="card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-color:#86efac">
         <h2 style="color:#065f46">📄 GST Invoice</h2>
         <div style="font-size:13px;color:#065f46;margin-bottom:14px">
-          Invoice <strong>${order.invoice_number || ''}</strong> · generated for your records.
+          ${order.invoice_number
+            ? `Invoice <strong>${order.invoice_number}</strong> · ready for your records.`
+            : `Your GST invoice is ready to download.`}
         </div>
-        <a href="${order.invoice_url}" target="_blank" rel="noopener"
-           style="display:inline-block;background:#065f46;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13px;text-decoration:none">
-          ⬇ Download Invoice (PDF)
-        </a>
+        ${order.invoice_url
+          ? `<a href="${order.invoice_url}" target="_blank" rel="noopener"
+                style="display:inline-block;background:#065f46;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13px;text-decoration:none">
+              ⬇ Download Invoice (PDF)
+            </a>`
+          : `<a href="#" onclick="event.preventDefault();downloadInvoice(${order.id})"
+                style="display:inline-block;background:#065f46;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13px;text-decoration:none">
+              ⬇ Download Invoice (PDF)
+            </a>`}
       </div>
     ` : ''}
 
@@ -224,6 +246,20 @@ function render(order, isNew){
 }
 
 init();
+
+async function downloadInvoice(orderId) {
+  try {
+    const r = await fetch(`/api/shop/my-orders/${orderId}/invoice`, { credentials: 'include' });
+    const data = await r.json();
+    if (!r.ok || !data.invoice_url) {
+      alert(data.error || 'Could not generate invoice. Please log in and try again.');
+      return;
+    }
+    window.open(data.invoice_url, '_blank', 'noopener');
+  } catch (e) {
+    alert('Network error — please try again');
+  }
+}
 
 // Auth-aware nav chip
 fetch('/api/shop/me').then(r => r.json()).then(d => {

@@ -40,7 +40,7 @@
     .card h3{font-family:Poppins;font-size:14px;text-transform:uppercase;letter-spacing:2px;color:#475569;margin-bottom:14px}
 
     .order-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:12px;transition:all .2s ease}
-    .order-card:hover{box-shadow:0 8px 24px rgba(10,22,40,0.08);border-color:#00b4d8}
+    .order-card:hover{box-shadow:0 8px 24px rgba(10,22,40,0.08);border-color:#c07a4a}
     .order-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px}
     .order-num{font-family:Poppins;font-weight:700;font-size:15px}
     .order-date{font-size:12px;color:#94a3b8;margin-top:2px}
@@ -67,7 +67,7 @@
     .field{margin-bottom:12px}
     .field label{display:block;font-size:12px;color:#475569;font-weight:600;margin-bottom:5px}
     .field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;font-family:inherit}
-    .field input:focus,.field select:focus{outline:none;border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,0.15)}
+    .field input:focus,.field select:focus{outline:none;border-color:#c07a4a;box-shadow:0 0 0 3px rgba(192,122,74,0.15)}
     .field input:disabled{background:#f8fafc;color:#94a3b8}
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     @media(max-width:640px){.row2{grid-template-columns:1fr}}
@@ -81,9 +81,9 @@
     .btn-danger:hover{text-decoration:underline}
 
     .addr-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:18px;display:flex;justify-content:space-between;gap:14px;margin-bottom:10px}
-    .addr-card.default{border-color:#00b4d8;background:#f0f9ff}
+    .addr-card.default{border-color:#c07a4a;background:#f0f9ff}
     .addr-card .lbl{display:inline-block;background:#0a1628;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
-    .addr-card.default .lbl{background:#00b4d8}
+    .addr-card.default .lbl{background:#c07a4a}
     .addr-card .text{font-size:13px;color:#475569;line-height:1.5}
     .addr-card .text strong{display:block;color:#0a1628;margin-bottom:2px}
 
@@ -92,7 +92,7 @@
 
     .loading{padding:40px;text-align:center;color:#94a3b8;font-size:13px}
   </style>
-  <script src="/nav.js" defer></script>
+  <script src="/nav.js?v=20260619" defer></script>
 </head>
 <body>
 
@@ -193,7 +193,10 @@ async function loadOrders() {
           ${o.tracking_number ? `<div style="background:#f0f9ff;border-radius:8px;padding:8px 12px;font-size:12px;color:#0369a1;margin-bottom:10px">📦 Tracking: <strong>${o.tracking_number}</strong> · ${o.shipping_carrier || 'Courier'}</div>` : ''}
           <div class="order-bottom">
             <div class="order-total">${FMT(o.total_amount)}</div>
-            <div class="order-actions">
+            <div class="order-actions" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+              ${(o.payment_status === 'paid' || o.status === 'delivered')
+                ? `<a href="#" onclick="event.preventDefault();downloadInvoice(${o.id})">📄 Download Invoice</a>`
+                : `<span title="Available after payment" style="color:#94a3b8;font-size:13px">📄 Invoice (after payment)</span>`}
               <a onclick="window.location.href='/order.html?id=${o.id}&phone=${CUSTOMER.phone}'">View Details →</a>
             </div>
           </div>
@@ -202,6 +205,19 @@ async function loadOrders() {
     list.classList.remove('loading');
   } catch (err) {
     document.getElementById('orders-list').innerHTML = '<div class="empty">Could not load orders</div>';
+  }
+}
+
+async function downloadInvoice(orderId) {
+  showToast('Preparing invoice…');
+  try {
+    const r = await fetch(`/api/shop/my-orders/${orderId}/invoice`, { credentials: 'include' });
+    const data = await r.json();
+    if (!r.ok || !data.invoice_url) throw new Error(data.error || 'Could not generate invoice');
+    // Open the PDF in a new tab
+    window.open(data.invoice_url, '_blank', 'noopener');
+  } catch (e) {
+    showToast(e.message);
   }
 }
 

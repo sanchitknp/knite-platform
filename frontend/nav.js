@@ -23,12 +23,12 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
   .kn-nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
-  .kn-nav-logo svg { width: 36px; height: 36px; }
+  .kn-nav-logo svg, .kn-nav-logo img { height: 24px; width: auto; display: block; }
   .kn-nav-brand {
     font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 700;
     letter-spacing: 3px; text-transform: uppercase; color: #fff;
   }
-  .kn-nav-brand .dot { color: #00b4d8; }
+  .kn-nav-brand .dot { color: #c07a4a; }
 
   .kn-nav-links {
     display: flex; align-items: center; gap: 24px;
@@ -40,11 +40,11 @@
     font-size: 14px; font-weight: 500; letter-spacing: 0.3px;
     transition: color 0.2s; font-family: 'Inter', sans-serif;
   }
-  .kn-nav-links a:hover { color: #00b4d8; }
-  .kn-nav-links a.kn-shop-link { color: #00b4d8; font-weight: 600; }
+  .kn-nav-links a:hover { color: #c07a4a; }
+  .kn-nav-links a.kn-shop-link { color: #c07a4a; font-weight: 600; }
 
   .kn-cta {
-    background: #00b4d8; color: #0a1628 !important;
+    background: #c07a4a; color: #0a1628 !important;
     padding: 9px 22px; border-radius: 50px;
     font-weight: 600 !important; font-size: 13px !important;
   }
@@ -119,7 +119,7 @@
   .kn-acct:hover .kn-acct-chev,
   .kn-acct.open .kn-acct-chev { transform: rotate(180deg); }
   .kn-cart-count {
-    background: #00b4d8; color: #0a1628;
+    background: #c07a4a; color: #0a1628;
     font-weight: 700; border-radius: 99px;
     padding: 1px 7px; font-size: 11px; min-width: 20px; text-align: center;
   }
@@ -133,7 +133,7 @@
     display: inline-flex; align-items: center; gap: 4px;
     font-family: 'Inter', sans-serif; padding: 0; transition: color 0.2s;
   }
-  .kn-drop:hover > button, .kn-drop.open > button { color: #00b4d8; }
+  .kn-drop:hover > button, .kn-drop.open > button { color: #c07a4a; }
   .kn-drop > button svg { transition: transform 0.2s; }
   .kn-drop:hover > button svg, .kn-drop.open > button svg { transform: rotate(180deg); }
   .kn-drop ul {
@@ -155,6 +155,9 @@
 
   .kn-ham { display: none; cursor: pointer; flex-direction: column; gap: 5px; }
   .kn-ham span { width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: 0.3s; }
+
+  /* Right cluster (cart + account + hamburger) — always visible */
+  .kn-right { display: flex; align-items: center; gap: 10px; }
 
   /* Mobile */
   @media (max-width: 900px) {
@@ -185,23 +188,26 @@
       display: flex; flex-direction: column; gap: 20px;
       align-items: center; width: 100%; text-align: center;
     }
+
+    /* Tighten the right cluster on mobile */
+    .kn-right { gap: 6px; }
+    .kn-cart-btn, .kn-account-btn { padding: 6px 10px; font-size: 13px !important; }
+    /* On narrow screens, show only the icon for the account chip even when logged in */
+    .kn-acct-greet { font-size: 12px; }
+    .kn-acct-greet strong { font-weight: 700; }
+  }
+  /* Very narrow (≤420px): drop the "Hello" word to save space, keep "<Name> v" */
+  @media (max-width: 420px) {
+    .kn-acct-greet .kn-hello-text { display: none; }
+    .kn-cart-btn { padding: 6px 8px; }
+  }
   }`;
 
   // ── HTML ───────────────────────────────────────────────────
   const html = `
   <nav class="kn-nav" id="kniteNav">
     <a href="/" class="kn-nav-logo" aria-label="Knite home">
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="kn-navBg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#0f2b4a"/><stop offset="100%" stop-color="#020617"/>
-          </linearGradient>
-        </defs>
-        <circle cx="32" cy="32" r="32" fill="url(#kn-navBg)"/>
-        <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.55"/>
-        <text x="32" y="42" text-anchor="middle" font-family="Poppins,Inter,Helvetica,Arial,sans-serif" font-weight="800" font-size="26" letter-spacing="-2" fill="#ffffff">KN</text>
-      </svg>
-      <span class="kn-nav-brand">KNITE<span class="dot">.</span></span>
+      <img class="kn-logo" src="/knite-logo.png?v=20260619" width="660" height="135" alt="Knite">
     </a>
 
     <ul class="kn-nav-links" id="kniteNavLinks">
@@ -220,12 +226,17 @@
           <li><a href="/#faq">FAQ</a></li>
         </ul>
       </li>
-      <li id="kniteCartLi"><a href="/cart.html" class="kn-cart-btn" aria-label="Cart">🛒 <span class="kn-cart-text">Cart</span> <span class="kn-cart-count" id="kniteCartCount">0</span></a></li>
-      <li class="kn-acct" id="kniteAcct">
+      <li><a href="/#feedback" class="kn-cta">Get a Quote</a></li>
+    </ul>
+
+    <!-- Always-visible right cluster: Cart + Account + Hamburger -->
+    <div class="kn-right">
+      <a href="/cart.html" class="kn-cart-btn" id="kniteCartLi" aria-label="Cart">🛒 <span class="kn-cart-text">Cart</span> <span class="kn-cart-count" id="kniteCartCount">0</span></a>
+      <div class="kn-acct" id="kniteAcct">
         <a href="/login.html" class="kn-account-btn" id="kniteAccountLink" aria-label="Sign in">
           <span class="kn-acct-icon" id="kniteAccountIcon">👤</span>
           <span class="kn-acct-greet" id="kniteAccountGreet" style="display:none">
-            Hello <strong id="kniteAccountName">there</strong>
+            <span class="kn-hello-text">Hello </span><strong id="kniteAccountName">there</strong>
             <svg class="kn-acct-chev" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 3l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </span>
         </a>
@@ -236,11 +247,9 @@
           <li class="kn-acct-divider"></li>
           <li><a href="#" onclick="event.preventDefault();kniteLogout()" style="color:#dc2626">↪ Sign out</a></li>
         </ul>
-      </li>
-      <li><a href="/#feedback" class="kn-cta">Get a Quote</a></li>
-    </ul>
-
-    <div class="kn-ham" id="kniteHam" aria-label="Toggle menu" role="button" tabindex="0"><span></span><span></span><span></span></div>
+      </div>
+      <div class="kn-ham" id="kniteHam" aria-label="Toggle menu" role="button" tabindex="0"><span></span><span></span><span></span></div>
+    </div>
   </nav>`;
 
   // Inject CSS

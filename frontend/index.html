@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knite — RO Water Purifiers India | Knite Core, Shield & Prime | knite.in</title>
-  <meta name="description" content="Knite (knite.in) — Indian RO water purifier brand by Axios Enterprise LLP. Knite Core ₹7,999, Knite Shield ₹8,999, Knite Prime ₹9,999. 7–9 stage RO + UV + UF with copper-alkaline. Free pan-India installation, 1-year warranty. Knite is an independent brand — not Kent, not Aquaguard.">
-  <meta name="keywords" content="knite, knite ro, knite ro water purifier, knite india, knite water purifier, knite core, knite shield, knite prime, knite by axios, knite copper alkaline, knite installation, knite.in, ro water purifier india, 7 stage ro purifier, 8 stage ro purifier, 9 stage ro purifier">
+  <meta name="description" content="Knite (knite.in) — Indian RO water purifier brand by Axios Enterprise LLP. 9 models from ₹7,999 — Core, Flux, Prime, Shield & Edge series. 6–11 stage RO + UV + UF / Alkaline, up to 3000 ppm TDS. Free pan-India installation, up to 2-year warranty. Knite is an independent brand — not Kent, not Aquaguard.">
+  <meta name="keywords" content="knite, knite ro, knite ro water purifier, knite india, knite water purifier, knite core, knite shield, knite prime, knite by axios, knite alkaline ro, knite installation, knite.in, ro water purifier india, 8 stage ro purifier, 9 stage ro purifier, 10 stage ro purifier">
   <meta name="author" content="Knite — Axios Enterprise LLP">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="googlebot" content="index, follow">
@@ -28,7 +28,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://knite.in/">
   <meta property="og:title" content="Knite RO Water Purifier — Pure Water, Pure Life">
-  <meta property="og:description" content="Premium RO water purifiers with 7-stage purification, copper-alkaline tech & free installation across India. Available on Amazon & Flipkart.">
+  <meta property="og:description" content="Premium RO water purifiers with up to 11-stage purification, alkaline mineralisation & free installation across India. Available on Amazon & Flipkart.">
   <meta property="og:image" content="https://knite.in/og-image.png">
   <meta property="og:site_name" content="Knite">
   <meta property="og:locale" content="en_IN">
@@ -37,7 +37,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://knite.in/">
   <meta name="twitter:title" content="Knite RO Water Purifier — Pure Water, Pure Life">
-  <meta name="twitter:description" content="Premium RO water purifiers with 7-stage purification & free installation across India.">
+  <meta name="twitter:description" content="Premium RO water purifiers with up to 11-stage purification & free installation across India.">
   <meta name="twitter:image" content="https://knite.in/og-image.png">
 
   <!-- Geo / Local SEO -->
@@ -60,8 +60,8 @@
   <style>
     :root {
       --primary: #0a1628;
-      --accent: #00b4d8;
-      --accent2: #0077b6;
+      --accent: #c07a4a;
+      --accent2: #8c5a3c;
       --light: #f8fafc;
       --text: #1e293b;
       --muted: #64748b;
@@ -542,6 +542,21 @@
       letter-spacing: 0.5px;
     }
 
+    .hero-card-inner { transition: opacity .4s ease; }
+    .hero-card-inner.fading { opacity: 0; }
+    .hero-prod-imgwrap {
+      width: 180px; height: 180px; margin: 0 auto 18px;
+      border-radius: 18px; background: rgba(255,255,255,0.94);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .hero-prod-img { width: 100%; height: 100%; object-fit: contain; padding: 6px; display: block; }
+    .hero-product-card { cursor: pointer; }
+    .hero-dots { display: flex; justify-content: center; gap: 7px; margin-top: 20px; }
+    .hero-dots button { width: 7px; height: 7px; border-radius: 99px; border: none; padding: 0;
+      background: rgba(255,255,255,0.25); cursor: pointer; transition: all .3s ease; }
+    .hero-dots button.active { background: var(--accent); width: 20px; }
+
     .hero-scroll {
       position: absolute;
       bottom: 32px;
@@ -675,12 +690,27 @@
       cursor: pointer;
     }
 
-    .product-card:hover { transform: translateY(-6px); box-shadow: 0 32px 80px rgba(0,0,0,0.1); border-color: var(--accent); }
+    .product-card:hover { transform: translateY(-8px); box-shadow: 0 40px 90px rgba(10,22,40,0.16); border-color: var(--accent); }
 
     .product-badge-wrap {
       position: absolute;
       top: 16px; left: 16px;
       z-index: 2;
+    }
+    .product-save-wrap {
+      position: absolute;
+      top: 16px; right: 16px;
+      z-index: 2;
+    }
+    .save-tag {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      padding: 5px 11px;
+      border-radius: 50px;
+      color: #fff;
+      background: linear-gradient(135deg, #cf9572, #8c5a3c);
+      box-shadow: 0 6px 16px rgba(140,90,60,0.35);
     }
 
     .badge {
@@ -688,8 +718,9 @@
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      padding: 4px 12px;
+      padding: 5px 12px;
       border-radius: 50px;
+      box-shadow: 0 4px 12px rgba(10,22,40,0.08);
     }
 
     .badge-best { background: #fef3c7; color: #92400e; }
@@ -698,18 +729,50 @@
     .badge-pro { background: #fee2e2; color: #991b1b; }
 
     .product-image-area {
-      background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%);
-      padding: 40px 20px 24px;
-      text-align: center;
-      min-height: 200px;
+      position: relative;
+      background:
+        radial-gradient(125% 95% at 50% 30%, #ecebeb 0%, #e1dfdf 55%, #d2d0d0 100%);
+      padding: 0;
+      aspect-ratio: 1 / 1;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
+    }
+    .product-image-area::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,180,216,0.25), transparent);
     }
 
-    .product-svg { width: 120px; height: 160px; }
+    .product-svg {
+      width: 168px; height: 186px;
+      filter: drop-shadow(0 18px 26px rgba(10,22,40,0.18));
+      transition: transform 0.4s ease;
+    }
+    .product-card:hover .product-svg { transform: translateY(-4px) scale(1.04); }
+    .product-photo {
+      display: block;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      transition: transform 0.5s ease;
+    }
+    .product-card:hover .product-photo { transform: scale(1.05); }
 
-    .product-info { padding: 24px; }
+    .product-info { padding: 22px 24px 24px; }
+
+    .product-rating {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 9px;
+    }
+    .product-rating .stars { display: inline-flex; gap: 1px; font-size: 13px; line-height: 1; }
+    .product-rating .star { color: #d8dee8; }
+    .product-rating .star.on { color: #f59e0b; }
+    .product-rating .rating-num { font-size: 12px; color: var(--muted); font-weight: 600; }
 
     .product-info h3 {
       font-family: 'Poppins', sans-serif;
@@ -722,7 +785,8 @@
     .product-tagline {
       font-size: 13px;
       color: var(--muted);
-      margin-bottom: 18px;
+      margin-bottom: 16px;
+      min-height: 34px;
     }
 
     .product-specs {
@@ -733,48 +797,69 @@
     }
 
     .spec-pill {
-      background: #f1f5f9;
-      color: #475569;
+      background: #eef4fb;
+      color: #334155;
       font-size: 11px;
       font-weight: 600;
-      padding: 4px 10px;
+      padding: 5px 11px;
       border-radius: 50px;
       letter-spacing: 0.3px;
+      border: 1px solid #e2ecf7;
     }
+
+    .card-warranty {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #ecfeff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+    }
+    .card-warranty .cw-ic { font-size: 15px; line-height: 1; }
+    .card-warranty .cw-text { font-size: 11.5px; color: #0369a1; font-weight: 500; }
+    .card-warranty .cw-text strong { font-weight: 800; color: #075985; }
 
     .product-price-row {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between;
       padding-top: 16px;
       border-top: 1px solid var(--border);
     }
 
+    .price-block { display: flex; flex-direction: column; gap: 2px; }
+    .price-meta { display: flex; align-items: center; gap: 8px; }
+    .price-mrp { font-size: 13px; color: var(--muted); text-decoration: line-through; }
+
     .product-price {
       font-family: 'Poppins', sans-serif;
-      font-size: 22px;
+      font-size: 23px;
       font-weight: 800;
       color: var(--primary);
+      line-height: 1.1;
     }
 
-    .product-price sup { font-size: 13px; font-weight: 600; }
-    .product-price small { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+    .product-price sup { font-size: 13px; font-weight: 600; top: -0.5em; }
+    .product-price small { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 5px; }
 
     .btn-buy {
       background: var(--primary);
       color: #fff;
       border: none;
-      padding: 10px 22px;
+      padding: 11px 22px;
       border-radius: 50px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.3s;
       text-decoration: none;
       display: inline-block;
+      white-space: nowrap;
     }
 
-    .btn-buy:hover { background: var(--accent2); transform: scale(1.03); }
+    .btn-buy:hover { background: var(--accent2); transform: scale(1.04); box-shadow: 0 10px 22px rgba(0,180,216,0.35); }
 
     /* ── STATS ── */
     .stats { background: var(--gradient); padding: 70px 5%; }
@@ -1458,7 +1543,7 @@
     },
     "image": "https://knite.in/og-image.png",
     "slogan": "Pure Water, Pure Life — by Knite.",
-    "description": "Knite is an Indian RO water purifier brand by Axios Enterprise LLP, offering 7-stage to 9-stage RO + UV + UF purification with copper-alkaline technology, free installation, and pan-India service. Knite is a distinct brand and is not affiliated with Kent, Aquaguard, LivPure, or any other manufacturer.",
+    "description": "Knite is an Indian RO water purifier brand by Axios Enterprise LLP, offering 6-stage to 11-stage RO + UV + UF / Alkaline purification, free installation, and pan-India service. Knite is a distinct brand and is not affiliated with Kent, Aquaguard, LivPure, or any other manufacturer.",
     "foundingDate": "2025",
     "foundingLocation": "New Delhi, India",
     "areaServed": { "@type": "Country", "name": "India" },
@@ -1486,7 +1571,7 @@
       "https://www.flipkart.com/search?q=knite+ro+water+purifier",
       "https://www.indiamart.com/search.mp?ss=knite+ro",
       "https://www.facebook.com/knite.in",
-      "https://www.instagram.com/knite.in/",
+      "https://www.instagram.com/knite.india/",
       "https://www.linkedin.com/company/knite-in/",
       "https://twitter.com/knite_in",
       "https://www.youtube.com/@knite-in"
@@ -1547,7 +1632,7 @@
         "@type": "Product",
         "position": 1,
         "name": "Knite Core RO Water Purifier",
-        "description": "Essential 7-stage RO + UV purification with TDS controller for everyday families.",
+        "description": "6-stage RO + UV RO purifier in the Core cabinet. 100 GPD, handles TDS up to 3000 ppm.",
         "brand": { "@type": "Brand", "name": "Knite" },
         "category": "Water Purifier",
         "image": "https://knite.in/favicon.svg",
@@ -1563,49 +1648,74 @@
         },
         "aggregateRating": {
           "@type": "AggregateRating",
-          "ratingValue": "4.7",
+          "ratingValue": "4.6",
           "bestRating": "5",
-          "ratingCount": "82"
+          "ratingCount": "48"
         }
       },
       {
         "@type": "Product",
         "position": 2,
-        "name": "Knite Shield RO Water Purifier",
-        "description": "8-stage RO + UV + UF + mineraliser. Built for tougher Indian water with digital TDS display.",
+        "name": "Knite Flux RO Water Purifier",
+        "description": "8-stage RO + UV + UF + MTDS RO purifier in the Flux cabinet. 100 GPD, handles TDS up to 3000 ppm.",
         "brand": { "@type": "Brand", "name": "Knite" },
         "category": "Water Purifier",
         "image": "https://knite.in/favicon.svg",
-        "sku": "KNITE-SHIELD",
-        "url": "https://knite.in/product.html?slug=knite-shield",
+        "sku": "KNITE-FLUX",
+        "url": "https://knite.in/product.html?slug=knite-flux",
         "offers": {
           "@type": "Offer",
-          "url": "https://knite.in/product.html?slug=knite-shield",
+          "url": "https://knite.in/product.html?slug=knite-flux",
           "priceCurrency": "INR",
-          "price": "8999",
+          "price": "7999",
           "availability": "https://schema.org/InStock",
           "seller": { "@type": "Organization", "name": "Knite" }
         },
         "aggregateRating": {
           "@type": "AggregateRating",
-          "ratingValue": "4.8",
+          "ratingValue": "4.7",
           "bestRating": "5",
-          "ratingCount": "105"
+          "ratingCount": "36"
         }
       },
       {
         "@type": "Product",
         "position": 3,
-        "name": "Knite Prime RO Water Purifier with Copper + Alkaline",
-        "description": "Top-of-line 9-stage purifier with food-grade copper and alkaline mineralisation (pH 8.5-9.0). Maximum wellness.",
+        "name": "Knite Flux White RO Water Purifier",
+        "description": "8-stage RO + UV + UF + MTDS RO purifier in the Flux White cabinet. 100 GPD, handles TDS up to 3000 ppm.",
         "brand": { "@type": "Brand", "name": "Knite" },
         "category": "Water Purifier",
-        "image": "https://knite.in/favicon.svg",
-        "sku": "KNITE-PRIME",
-        "url": "https://knite.in/product.html?slug=knite-prime",
+        "image": "https://knite.in/products/knite-flux-white.jpg",
+        "sku": "KNITE-FLUX-WHITE",
+        "url": "https://knite.in/product.html?slug=knite-flux-white",
         "offers": {
           "@type": "Offer",
-          "url": "https://knite.in/product.html?slug=knite-prime",
+          "url": "https://knite.in/product.html?slug=knite-flux-white",
+          "priceCurrency": "INR",
+          "price": "7999",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.7",
+          "bestRating": "5",
+          "ratingCount": "24"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 4,
+        "name": "Knite Prime White RO Water Purifier",
+        "description": "11-stage RO + UV + Alkaline RO purifier in the Prime White cabinet. 100 GPD, handles TDS up to 3000 ppm.",
+        "brand": { "@type": "Brand", "name": "Knite" },
+        "category": "Water Purifier",
+        "image": "https://knite.in/products/knite-prime-white.jpg",
+        "sku": "KNITE-PRIME-WHITE",
+        "url": "https://knite.in/product.html?slug=knite-prime-white",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-prime-white",
           "priceCurrency": "INR",
           "price": "9999",
           "availability": "https://schema.org/InStock",
@@ -1613,9 +1723,134 @@
         },
         "aggregateRating": {
           "@type": "AggregateRating",
-          "ratingValue": "4.9",
+          "ratingValue": "4.7",
           "bestRating": "5",
-          "ratingCount": "60"
+          "ratingCount": "52"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 5,
+        "name": "Knite Prime Black RO Water Purifier",
+        "description": "11-stage RO + UV + Alkaline RO purifier in the Prime Black cabinet. 100 GPD, handles TDS up to 3000 ppm.",
+        "brand": { "@type": "Brand", "name": "Knite" },
+        "category": "Water Purifier",
+        "image": "https://knite.in/products/knite-prime-black.jpg",
+        "sku": "KNITE-PRIME-BLACK",
+        "url": "https://knite.in/product.html?slug=knite-prime-black",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-prime-black",
+          "priceCurrency": "INR",
+          "price": "9999",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "bestRating": "5",
+          "ratingCount": "64"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 6,
+        "name": "Knite Shield Copper RO Water Purifier",
+        "description": "11-stage RO + UV + Alkaline RO purifier in the Shield Copper cabinet. 100 GPD, handles TDS up to 3000 ppm.",
+        "brand": { "@type": "Brand", "name": "Knite" },
+        "category": "Water Purifier",
+        "image": "https://knite.in/favicon.svg",
+        "sku": "KNITE-SHIELD-COPPER",
+        "url": "https://knite.in/product.html?slug=knite-shield-copper",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-shield-copper",
+          "priceCurrency": "INR",
+          "price": "10499",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.7",
+          "bestRating": "5",
+          "ratingCount": "44"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 7,
+        "name": "Knite Shield Silver RO Water Purifier",
+        "description": "11-stage RO + UV + Alkaline RO purifier in the Shield Silver cabinet. 100 GPD, handles TDS up to 3000 ppm.",
+        "brand": { "@type": "Brand", "name": "Knite" },
+        "category": "Water Purifier",
+        "image": "https://knite.in/favicon.svg",
+        "sku": "KNITE-SHIELD-SILVER",
+        "url": "https://knite.in/product.html?slug=knite-shield-silver",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-shield-silver",
+          "priceCurrency": "INR",
+          "price": "10499",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "bestRating": "5",
+          "ratingCount": "38"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 8,
+        "name": "Knite Edge Black RO Water Purifier",
+        "description": "11-stage RO + UV + Alkaline RO purifier in the Edge Black cabinet. 100 GPD, handles TDS up to 3000 ppm.",
+        "brand": { "@type": "Brand", "name": "Knite" },
+        "category": "Water Purifier",
+        "image": "https://knite.in/favicon.svg",
+        "sku": "KNITE-EDGE-BLACK",
+        "url": "https://knite.in/product.html?slug=knite-edge-black",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-edge-black",
+          "priceCurrency": "INR",
+          "price": "10999",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.7",
+          "bestRating": "5",
+          "ratingCount": "41"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 9,
+        "name": "Knite Edge Silver RO Water Purifier",
+        "description": "11-stage RO + UV + Alkaline RO purifier in the Edge Silver cabinet. 100 GPD, handles TDS up to 3000 ppm.",
+        "brand": { "@type": "Brand", "name": "Knite" },
+        "category": "Water Purifier",
+        "image": "https://knite.in/favicon.svg",
+        "sku": "KNITE-EDGE-SILVER",
+        "url": "https://knite.in/product.html?slug=knite-edge-silver",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://knite.in/product.html?slug=knite-edge-silver",
+          "priceCurrency": "INR",
+          "price": "10999",
+          "availability": "https://schema.org/InStock",
+          "seller": { "@type": "Organization", "name": "Knite" }
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "bestRating": "5",
+          "ratingCount": "35"
         }
       }
     ]
@@ -1648,13 +1883,13 @@
     "mainEntity": [
       { "@type": "Question",
         "name": "What is Knite?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Knite is an Indian water purifier brand owned by Axios Enterprise LLP, headquartered in New Delhi. Knite manufactures 7-stage to 9-stage RO + UV + UF water purifiers with copper-alkaline technology, free installation, and pan-India service. Knite is a distinct brand and is not affiliated with Kent, Aquaguard, LivPure, Pureit, or any other water purifier manufacturer." } },
+        "acceptedAnswer": { "@type": "Answer", "text": "Knite is an Indian water purifier brand owned by Axios Enterprise LLP, headquartered in New Delhi. Knite manufactures 6-stage to 11-stage RO + UV + UF / Alkaline water purifiers, free installation, and pan-India service. Knite is a distinct brand and is not affiliated with Kent, Aquaguard, LivPure, Pureit, or any other water purifier manufacturer." } },
       { "@type": "Question",
         "name": "Is Knite the same as Kent?",
         "acceptedAnswer": { "@type": "Answer", "text": "No. Knite (spelled K-N-I-T-E) is an independent Indian water purifier brand by Axios Enterprise LLP. Kent (spelled K-E-N-T) is a separate, unrelated company. The two brands have no business, ownership, or technical association." } },
       { "@type": "Question",
         "name": "Which Knite RO water purifier is best for my home?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Knite Core (Rs 7,999) is the essential 7-stage RO + UV purifier for everyday families. Knite Shield (Rs 8,999) adds UF and a mineraliser for tougher water. Knite Prime (Rs 9,999) is the flagship 9-stage model with copper and alkaline infusion for maximum wellness." } },
+        "acceptedAnswer": { "@type": "Answer", "text": "Knite Core (Rs 7,999) is the essential 6-stage RO + UV purifier for everyday families. Knite Flux (Rs 7,999) is an 8-stage RO + UV + UF model with a manual TDS controller for variable water. Knite Prime (Rs 9,999) is the flagship 11-stage RO + UV + Alkaline model with auto-flush and a 2-year warranty." } },
       { "@type": "Question",
         "name": "How does the free installation work?",
         "acceptedAnswer": { "@type": "Answer", "text": "After you order from Amazon or Flipkart, a Knite-certified technician contacts you within 24 hours to schedule installation. The visit takes 60-90 minutes and includes mounting, plumbing, TDS calibration, and a demo. Zero installation charges anywhere in India." } },
@@ -1693,7 +1928,7 @@
     "@type": "Product",
     "name": "Knite RO Water Purifier Range",
     "brand": { "@type": "Brand", "name": "Knite" },
-    "description": "Premium RO water purifiers with 7-stage purification, copper-alkaline technology, UV+UF, and free installation across India.",
+    "description": "Premium RO water purifiers with up to 11-stage purification, alkaline mineralisation, UV+UF, and free installation across India.",
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": "4.8",
@@ -1745,7 +1980,7 @@
     ]
   }
   </script>
-  <script src="/nav.js" defer></script>
+  <script src="/nav.js?v=20260619" defer></script>
 </head>
 <body>
 
@@ -1760,7 +1995,7 @@
   <div class="hero-content">
     <div class="hero-badge">Trusted by 10,000+ households</div>
     <h1>Pure Water,<br><span>Pure Life.</span></h1>
-    <p>Advanced 10-stage RO purification technology. Free installation, nationwide service, 1-year warranty. Experience water the way nature intended.</p>
+    <p>Advanced multi-stage RO + UV purification. Free installation, nationwide service, up to 2-year warranty. Experience water the way nature intended.</p>
     <div class="hero-btns">
       <a href="#products" class="btn-primary">Explore Products</a>
       <a href="#feedback" class="btn-outline">Book Free Demo</a>
@@ -1777,41 +2012,20 @@
   </div>
 
   <div class="hero-visual">
-    <div class="hero-product-card">
-      <svg class="product-icon-large" viewBox="0 0 140 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- RO purifier illustration -->
-        <rect x="30" y="20" width="80" height="140" rx="16" fill="url(#heroGrad)"/>
-        <rect x="38" y="30" width="64" height="90" rx="10" fill="rgba(255,255,255,0.08)"/>
-        <!-- Display panel -->
-        <rect x="44" y="36" width="52" height="28" rx="6" fill="rgba(0,180,216,0.15)"/>
-        <rect x="48" y="40" width="44" height="8" rx="3" fill="rgba(0,180,216,0.4)"/>
-        <rect x="52" y="52" width="36" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
-        <!-- Filter stages -->
-        <circle cx="55" cy="90" r="10" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.4)" stroke-width="1.5"/>
-        <circle cx="75" cy="90" r="10" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.4)" stroke-width="1.5"/>
-        <circle cx="95" cy="90" r="10" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.4)" stroke-width="1.5"/>
-        <text x="55" y="94" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7" font-family="Inter">RO</text>
-        <text x="75" y="94" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7" font-family="Inter">UV</text>
-        <text x="95" y="94" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="6" font-family="Inter">UF</text>
-        <!-- Tap -->
-        <rect x="56" y="145" width="28" height="8" rx="4" fill="rgba(0,180,216,0.5)"/>
-        <rect x="66" y="153" width="8" height="6" rx="2" fill="rgba(0,180,216,0.4)"/>
-        <!-- Water drop from tap -->
-        <ellipse cx="70" cy="163" rx="3" ry="4" fill="rgba(0,180,216,0.6)"/>
-        <defs>
-          <linearGradient id="heroGrad" x1="30" y1="20" x2="110" y2="160" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#0d2137"/>
-            <stop offset="100%" stop-color="#0a3d62"/>
-          </linearGradient>
-        </defs>
-      </svg>
-      <h3>Knite Prime</h3>
-      <p>Flagship 9-Stage RO + UV + UF + Copper + Alkaline</p>
-      <div class="hero-specs">
-        <div class="hero-spec"><strong>9</strong><span>Stages</span></div>
-        <div class="hero-spec"><strong>14L</strong><span>Tank</span></div>
-        <div class="hero-spec"><strong>100</strong><span>GPD</span></div>
+    <div class="hero-product-card" id="heroCard" role="link" tabindex="0" aria-label="Featured Knite product — click to view">
+      <div class="hero-card-inner" id="heroInner">
+        <div class="hero-prod-imgwrap">
+          <img class="hero-prod-img" id="heroImg" src="/products/knite-core.jpg" alt="Knite Core" width="180" height="180">
+        </div>
+        <h3 id="heroName">Knite Core</h3>
+        <p id="heroTag">6-Stage RO + UV</p>
+        <div class="hero-specs">
+          <div class="hero-spec"><strong id="heroStages">6</strong><span>Stages</span></div>
+          <div class="hero-spec"><strong id="heroTank">11L</strong><span>Tank</span></div>
+          <div class="hero-spec"><strong id="heroGpd">100</strong><span>GPD</span></div>
+        </div>
       </div>
+      <div class="hero-dots" id="heroDots"></div>
     </div>
   </div>
 
@@ -1820,6 +2034,45 @@
     Scroll
   </div>
 </section>
+<script>
+(function(){
+  var items=[
+    {s:'knite-core',n:'Knite Core',t:'6-Stage RO + UV',st:6,tk:'11L',g:100},
+    {s:'knite-flux',n:'Knite Flux',t:'8-Stage RO + UV + UF + MTDS',st:8,tk:'10L',g:100},
+    {s:'knite-flux-white',n:'Knite Flux White',t:'8-Stage RO + UV + UF + MTDS',st:8,tk:'10L',g:100},
+    {s:'knite-prime-white',n:'Knite Prime White',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
+    {s:'knite-prime-black',n:'Knite Prime Black',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
+    {s:'knite-shield-copper',n:'Knite Shield Copper',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
+    {s:'knite-shield-silver',n:'Knite Shield Silver',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
+    {s:'knite-edge-black',n:'Knite Edge Black',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
+    {s:'knite-edge-silver',n:'Knite Edge Silver',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100}
+  ];
+  var card=document.getElementById('heroCard'); if(!card) return;
+  var inner=document.getElementById('heroInner'),img=document.getElementById('heroImg'),
+      nm=document.getElementById('heroName'),tg=document.getElementById('heroTag'),
+      est=document.getElementById('heroStages'),etk=document.getElementById('heroTank'),
+      eg=document.getElementById('heroGpd'),dw=document.getElementById('heroDots');
+  var cur=0,timer=null;
+  items.forEach(function(it,idx){var b=document.createElement('button');b.type='button';
+    b.setAttribute('aria-label',it.n);
+    b.addEventListener('click',function(e){e.stopPropagation();go(idx);reset();});dw.appendChild(b);});
+  var dots=Array.prototype.slice.call(dw.children);
+  function render(idx){var it=items[idx];
+    img.src='/products/'+it.s+'.jpg';img.alt=it.n;nm.textContent=it.n;tg.textContent=it.t;
+    est.textContent=it.st;etk.textContent=it.tk;eg.textContent=it.g;card.setAttribute('data-slug',it.s);
+    dots.forEach(function(d,n){d.className=(n===idx?'active':'');});cur=idx;}
+  function go(idx){idx=(idx+items.length)%items.length;inner.classList.add('fading');
+    setTimeout(function(){render(idx);inner.classList.remove('fading');},380);}
+  function reset(){if(timer)clearInterval(timer);timer=setInterval(function(){go(cur+1);},5000);}
+  function nav(){location.href='/product.html?slug='+card.getAttribute('data-slug');}
+  card.addEventListener('click',nav);
+  card.addEventListener('keydown',function(e){if(e.key==='Enter')nav();});
+  card.addEventListener('mouseenter',function(){if(timer)clearInterval(timer);});
+  card.addEventListener('mouseleave',reset);
+  render(0);reset();
+})();
+</script>
+
 
 <!-- ── WHY KNITE ── -->
 <section class="features" id="features">
@@ -1831,8 +2084,8 @@
   <div class="features-grid">
     <div class="feature-card fade-up">
       <div class="feature-icon">🧬</div>
-      <h3>10-Stage Purification</h3>
-      <p>Multi-stage filtration including Sediment, Carbon, RO membrane, UV, UF, and TDS controller for the purest water.</p>
+      <h3>Multi-Stage Purification</h3>
+      <p>Multi-stage filtration including Sediment, Carbon, RO membrane, UV, UF, and Alkaline mineraliser for safe, great-tasting water.</p>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon">⚡</div>
@@ -1867,116 +2120,256 @@
   <div class="fade-up">
     <div class="section-label">Product Catalogue</div>
     <h2 class="section-title">Choose Your <span>Perfect Purifier</span></h2>
-    <p class="section-sub">From compact under-sink models to premium whole-family systems — there's a Knite for every home.</p>
   </div>
   <div class="products-grid">
 
     <!-- Knite Core -->
     <a href="/product.html?slug=knite-core" class="product-card fade-up" aria-label="Knite Core RO Water Purifier">
       <div class="product-badge-wrap"><span class="badge badge-best">Essential</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
       <div class="product-image-area">
-        <svg class="product-svg" viewBox="0 0 120 160" fill="none">
-          <rect x="20" y="10" width="80" height="130" rx="14" fill="url(#pCoreG)"/>
-          <rect x="28" y="18" width="64" height="80" rx="9" fill="rgba(255,255,255,0.07)"/>
-          <rect x="34" y="24" width="52" height="22" rx="5" fill="rgba(0,180,216,0.15)"/>
-          <rect x="38" y="28" width="44" height="6" rx="3" fill="rgba(0,180,216,0.5)"/>
-          <circle cx="48" cy="72" r="9" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
-          <circle cx="72" cy="72" r="9" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.5)" stroke-width="1.5"/>
-          <text x="48" y="76" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
-          <text x="72" y="76" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
-          <rect x="46" y="128" width="28" height="7" rx="3.5" fill="rgba(0,180,216,0.5)"/>
-          <ellipse cx="60" cy="140" rx="2.5" ry="3.5" fill="rgba(0,180,216,0.7)"/>
-          <defs><linearGradient id="pCoreG" x1="20" y1="10" x2="100" y2="140" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0d2137"/><stop offset="100%" stop-color="#0a3d62"/></linearGradient></defs>
-        </svg>
+        <img class="product-photo" src="/products/knite-core.jpg" alt="Knite Core RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.6 (48)</span></div>
         <h3>Knite Core</h3>
-        <p class="product-tagline">7-Stage RO + UV — Dependable everyday purification</p>
-        <div class="product-specs">
-          <span class="spec-pill">60 GPD</span>
-          <span class="spec-pill">7-Stage</span>
-          <span class="spec-pill">9L Tank</span>
-          <span class="spec-pill">RO+UV</span>
-        </div>
-        <div class="product-price-row">
-          <div class="product-price"><sup>₹</sup>7,999<small>all-incl.</small></div>
-          <span class="btn-buy">Buy Now</span>
-        </div>
-      </div>
-    </a>
-
-    <!-- Knite Shield -->
-    <a href="/product.html?slug=knite-shield" class="product-card fade-up" aria-label="Knite Shield RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-popular">Most Popular</span></div>
-      <div class="product-image-area">
-        <svg class="product-svg" viewBox="0 0 120 160" fill="none">
-          <rect x="15" y="8" width="90" height="134" rx="16" fill="url(#pShieldG)"/>
-          <rect x="24" y="16" width="72" height="85" rx="10" fill="rgba(255,255,255,0.07)"/>
-          <rect x="30" y="22" width="60" height="26" rx="6" fill="rgba(0,180,216,0.12)"/>
-          <rect x="34" y="27" width="52" height="7" rx="3" fill="rgba(0,180,216,0.45)"/>
-          <rect x="34" y="38" width="30" height="4" rx="2" fill="rgba(255,255,255,0.12)"/>
-          <circle cx="38" cy="76" r="10" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
-          <circle cx="60" cy="76" r="10" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.5)" stroke-width="1.5"/>
-          <circle cx="82" cy="76" r="10" fill="rgba(94,234,212,0.2)" stroke="rgba(94,234,212,0.5)" stroke-width="1.5"/>
-          <text x="38" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
-          <text x="60" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
-          <text x="82" y="80" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UF</text>
-          <rect x="42" y="130" width="36" height="7" rx="3.5" fill="rgba(0,180,216,0.5)"/>
-          <ellipse cx="60" cy="142" rx="3" ry="4" fill="rgba(0,180,216,0.7)"/>
-          <defs><linearGradient id="pShieldG" x1="15" y1="8" x2="105" y2="142" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#052940"/><stop offset="100%" stop-color="#0a4a6e"/></linearGradient></defs>
-        </svg>
-      </div>
-      <div class="product-info">
-        <h3>Knite Shield</h3>
-        <p class="product-tagline">8-Stage RO + UV + UF + Mineraliser — Built for tougher water</p>
-        <div class="product-specs">
-          <span class="spec-pill">75 GPD</span>
-          <span class="spec-pill">8-Stage</span>
-          <span class="spec-pill">12L Tank</span>
-          <span class="spec-pill">RO+UV+UF</span>
-        </div>
-        <div class="product-price-row">
-          <div class="product-price"><sup>₹</sup>8,999<small>all-incl.</small></div>
-          <span class="btn-buy">Buy Now</span>
-        </div>
-      </div>
-    </a>
-
-    <!-- Knite Prime -->
-    <a href="/product.html?slug=knite-prime" class="product-card fade-up" aria-label="Knite Prime RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-pro">Premium</span></div>
-      <div class="product-image-area">
-        <svg class="product-svg" viewBox="0 0 120 160" fill="none">
-          <rect x="10" y="6" width="100" height="140" rx="18" fill="url(#pPrimeG)"/>
-          <rect x="19" y="15" width="82" height="95" rx="12" fill="rgba(255,255,255,0.06)"/>
-          <rect x="25" y="21" width="70" height="30" rx="7" fill="rgba(0,180,216,0.12)"/>
-          <rect x="30" y="26" width="60" height="8" rx="4" fill="rgba(0,180,216,0.45)"/>
-          <rect x="30" y="38" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.12)"/>
-          <rect x="74" y="38" width="16" height="5" rx="2.5" fill="rgba(0,180,216,0.3)"/>
-          <circle cx="33" cy="82" r="10" fill="rgba(0,180,216,0.2)" stroke="rgba(0,180,216,0.5)" stroke-width="1.5"/>
-          <circle cx="53" cy="82" r="10" fill="rgba(0,119,182,0.2)" stroke="rgba(0,119,182,0.5)" stroke-width="1.5"/>
-          <circle cx="73" cy="82" r="10" fill="rgba(217,119,6,0.25)" stroke="rgba(217,119,6,0.6)" stroke-width="1.5"/>
-          <circle cx="93" cy="82" r="10" fill="rgba(167,243,208,0.2)" stroke="rgba(167,243,208,0.5)" stroke-width="1.5"/>
-          <text x="33" y="86" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">RO</text>
-          <text x="53" y="86" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="6" font-family="Inter">UV</text>
-          <text x="73" y="86" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="5" font-family="Inter">Cu+</text>
-          <text x="93" y="86" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="5" font-family="Inter">ALK</text>
-          <rect x="42" y="132" width="36" height="7" rx="3.5" fill="rgba(0,180,216,0.5)"/>
-          <ellipse cx="60" cy="144" rx="3" ry="4" fill="rgba(0,180,216,0.7)"/>
-          <defs><linearGradient id="pPrimeG" x1="10" y1="6" x2="110" y2="146" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#061220"/><stop offset="100%" stop-color="#0b3255"/></linearGradient></defs>
-        </svg>
-      </div>
-      <div class="product-info">
-        <h3>Knite Prime</h3>
-        <p class="product-tagline">9-Stage RO + UV + UF + Copper + Alkaline — Maximum wellness</p>
+        <p class="product-tagline">6-Stage RO + UV — Core cabinet</p>
         <div class="product-specs">
           <span class="spec-pill">100 GPD</span>
-          <span class="spec-pill">9-Stage</span>
-          <span class="spec-pill">14L Tank</span>
-          <span class="spec-pill">Copper+ALK</span>
+          <span class="spec-pill">6-Stage</span>
+          <span class="spec-pill">11L Tank</span>
+          <span class="spec-pill">RO+UV+ALK</span>
         </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>1-Year Warranty</strong> · 1 free spun filter</span></div>
         <div class="product-price-row">
-          <div class="product-price"><sup>₹</sup>9,999<small>all-incl.</small></div>
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹11,999</span></div>
+            <div class="product-price"><sup>₹</sup>7,999<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Flux -->
+    <a href="/product.html?slug=knite-flux" class="product-card fade-up" aria-label="Knite Flux RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-popular">RO+UV+UF</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-flux.jpg" alt="Knite Flux RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (36)</span></div>
+        <h3>Knite Flux</h3>
+        <p class="product-tagline">8-Stage RO + UV + UF + MTDS — Flux cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">8-Stage</span>
+          <span class="spec-pill">10L Tank</span>
+          <span class="spec-pill">RO+UV+UF</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>1-Year Warranty</strong> · 1 free spun filter</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹11,999</span></div>
+            <div class="product-price"><sup>₹</sup>7,999<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Flux White -->
+    <a href="/product.html?slug=knite-flux-white" class="product-card fade-up" aria-label="Knite Flux White RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-best">New</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-flux-white.jpg" alt="Knite Flux White RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (24)</span></div>
+        <h3>Knite Flux White</h3>
+        <p class="product-tagline">8-Stage RO + UV + UF + MTDS — Flux White cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">8-Stage</span>
+          <span class="spec-pill">10L Tank</span>
+          <span class="spec-pill">RO+UV+UF</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>1-Year Warranty</strong> · 1 free spun filter</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹11,999</span></div>
+            <div class="product-price"><sup>₹</sup>7,999<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Prime White -->
+    <a href="/product.html?slug=knite-prime-white" class="product-card fade-up" aria-label="Knite Prime White RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-popular">Most Popular</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-prime-white.jpg" alt="Knite Prime White RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (52)</span></div>
+        <h3>Knite Prime White</h3>
+        <p class="product-tagline">11-Stage RO + UV + Alkaline — Prime White cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">11-Stage</span>
+          <span class="spec-pill">9L Tank</span>
+          <span class="spec-pill">RO+UV+ALK</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>2-Year Warranty</strong> · Free filters &amp; service</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹14,999</span></div>
+            <div class="product-price"><sup>₹</sup>9,999<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Prime Black -->
+    <a href="/product.html?slug=knite-prime-black" class="product-card fade-up" aria-label="Knite Prime Black RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-pro">Premium</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-prime-black.jpg" alt="Knite Prime Black RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (64)</span></div>
+        <h3>Knite Prime Black</h3>
+        <p class="product-tagline">11-Stage RO + UV + Alkaline — Prime Black cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">11-Stage</span>
+          <span class="spec-pill">9L Tank</span>
+          <span class="spec-pill">RO+UV+ALK</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>2-Year Warranty</strong> · Free filters &amp; service</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹14,999</span></div>
+            <div class="product-price"><sup>₹</sup>9,999<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Shield Copper -->
+    <a href="/product.html?slug=knite-shield-copper" class="product-card fade-up" aria-label="Knite Shield Copper RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-best">Designer</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-30%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-shield-copper.jpg" alt="Knite Shield Copper RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (44)</span></div>
+        <h3>Knite Shield Copper</h3>
+        <p class="product-tagline">11-Stage RO + UV + Alkaline — Shield Copper cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">11-Stage</span>
+          <span class="spec-pill">9L Tank</span>
+          <span class="spec-pill">RO+UV+ALK</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>2-Year Warranty</strong> · Free filters &amp; service</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹14,999</span></div>
+            <div class="product-price"><sup>₹</sup>10,499<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Shield Silver -->
+    <a href="/product.html?slug=knite-shield-silver" class="product-card fade-up" aria-label="Knite Shield Silver RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-pro">Metallic</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-38%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-shield-silver.jpg" alt="Knite Shield Silver RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (38)</span></div>
+        <h3>Knite Shield Silver</h3>
+        <p class="product-tagline">11-Stage RO + UV + Alkaline — Shield Silver cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">11-Stage</span>
+          <span class="spec-pill">9L Tank</span>
+          <span class="spec-pill">RO+UV+ALK</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>2-Year Warranty</strong> · Free filters &amp; service</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹16,999</span></div>
+            <div class="product-price"><sup>₹</sup>10,499<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Edge Black -->
+    <a href="/product.html?slug=knite-edge-black" class="product-card fade-up" aria-label="Knite Edge Black RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-best">Designer</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-27%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-edge-black.jpg" alt="Knite Edge Black RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (41)</span></div>
+        <h3>Knite Edge Black</h3>
+        <p class="product-tagline">11-Stage RO + UV + Alkaline — Edge Black cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">11-Stage</span>
+          <span class="spec-pill">9L Tank</span>
+          <span class="spec-pill">RO+UV+ALK</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>2-Year Warranty</strong> · Free filters &amp; service</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹14,999</span></div>
+            <div class="product-price"><sup>₹</sup>10,999<small>all-incl.</small></div>
+          </div>
+          <span class="btn-buy">Buy Now</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Knite Edge Silver -->
+    <a href="/product.html?slug=knite-edge-silver" class="product-card fade-up" aria-label="Knite Edge Silver RO Water Purifier">
+      <div class="product-badge-wrap"><span class="badge badge-pro">Metallic</span></div>
+      <div class="product-save-wrap"><span class="save-tag">-35%</span></div>
+      <div class="product-image-area">
+        <img class="product-photo" src="/products/knite-edge-silver.jpg" alt="Knite Edge Silver RO Water Purifier" loading="lazy">
+      </div>
+      <div class="product-info">
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (35)</span></div>
+        <h3>Knite Edge Silver</h3>
+        <p class="product-tagline">11-Stage RO + UV + Alkaline — Edge Silver cabinet</p>
+        <div class="product-specs">
+          <span class="spec-pill">100 GPD</span>
+          <span class="spec-pill">11-Stage</span>
+          <span class="spec-pill">9L Tank</span>
+          <span class="spec-pill">RO+UV+ALK</span>
+        </div>
+        <div class="card-warranty"><span class="cw-ic">🛡️</span><span class="cw-text"><strong>2-Year Warranty</strong> · Free filters &amp; service</span></div>
+        <div class="product-price-row">
+          <div class="price-block">
+            <div class="price-meta"><span class="price-mrp">₹16,999</span></div>
+            <div class="product-price"><sup>₹</sup>10,999<small>all-incl.</small></div>
+          </div>
           <span class="btn-buy">Buy Now</span>
         </div>
       </div>
@@ -2058,7 +2451,7 @@
     }
     .cov-stat-num {
       font-family:'Poppins',sans-serif;font-size:28px;font-weight:800;
-      background:linear-gradient(135deg,#00b4d8,#0077b6);
+      background:linear-gradient(135deg,#cf9572,#8c5a3c);
       -webkit-background-clip:text;background-clip:text;color:transparent;
     }
     .cov-stat-lbl { font-size:13px;color:#64748b;margin-top:4px;font-weight:500 }
@@ -2236,7 +2629,7 @@
       background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;
       overflow:hidden;transition:all 0.25s ease;
     }
-    .faq-item[open] { border-color:#00b4d8;box-shadow:0 6px 24px rgba(0,180,216,0.08) }
+    .faq-item[open] { border-color:#c07a4a;box-shadow:0 6px 24px rgba(192,122,74,0.10) }
     .faq-question {
       list-style:none;cursor:pointer;padding:20px 24px;
       font-family:'Poppins',sans-serif;font-size:16px;font-weight:600;color:#0a1628;
@@ -2244,7 +2637,7 @@
     }
     .faq-question::-webkit-details-marker { display:none }
     .faq-question::after {
-      content:'+';font-size:22px;font-weight:300;color:#00b4d8;flex-shrink:0;
+      content:'+';font-size:22px;font-weight:300;color:#c07a4a;flex-shrink:0;
       transition:transform 0.25s ease;
     }
     .faq-item[open] .faq-question::after { content:'−';transform:rotate(0) }
@@ -2264,7 +2657,7 @@
     <div class="faq-list">
       <details class="faq-item fade-up">
         <summary class="faq-question">Which Knite RO water purifier is best for my home?</summary>
-        <div class="faq-answer">The <strong>Knite Core</strong> (₹7,999) is our essential 7-stage RO + UV model — ideal for couples and small families on municipal water. The <strong>Knite Shield</strong> (₹8,999) adds UF and a mineraliser stage for tougher water and larger households. The <strong>Knite Prime</strong> (₹9,999) is our flagship 9-stage model with food-grade copper infusion and alkaline mineralisation for maximum wellness.</div>
+        <div class="faq-answer">The <strong>Knite Core</strong> (₹7,999) is our essential 6-stage RO + UV model — ideal for couples and small families on municipal water. The <strong>Knite Flux</strong> (₹7,999) is an 8-stage RO + UV + UF model with a manual TDS controller for variable or borewell water. The <strong>Knite Prime</strong> (₹9,999) is our flagship 11-stage RO + UV + Alkaline model with auto-flush and a 2-year warranty for maximum wellness.</div>
       </details>
 
       <details class="faq-item fade-up">
@@ -2506,28 +2899,15 @@
   <div class="footer-grid">
     <div class="footer-brand">
       <a href="#" class="nav-logo" style="text-decoration:none;display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <svg width="32" height="32" viewBox="0 0 64 64" fill="none">
-          <defs>
-            <linearGradient id="ftBg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"  stop-color="#0f2b4a"/>
-              <stop offset="100%" stop-color="#020617"/>
-            </linearGradient>
-          </defs>
-          <circle cx="32" cy="32" r="32" fill="url(#ftBg)"/>
-          <circle cx="32" cy="32" r="28" fill="none" stroke="#00b4d8" stroke-width="0.9" stroke-opacity="0.6"/>
-          <text x="32" y="42" text-anchor="middle"
-                font-family="Poppins, Inter, Helvetica, Arial, sans-serif"
-                font-weight="800" font-size="26" letter-spacing="-2"
-                fill="#ffffff">KN</text>
-        </svg>
-        <span style="font-family:Poppins;font-size:18px;font-weight:700;color:#fff;letter-spacing:3px">KNITE<span style="color:#00b4d8">.</span></span>
+        <img src="/knite-logo.png?v=20260619" width="660" height="135" alt="Knite" style="height:28px;width:auto;display:block">
       </a>
       <p>Pure Water, Pure Life. Advanced RO purification technology trusted by 10,000+ Indian families.</p>
       <div class="social-links">
-        <a href="#" class="social-link" aria-label="Facebook" title="Facebook">f</a>
-        <a href="#" class="social-link" aria-label="LinkedIn" title="LinkedIn">in</a>
-        <a href="#" class="social-link" aria-label="Twitter" title="Twitter">tw</a>
-        <a href="#" class="social-link" aria-label="YouTube" title="YouTube">yt</a>
+        <a href="https://www.instagram.com/knite.india/" target="_blank" rel="noopener" class="social-link" aria-label="Instagram" title="Instagram"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" style="display:block"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+        <a href="#" class="social-link" aria-label="Facebook" title="Facebook"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" style="display:block"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></svg></a>
+        <a href="#" class="social-link" aria-label="LinkedIn" title="LinkedIn"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" style="display:block"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+        <a href="#" class="social-link" aria-label="X (Twitter)" title="X (Twitter)"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="display:block"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+        <a href="#" class="social-link" aria-label="YouTube" title="YouTube"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true" style="display:block"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
         <a href="https://www.indiamart.com/" target="_blank" rel="noopener" class="social-link social-im" aria-label="IndiaMART" title="IndiaMART">IM</a>
       </div>
     </div>
@@ -2535,8 +2915,9 @@
       <h4>Products</h4>
       <ul>
         <li><a href="/product.html?slug=knite-core">Knite Core</a></li>
-        <li><a href="/product.html?slug=knite-shield">Knite Shield</a></li>
-        <li><a href="/product.html?slug=knite-prime">Knite Prime</a></li>
+        <li><a href="/product.html?slug=knite-flux">Knite Flux</a></li>
+        <li><a href="/product.html?slug=knite-prime-white">Knite Prime</a></li>
+        <li><a href="/#products">All Models</a></li>
         <li><a href="#feedback">AMC Plans</a></li>
       </ul>
     </div>
@@ -2761,8 +3142,8 @@
             const r = Math.max(3, Math.min(14, 2.4 + Math.sqrt(c.count) * 0.9));
             const marker = L.circleMarker([c.lat, c.lng], {
               radius: r,
-              fillColor: '#00b4d8',
-              color: '#0077b6',
+              fillColor: '#c07a4a',
+              color: '#8c5a3c',
               weight: 1,
               opacity: 0.85,
               fillOpacity: 0.55,

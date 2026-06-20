@@ -295,8 +295,12 @@ async function generateInvoiceForOrder(orderId) {
       '4. All disputes are subject to Delhi jurisdiction only.',
       '5. GSTIN provided is the registered identifier of Axios Enterprise LLP under the GST Act, 2017.',
     ];
-    let ty = y + 12;
-    terms.forEach(t => { doc.text(t, X, ty, { width: W/2 - 10 }); ty += 12; });
+    let ty = y + 14;
+    const termWidth = W/2 - 16;
+    terms.forEach(t => {
+      doc.text(t, X, ty, { width: termWidth, lineGap: 2 });
+      ty += doc.heightOfString(t, { width: termWidth, lineGap: 2 }) + 4;
+    });
 
     // Signature box (right)
     const sigX = X + W/2 + 10;

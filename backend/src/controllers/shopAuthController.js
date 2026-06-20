@@ -262,6 +262,43 @@ async function updateMe(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// GET /api/shop/my-orders/:id/invoice  — download (or generate-then-download) GST invoice
+// ─────────────────────────────────────────────────────────────
+async function myOrderInvoice(req, res) {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    if (!orderId) return res.status(400).json({ error: 'Invalid order id' });
+
+    const oR = await db.query(
+      `SELECT id, order_number, status, payment_status, invoice_url, invoice_number
+       FROM shop_orders
+       WHERE id = $1 AND customer_id = $2 LIMIT 1`,
+      [orderId, req.shopCustomer.id]
+    );
+    if (!oR.rows.length) return res.status(404).json({ error: 'Order not found' });
+    const order = oR.rows[0];
+
+    // Invoice only available for paid orders (or COD orders that are delivered)
+    const eligible = order.payment_status === 'paid' || order.status === 'delivered';
+    if (!eligible) {
+      return res.status(403).json({ error: 'Invoice will be available after payment is confirmed.' });
+    }
+
+    // If already generated, return URL
+    if (order.invoice_url) {
+      return res.json({ ok: true, invoice_url: order.invoice_url, invoice_number: order.invoice_number });
+    }
+
+    // Generate on-demand
+    const invoiceGen = require('../services/invoiceGenerator');
+    const result = await invoiceGen.generateInvoiceForOrder(orderId);
+    res.json({ ok: true, invoice_url: result.invoice_url, invoice_number: result.invoice_number });
+  } catch (err) {
+    console.error('[SHOP-AUTH] myOrderInvoice:', err);
+    res.status(500).json({ error: err.message || 'Failed to generate invoice' });
+  }
+}
+
 // GET /api/shop/my-orders   — order history for logged-in customer
 // ─────────────────────────────────────────────────────────────
 async function myOrders(req, res) {
@@ -270,6 +307,7 @@ async function myOrders(req, res) {
       `SELECT o.id, o.order_number, o.status, o.payment_status, o.payment_method,
               o.total_amount, o.created_at, o.shipped_at, o.delivered_at,
               o.tracking_number, o.shipping_carrier,
+              o.invoice_number, o.invoice_url, o.invoice_generated_at,
               (SELECT json_agg(json_build_object(
                  'name', product_name, 'qty', quantity, 'line_total', line_total
                )) FROM shop_order_items WHERE order_id = o.id) AS items
@@ -341,6 +379,7 @@ module.exports = {
   me,
   updateMe,
   myOrders,
+  myOrderInvoice,
   listAddresses,
   addAddress,
   deleteAddress,
