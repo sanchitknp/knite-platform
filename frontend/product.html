@@ -279,7 +279,7 @@ function render(p) {
 
   document.getElementById('pdp-root').innerHTML = `
     <section class="pdp">
-      <div class="pdp-img">${HERO_SLUGS.includes(p.slug) ? `<img src="/products/${p.slug}.jpg" alt="${p.name}" style="width:100%;height:100%;object-fit:contain">` : PRODUCT_SVG}</div>
+      <div class="pdp-img">${HERO_SLUGS.includes(p.slug) ? `<img src="/products/${p.slug}.jpg?v=20260626" alt="${p.name}" style="width:100%;height:100%;object-fit:contain">` : PRODUCT_SVG}</div>
       <div class="pdp-info">
         <div class="pdp-brand">${p.brand || 'Knite'}</div>
         <h1>${p.name}</h1>

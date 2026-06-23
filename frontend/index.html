@@ -1806,8 +1806,8 @@
       {
         "@type": "Product",
         "position": 8,
-        "name": "Knite Edge Black RO Water Purifier",
-        "description": "11-stage RO + UV + Alkaline RO purifier in the Edge Black cabinet. 100 GPD, handles TDS up to 3000 ppm.",
+        "name": "Knite Edge Metal RO Water Purifier",
+        "description": "11-stage RO + UV + Alkaline RO purifier in the Edge Metal cabinet. 100 GPD, handles TDS up to 3000 ppm.",
         "brand": { "@type": "Brand", "name": "Knite" },
         "category": "Water Purifier",
         "image": "https://knite.in/favicon.svg",
@@ -2015,7 +2015,7 @@
     <div class="hero-product-card" id="heroCard" role="link" tabindex="0" aria-label="Featured Knite product — click to view">
       <div class="hero-card-inner" id="heroInner">
         <div class="hero-prod-imgwrap">
-          <img class="hero-prod-img" id="heroImg" src="/products/knite-core.jpg" alt="Knite Core" width="180" height="180">
+          <img class="hero-prod-img" id="heroImg" src="/products/knite-core.jpg?v=20260626" alt="Knite Core" width="180" height="180">
         </div>
         <h3 id="heroName">Knite Core</h3>
         <p id="heroTag">6-Stage RO + UV</p>
@@ -2044,7 +2044,7 @@
     {s:'knite-prime-black',n:'Knite Prime Black',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
     {s:'knite-shield-copper',n:'Knite Shield Copper',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
     {s:'knite-shield-silver',n:'Knite Shield Silver',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
-    {s:'knite-edge-black',n:'Knite Edge Black',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
+    {s:'knite-edge-black',n:'Knite Edge Metal',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100},
     {s:'knite-edge-silver',n:'Knite Edge Silver',t:'11-Stage RO + UV + Alkaline',st:11,tk:'9L',g:100}
   ];
   var card=document.getElementById('heroCard'); if(!card) return;
@@ -2058,7 +2058,7 @@
     b.addEventListener('click',function(e){e.stopPropagation();go(idx);reset();});dw.appendChild(b);});
   var dots=Array.prototype.slice.call(dw.children);
   function render(idx){var it=items[idx];
-    img.src='/products/'+it.s+'.jpg';img.alt=it.n;nm.textContent=it.n;tg.textContent=it.t;
+    img.src='/products/'+it.s+'.jpg?v=20260626';img.alt=it.n;nm.textContent=it.n;tg.textContent=it.t;
     est.textContent=it.st;etk.textContent=it.tk;eg.textContent=it.g;card.setAttribute('data-slug',it.s);
     dots.forEach(function(d,n){d.className=(n===idx?'active':'');});cur=idx;}
   function go(idx){idx=(idx+items.length)%items.length;inner.classList.add('fading');
@@ -2125,10 +2125,8 @@
 
     <!-- Knite Core -->
     <a href="/product.html?slug=knite-core" class="product-card fade-up" aria-label="Knite Core RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-best">Essential</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-core.jpg" alt="Knite Core RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-core.jpg?v=20260626" alt="Knite Core RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.6 (48)</span></div>
@@ -2153,10 +2151,8 @@
 
     <!-- Knite Flux -->
     <a href="/product.html?slug=knite-flux" class="product-card fade-up" aria-label="Knite Flux RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-popular">RO+UV+UF</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-flux.jpg" alt="Knite Flux RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-flux.jpg?v=20260626" alt="Knite Flux RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (36)</span></div>
@@ -2181,10 +2177,8 @@
 
     <!-- Knite Flux White -->
     <a href="/product.html?slug=knite-flux-white" class="product-card fade-up" aria-label="Knite Flux White RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-best">New</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-flux-white.jpg" alt="Knite Flux White RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-flux-white.jpg?v=20260626" alt="Knite Flux White RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (24)</span></div>
@@ -2209,10 +2203,8 @@
 
     <!-- Knite Prime White -->
     <a href="/product.html?slug=knite-prime-white" class="product-card fade-up" aria-label="Knite Prime White RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-popular">Most Popular</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-prime-white.jpg" alt="Knite Prime White RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-prime-white.jpg?v=20260626" alt="Knite Prime White RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (52)</span></div>
@@ -2237,10 +2229,8 @@
 
     <!-- Knite Prime Black -->
     <a href="/product.html?slug=knite-prime-black" class="product-card fade-up" aria-label="Knite Prime Black RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-pro">Premium</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-33%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-prime-black.jpg" alt="Knite Prime Black RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-prime-black.jpg?v=20260626" alt="Knite Prime Black RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (64)</span></div>
@@ -2265,10 +2255,8 @@
 
     <!-- Knite Shield Copper -->
     <a href="/product.html?slug=knite-shield-copper" class="product-card fade-up" aria-label="Knite Shield Copper RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-best">Designer</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-30%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-shield-copper.jpg" alt="Knite Shield Copper RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-shield-copper.jpg?v=20260626" alt="Knite Shield Copper RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (44)</span></div>
@@ -2293,10 +2281,8 @@
 
     <!-- Knite Shield Silver -->
     <a href="/product.html?slug=knite-shield-silver" class="product-card fade-up" aria-label="Knite Shield Silver RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-pro">Metallic</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-38%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-shield-silver.jpg" alt="Knite Shield Silver RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-shield-silver.jpg?v=20260626" alt="Knite Shield Silver RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (38)</span></div>
@@ -2319,17 +2305,15 @@
       </div>
     </a>
 
-    <!-- Knite Edge Black -->
-    <a href="/product.html?slug=knite-edge-black" class="product-card fade-up" aria-label="Knite Edge Black RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-best">Designer</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-27%</span></div>
+    <!-- Knite Edge Metal -->
+    <a href="/product.html?slug=knite-edge-black" class="product-card fade-up" aria-label="Knite Edge Metal RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-edge-black.jpg" alt="Knite Edge Black RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-edge-black.jpg?v=20260626" alt="Knite Edge Metal RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (41)</span></div>
-        <h3>Knite Edge Black</h3>
-        <p class="product-tagline">11-Stage RO + UV + Alkaline — Edge Black cabinet</p>
+        <h3>Knite Edge Metal</h3>
+        <p class="product-tagline">11-Stage RO + UV + Alkaline — Edge Metal cabinet</p>
         <div class="product-specs">
           <span class="spec-pill">100 GPD</span>
           <span class="spec-pill">11-Stage</span>
@@ -2349,10 +2333,8 @@
 
     <!-- Knite Edge Silver -->
     <a href="/product.html?slug=knite-edge-silver" class="product-card fade-up" aria-label="Knite Edge Silver RO Water Purifier">
-      <div class="product-badge-wrap"><span class="badge badge-pro">Metallic</span></div>
-      <div class="product-save-wrap"><span class="save-tag">-35%</span></div>
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-edge-silver.jpg" alt="Knite Edge Silver RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-edge-silver.jpg?v=20260626" alt="Knite Edge Silver RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (35)</span></div>
