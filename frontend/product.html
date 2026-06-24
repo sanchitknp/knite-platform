@@ -216,9 +216,11 @@ const PRODUCT_SVG = `
 const HERO_SLUGS = ['knite-core','knite-flux','knite-flux-white','knite-prime-white','knite-prime-black','knite-shield-copper','knite-shield-silver','knite-edge-black','knite-edge-silver'];
 
 // Per-product image galleries (Amazon-style). Add more slugs here as image sets arrive.
-const GV = '20260625e';
+const GV = '20260625f';
 const GALLERY = {
-  'knite-flux-white': [1,2,3,4,5,6,7,8].map(n => `/products/gallery/knite-flux-white/${n}.jpg?v=${GV}`)
+  'knite-flux-white': [1,2,3,4,5,6,7,8].map(n => `/products/gallery/knite-flux-white/${n}.jpg?v=${GV}`),
+  'knite-flux':       [1,2,3,4,5,6,7,8].map(n => `/products/gallery/knite-flux/${n}.jpg?v=${GV}`),
+  'knite-core':       [1,2,3,4,5,6,7,8].map(n => `/products/gallery/knite-core/${n}.jpg?v=${GV}`)
 };
 function setMainImg(i){
   if(!window.__gal) return;
