@@ -50,6 +50,22 @@
     .pdp-img{background:radial-gradient(125% 95% at 50% 30%,#ecebeb 0%,#e1dfdf 55%,#d2d0d0 100%);border-radius:24px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;position:relative;border:1px solid #e2e8f0;overflow:hidden}
     .pdp-img svg{width:55%;height:auto}
 
+    /* ── Amazon-style product gallery (main on top, thumbs below) ── */
+    .pdp-gallery{display:flex;flex-direction:column;gap:12px;min-width:0}
+    .pdp-main{position:relative;width:100%;aspect-ratio:1/1;background:radial-gradient(125% 95% at 50% 28%,#ffffff 0%,#eef2f6 68%,#e2e8f0 100%);border-radius:24px;display:flex;align-items:center;justify-content:center;border:1px solid #e2e8f0;overflow:hidden}
+    .pdp-main img{width:100%;height:100%;object-fit:contain;display:block;padding:10px;transition:opacity .15s ease}
+    .pdp-thumbs{display:flex;flex-direction:row;gap:10px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px}
+    .pdp-thumb{width:84px;height:84px;flex-shrink:0;border:2px solid #e2e8f0;border-radius:12px;background:#fff;padding:5px;cursor:pointer;overflow:hidden;transition:all .15s ease}
+    .pdp-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+    .pdp-thumb:hover{border-color:#7dd3fc}
+    .pdp-thumb.active{border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,.18)}
+    @media(max-width:520px){ .pdp-thumb{width:70px;height:70px} }
+    /* slide arrows — mobile only (desktop uses hover thumbnails) */
+    .gal-arrow{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:none;background:rgba(10,22,40,.5);color:#fff;font-size:26px;line-height:1;padding-bottom:3px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:3;transition:background .15s;-webkit-tap-highlight-color:transparent}
+    .gal-arrow:active{background:rgba(10,22,40,.82)}
+    .gal-prev{left:10px}.gal-next{right:10px}
+    @media(max-width:880px){ .gal-arrow{display:flex} }
+
     .pdp-info h1{font-family:Poppins;font-size:30px;font-weight:800;line-height:1.2;margin-bottom:12px}
     .pdp-brand{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:#c07a4a;font-weight:600;margin-bottom:6px}
     .pdp-desc{color:#475569;font-size:15px;margin-bottom:24px}
@@ -199,6 +215,22 @@ const PRODUCT_SVG = `
 
 const HERO_SLUGS = ['knite-core','knite-flux','knite-flux-white','knite-prime-white','knite-prime-black','knite-shield-copper','knite-shield-silver','knite-edge-black','knite-edge-silver'];
 
+// Per-product image galleries (Amazon-style). Add more slugs here as image sets arrive.
+const GV = '20260625d';
+const GALLERY = {
+  'knite-flux-white': [1,2,3,4,5,6,7,8].map(n => `/products/gallery/knite-flux-white/${n}.jpg?v=${GV}`)
+};
+function setMainImg(i){
+  if(!window.__gal) return;
+  window.__galIdx = i;
+  const im=document.getElementById('pdpMainImg'); if(im) im.src=window.__gal[i];
+  document.querySelectorAll('.pdp-thumb').forEach((t,j)=>{ const a=(j===i); t.classList.toggle('active', a); if(a&&t.scrollIntoView) t.scrollIntoView({block:'nearest',inline:'nearest'}); });
+}
+function galNav(dir){ if(!window.__gal||window.__gal.length<2) return; const n=window.__gal.length; setMainImg(((window.__galIdx||0)+dir+n)%n); }
+let __galTouchX=null;
+function galTouchStart(e){ __galTouchX = e.changedTouches[0].clientX; }
+function galTouchEnd(e){ if(__galTouchX==null) return; const dx=e.changedTouches[0].clientX-__galTouchX; __galTouchX=null; if(Math.abs(dx)>40) galNav(dx<0?1:-1); }
+
 async function loadProduct() {
   const slug = new URLSearchParams(window.location.search).get('slug');
   const __OLD2NEW={'knite-onix':'knite-core','knite-lexter':'knite-flux','knite-era-core':'knite-prime-white','knite-era-elite':'knite-prime-black','knite-era-silk':'knite-prime-white','knite-prime':'knite-prime-white','knite-prime-elite':'knite-prime-black','knite-prime-silk':'knite-prime-white','knite-canix-elite':'knite-shield-copper','knite-canix-metallic':'knite-shield-silver','knite-iris-elite':'knite-edge-black','knite-iris-metallic':'knite-edge-silver'}; if(__OLD2NEW[slug]){window.location.replace('/product.html?slug='+__OLD2NEW[slug]);return;}
@@ -279,7 +311,14 @@ function render(p) {
 
   document.getElementById('pdp-root').innerHTML = `
     <section class="pdp">
-      <div class="pdp-img">${HERO_SLUGS.includes(p.slug) ? `<img src="/products/${p.slug}.jpg?v=20260626" alt="${p.name}" style="width:100%;height:100%;object-fit:contain">` : PRODUCT_SVG}</div>
+      ${(() => {
+        const imgs = GALLERY[p.slug] || (HERO_SLUGS.includes(p.slug) ? ['/products/'+p.slug+'.jpg?v=20260626'] : []);
+        window.__gal = imgs; window.__galIdx = 0;
+        if (!imgs.length) return `<div class="pdp-img">${PRODUCT_SVG}</div>`;
+        const thumbs = imgs.length > 1 ? `<div class="pdp-thumbs">${imgs.map((s,i)=>`<button type="button" class="pdp-thumb${i===0?' active':''}" onmouseenter="setMainImg(${i})" onfocus="setMainImg(${i})" onclick="setMainImg(${i})" aria-label="View ${i+1}"><img src="${s}" alt="${p.name} view ${i+1}" loading="lazy"></button>`).join('')}</div>` : '';
+        const arrows = imgs.length > 1 ? `<button type="button" class="gal-arrow gal-prev" onclick="galNav(-1)" aria-label="Previous image">&#8249;</button><button type="button" class="gal-arrow gal-next" onclick="galNav(1)" aria-label="Next image">&#8250;</button>` : '';
+        return `<div class="pdp-gallery${imgs.length>1?'':' single'}"><div class="pdp-main" ontouchstart="galTouchStart(event)" ontouchend="galTouchEnd(event)"><img id="pdpMainImg" src="${imgs[0]}" alt="${p.name}">${arrows}</div>${thumbs}</div>`;
+      })()}
       <div class="pdp-info">
         <div class="pdp-brand">${p.brand || 'Knite'}</div>
         <h1>${p.name}</h1>
