@@ -1370,6 +1370,21 @@
 
     .btn-white:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
 
+    .install-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-white-outline {
+      background: transparent;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.65);
+      padding: 12px 34px;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.3s;
+    }
+    .btn-white-outline:hover { background: #fff; color: var(--accent2); border-color: #fff; transform: translateY(-2px); }
+
     /* ── FOOTER ── */
     footer {
       background: var(--primary);
@@ -1617,7 +1632,7 @@
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": "4.8",
-      "reviewCount": "247"
+      "reviewCount": "124"
     }
   }
   </script>
@@ -1650,7 +1665,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.6",
           "bestRating": "5",
-          "ratingCount": "48"
+          "ratingCount": "24"
         }
       },
       {
@@ -1675,7 +1690,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.7",
           "bestRating": "5",
-          "ratingCount": "36"
+          "ratingCount": "18"
         }
       },
       {
@@ -1700,7 +1715,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.7",
           "bestRating": "5",
-          "ratingCount": "24"
+          "ratingCount": "12"
         }
       },
       {
@@ -1725,7 +1740,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.7",
           "bestRating": "5",
-          "ratingCount": "52"
+          "ratingCount": "26"
         }
       },
       {
@@ -1750,7 +1765,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.8",
           "bestRating": "5",
-          "ratingCount": "64"
+          "ratingCount": "32"
         }
       },
       {
@@ -1775,7 +1790,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.7",
           "bestRating": "5",
-          "ratingCount": "44"
+          "ratingCount": "22"
         }
       },
       {
@@ -1800,7 +1815,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.8",
           "bestRating": "5",
-          "ratingCount": "38"
+          "ratingCount": "19"
         }
       },
       {
@@ -1825,7 +1840,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.7",
           "bestRating": "5",
-          "ratingCount": "41"
+          "ratingCount": "21"
         }
       },
       {
@@ -1850,7 +1865,7 @@
           "@type": "AggregateRating",
           "ratingValue": "4.8",
           "bestRating": "5",
-          "ratingCount": "35"
+          "ratingCount": "18"
         }
       }
     ]
@@ -1934,7 +1949,7 @@
       "ratingValue": "4.8",
       "bestRating": "5",
       "worstRating": "1",
-      "ratingCount": "247"
+      "ratingCount": "124"
     },
     "review": [
       { "@type": "Review",
@@ -1980,7 +1995,7 @@
     ]
   }
   </script>
-  <script src="/nav.js?v=20260619" defer></script>
+  <script src="/nav.js?v=20260705" defer></script>
 </head>
 <body>
 
@@ -2015,7 +2030,7 @@
     <div class="hero-product-card" id="heroCard" role="link" tabindex="0" aria-label="Featured Knite product — click to view">
       <div class="hero-card-inner" id="heroInner">
         <div class="hero-prod-imgwrap">
-          <img class="hero-prod-img" id="heroImg" src="/products/knite-core.jpg?v=20260626" alt="Knite Core" width="180" height="180">
+          <img class="hero-prod-img" id="heroImg" src="/products/knite-core.jpg?v=20260629" alt="Knite Core" width="180" height="180">
         </div>
         <h3 id="heroName">Knite Core</h3>
         <p id="heroTag">6-Stage RO + UV</p>
@@ -2058,7 +2073,7 @@
     b.addEventListener('click',function(e){e.stopPropagation();go(idx);reset();});dw.appendChild(b);});
   var dots=Array.prototype.slice.call(dw.children);
   function render(idx){var it=items[idx];
-    img.src='/products/'+it.s+'.jpg?v=20260626';img.alt=it.n;nm.textContent=it.n;tg.textContent=it.t;
+    img.src='/products/'+it.s+'.jpg?v=20260629';img.alt=it.n;nm.textContent=it.n;tg.textContent=it.t;
     est.textContent=it.st;etk.textContent=it.tk;eg.textContent=it.g;card.setAttribute('data-slug',it.s);
     dots.forEach(function(d,n){d.className=(n===idx?'active':'');});cur=idx;}
   function go(idx){idx=(idx+items.length)%items.length;inner.classList.add('fading');
@@ -2088,10 +2103,10 @@
     <!-- Knite Core -->
     <a href="/product.html?slug=knite-core" class="product-card fade-up" aria-label="Knite Core RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-core.jpg?v=20260626" alt="Knite Core RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-core.jpg?v=20260629" alt="Knite Core RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.6 (48)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.6 (24)</span></div>
         <h3>Knite Core</h3>
         <p class="product-tagline">6-Stage RO + UV — Core cabinet</p>
         <div class="product-specs">
@@ -2114,10 +2129,10 @@
     <!-- Knite Flux -->
     <a href="/product.html?slug=knite-flux" class="product-card fade-up" aria-label="Knite Flux RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-flux.jpg?v=20260626" alt="Knite Flux RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-flux.jpg?v=20260629" alt="Knite Flux RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (36)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (18)</span></div>
         <h3>Knite Flux</h3>
         <p class="product-tagline">8-Stage RO + UV + UF + MTDS — Flux cabinet</p>
         <div class="product-specs">
@@ -2140,10 +2155,10 @@
     <!-- Knite Flux White -->
     <a href="/product.html?slug=knite-flux-white" class="product-card fade-up" aria-label="Knite Flux White RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-flux-white.jpg?v=20260626" alt="Knite Flux White RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-flux-white.jpg?v=20260629" alt="Knite Flux White RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (24)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (12)</span></div>
         <h3>Knite Flux White</h3>
         <p class="product-tagline">8-Stage RO + UV + UF + MTDS — Flux White cabinet</p>
         <div class="product-specs">
@@ -2166,10 +2181,10 @@
     <!-- Knite Prime White -->
     <a href="/product.html?slug=knite-prime-white" class="product-card fade-up" aria-label="Knite Prime White RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-prime-white.jpg?v=20260626" alt="Knite Prime White RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-prime-white.jpg?v=20260629" alt="Knite Prime White RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (52)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (26)</span></div>
         <h3>Knite Prime White</h3>
         <p class="product-tagline">11-Stage RO + UV + Alkaline — Prime White cabinet</p>
         <div class="product-specs">
@@ -2192,10 +2207,10 @@
     <!-- Knite Prime Black -->
     <a href="/product.html?slug=knite-prime-black" class="product-card fade-up" aria-label="Knite Prime Black RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-prime-black.jpg?v=20260626" alt="Knite Prime Black RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-prime-black.jpg?v=20260629" alt="Knite Prime Black RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (64)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (32)</span></div>
         <h3>Knite Prime Black</h3>
         <p class="product-tagline">11-Stage RO + UV + Alkaline — Prime Black cabinet</p>
         <div class="product-specs">
@@ -2218,10 +2233,10 @@
     <!-- Knite Shield Copper -->
     <a href="/product.html?slug=knite-shield-copper" class="product-card fade-up" aria-label="Knite Shield Copper RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-shield-copper.jpg?v=20260626" alt="Knite Shield Copper RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-shield-copper.jpg?v=20260629" alt="Knite Shield Copper RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (44)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (22)</span></div>
         <h3>Knite Shield Copper</h3>
         <p class="product-tagline">11-Stage RO + UV + Alkaline — Shield Copper cabinet</p>
         <div class="product-specs">
@@ -2244,10 +2259,10 @@
     <!-- Knite Shield Silver -->
     <a href="/product.html?slug=knite-shield-silver" class="product-card fade-up" aria-label="Knite Shield Silver RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-shield-silver.jpg?v=20260626" alt="Knite Shield Silver RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-shield-silver.jpg?v=20260629" alt="Knite Shield Silver RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (38)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (19)</span></div>
         <h3>Knite Shield Silver</h3>
         <p class="product-tagline">11-Stage RO + UV + Alkaline — Shield Silver cabinet</p>
         <div class="product-specs">
@@ -2270,10 +2285,10 @@
     <!-- Knite Edge Metal -->
     <a href="/product.html?slug=knite-edge-black" class="product-card fade-up" aria-label="Knite Edge Metal RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-edge-black.jpg?v=20260626" alt="Knite Edge Metal RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-edge-black.jpg?v=20260629" alt="Knite Edge Metal RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (41)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.7 (21)</span></div>
         <h3>Knite Edge Metal</h3>
         <p class="product-tagline">11-Stage RO + UV + Alkaline — Edge Metal cabinet</p>
         <div class="product-specs">
@@ -2296,10 +2311,10 @@
     <!-- Knite Edge Silver -->
     <a href="/product.html?slug=knite-edge-silver" class="product-card fade-up" aria-label="Knite Edge Silver RO Water Purifier">
       <div class="product-image-area">
-        <img class="product-photo" src="/products/knite-edge-silver.jpg?v=20260626" alt="Knite Edge Silver RO Water Purifier" loading="lazy">
+        <img class="product-photo" src="/products/knite-edge-silver.jpg?v=20260629" alt="Knite Edge Silver RO Water Purifier" loading="lazy">
       </div>
       <div class="product-info">
-        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (35)</span></div>
+        <div class="product-rating"><span class="stars"><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span></span><span class="rating-num">4.8 (18)</span></div>
         <h3>Knite Edge Silver</h3>
         <p class="product-tagline">11-Stage RO + UV + Alkaline — Edge Silver cabinet</p>
         <div class="product-specs">
@@ -2505,7 +2520,7 @@
       <div class="rating-big">4.8</div>
       <div class="rating-details">
         <div class="stars">★★★★★</div>
-        <div class="rating-count">Based on 2,340+ reviews</div>
+        <div class="rating-count">Based on 1,170+ reviews</div>
       </div>
       <div class="rating-bars" style="margin-left:16px">
         <div class="rating-bar-row">5★ <div class="bar-track"><div class="bar-fill" style="width:85%"></div></div> 85%</div>
@@ -2794,14 +2809,17 @@
 <!-- ── INSTALLATION BANNER ── -->
 <div class="install-banner">
   <h2>Free Installation. Anywhere in India.</h2>
-  <p>Our certified technicians come to your home — at zero extra cost.</p>
+  <p>Our certified technicians come to your home — at zero extra cost. Already own a Knite? Book your installation or raise a support request online.</p>
   <div class="install-steps">
     <div class="install-step"><div class="step-num">1</div><span>Order Online</span></div>
     <div class="install-step"><div class="step-num">2</div><span>Delivery in 48 hrs</span></div>
     <div class="install-step"><div class="step-num">3</div><span>Technician Visit</span></div>
     <div class="install-step"><div class="step-num">4</div><span>Pure Water, Done!</span></div>
   </div>
-  <a href="#feedback" class="btn-white">Book Free Installation</a>
+  <div class="install-btns">
+    <a href="/support?flow=install" class="btn-white">Book Free Installation</a>
+    <a href="/support?flow=ticket" class="btn-white-outline">Raise a Support Request</a>
+  </div>
 </div>
 
 <!-- ── ABOUT ── -->
@@ -2908,11 +2926,11 @@
     <div class="footer-col">
       <h4>Support</h4>
       <ul>
-        <li><a href="#feedback">Book Installation</a></li>
-        <li><a href="#feedback">Service Request</a></li>
-        <li><a href="#feedback">Track Order</a></li>
-        <li><a href="#feedback">Warranty Claim</a></li>
-        <li><a href="#feedback">Contact Us</a></li>
+        <li><a href="/support?flow=install">Book Installation</a></li>
+        <li><a href="/support?flow=ticket">Service Request</a></li>
+        <li><a href="/account.html#orders">Track Order</a></li>
+        <li><a href="/support?flow=ticket">Warranty Claim</a></li>
+        <li><a href="/support">Contact Us</a></li>
       </ul>
     </div>
     <div class="footer-col">

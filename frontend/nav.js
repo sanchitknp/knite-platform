@@ -214,6 +214,7 @@
       <li><a href="/#products">Products</a></li>
       <li><a href="/blog.html">Blogs</a></li>
       <li><a href="/#about">About</a></li>
+      <li><a href="/support">Support</a></li>
       <li class="kn-drop" id="kniteDrop">
         <button type="button" aria-haspopup="true" aria-expanded="false">
           More

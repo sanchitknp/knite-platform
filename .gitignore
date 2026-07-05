@@ -70,3 +70,10 @@ uploads/
 # ─────────────────────────────────────────────
 conversations.json
 docs/claude-context/
+
+# ─────────────────────────────────────────────
+# Working/scratch assets & image backups (not part of the deployed app)
+# ─────────────────────────────────────────────
+assets/
+output/
+frontend/products_bak_*/

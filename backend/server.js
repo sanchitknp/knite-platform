@@ -13,6 +13,7 @@ const admin = require('./src/controllers/adminController');
 const shop  = require('./src/controllers/shopController');
 const shopAuth = require('./src/controllers/shopAuthController');
 const reviews = require('./src/controllers/reviewsController');
+const support = require('./src/controllers/supportController');
 const payment = require('./src/controllers/paymentController');
 const adminAuth = require('./src/controllers/adminAuthController');
 const { adminAuth: requireAdmin } = require('./src/middleware/adminAuth');
@@ -45,8 +46,9 @@ app.use(express.json({
 }));
 
 // Serve frontend files (mounted at /app/frontend in Docker, or ../frontend locally)
+// `extensions: ['html']` enables clean URLs — e.g. /support → support.html.
 const frontendPath = process.env.FRONTEND_PATH || path.join(__dirname, 'frontend');
-app.use(express.static(frontendPath));
+app.use(express.static(frontendPath, { extensions: ['html'] }));
 
 // Serve uploaded media files (KYC docs, proof photos, issue photos)
 const fs = require('fs');
@@ -257,6 +259,15 @@ app.post('/api/website/lead', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// SUPPORT — public endpoints for /support page (no auth)
+//   Two flows: installation request + support ticket, plus a
+//   pincode serviceability check for the installation form.
+// ─────────────────────────────────────────────
+app.get ('/api/support/check-pincode', support.checkPincode);
+app.post('/api/support/installation',  support.createInstallation);
+app.post('/api/support/ticket',        support.createTicket);
+
+// ─────────────────────────────────────────────
 // SHOP / E-COMMERCE — public endpoints (no auth)
 // ─────────────────────────────────────────────
 app.get('/api/shop/products',          shop.listProducts);
@@ -441,6 +452,13 @@ app.get('/api/admin/maintenance', admin.getMaintenanceSchedules);
 app.get('/api/admin/ledger', admin.getLedger);
 app.post('/api/admin/ledger/:techId/settle', admin.markSettled);
 app.get('/api/admin/customers', admin.getCustomers);
+
+// Support admin endpoints — installation requests + support tickets
+app.get  ('/api/admin/installations',      support.adminListInstallations);
+app.patch('/api/admin/installations/:id',  support.adminUpdateInstallation);
+app.get  ('/api/admin/installations/:id/technicians', support.getInstallationTechnicians);
+app.get  ('/api/admin/tickets',            support.adminListTickets);
+app.patch('/api/admin/tickets/:id',        support.adminUpdateTicket);
 
 // Shop admin endpoints
 app.get('/api/admin/shop/products',         shop.adminListProducts);

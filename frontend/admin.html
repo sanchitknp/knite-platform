@@ -194,6 +194,8 @@
     <div class="nav-item" onclick="showSection('ledger')"><span class="icon">💰</span> Ledger</div>
     <div class="nav-item" onclick="showSection('zones')"><span class="icon">🗺️</span> Zones</div>
     <div class="nav-item" onclick="showSection('website-leads')"><span class="icon">🌐</span> Website Leads</div>
+    <div class="nav-item" onclick="showSection('installations')"><span class="icon">🧰</span> Installations</div>
+    <div class="nav-item" onclick="showSection('tickets')"><span class="icon">🎫</span> Support Tickets</div>
     <div class="nav-item" onclick="showSection('coverage')"><span class="icon">🗺️</span> Coverage Map</div>
     <div class="nav-item" onclick="showSection('shop-products')"><span class="icon">📦</span> Shop Products</div>
     <div class="nav-item" onclick="showSection('shop-orders')"><span class="icon">🛒</span> Shop Orders</div>
@@ -306,6 +308,48 @@
     <div class="card">
       <div class="card-header"><span class="title" id="wl-count">Website Leads</span></div>
       <div class="card-body" id="websiteLeadsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- INSTALLATION REQUESTS -->
+  <div class="section" id="section-installations">
+    <div class="page-title">Installation Requests</div>
+    <div class="page-subtitle">Free-installation requests submitted via the /support page</div>
+    <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="loadInstallations()">🔄 Refresh</button>
+      <select id="inst-filter" onchange="loadInstallations()" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+        <option value="">All Statuses</option>
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="scheduled">Scheduled</option>
+        <option value="installed">Installed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title" id="inst-count">Installation Requests</span></div>
+      <div class="card-body" id="installationsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SUPPORT TICKETS -->
+  <div class="section" id="section-tickets">
+    <div class="page-title">Support Tickets</div>
+    <div class="page-subtitle">Service &amp; support tickets raised via the /support page</div>
+    <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="loadTickets()">🔄 Refresh</button>
+      <select id="tkt-filter" onchange="loadTickets()" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+        <option value="">All Statuses</option>
+        <option value="open">Open</option>
+        <option value="in_progress">In Progress</option>
+        <option value="waiting">Waiting</option>
+        <option value="resolved">Resolved</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title" id="tkt-count">Support Tickets</span></div>
+      <div class="card-body" id="ticketsTable"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
@@ -493,6 +537,8 @@ function showSection(name) {
     zones: loadZones,
     users: loadUsers,
     'website-leads': loadWebsiteLeads,
+    installations: loadInstallations,
+    tickets: loadTickets,
     coverage: loadCoverage,
     'shop-products': loadShopProducts,
     'shop-orders': loadShopOrders,
@@ -1321,6 +1367,186 @@ async function updateWebsiteLead(id, status) {
   });
   showToast('Lead updated → ' + status);
   loadWebsiteLeads();
+}
+
+// ── Installation Requests ──
+const INST_STATUS_COLORS = { new: '#f59e0b', contacted: '#3b82f6', scheduled: '#8b5cf6', installed: '#10b981', cancelled: '#6b7280' };
+async function loadInstallations() {
+  const status = document.getElementById('inst-filter')?.value || '';
+  const url = `${API}/api/admin/installations${status ? '?status=' + status : ''}`;
+  try {
+    const rows = await fetch(url).then(r => r.json());
+    document.getElementById('inst-count').textContent = `Installation Requests (${rows.length})`;
+    if (!rows.length) {
+      document.getElementById('installationsTable').innerHTML = `<div class="loading" style="color:#4a6a8c">No installation requests yet</div>`;
+      return;
+    }
+    document.getElementById('installationsTable').innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Model</th><th>Serial No.</th><th>Bought</th><th>Address</th><th>Pincode</th><th>Area</th><th>Preferred</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          ${rows.map(l => `
+            <tr>
+              <td style="white-space:nowrap;font-size:11px;color:#888">${new Date(l.created_at).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+              <td style="font-family:monospace;font-size:11px;color:#00d4aa">${l.ref}</td>
+              <td style="font-weight:600">${l.name}</td>
+              <td><a href="tel:+${l.phone}" style="color:#4caf50">+${l.phone}</a></td>
+              <td style="font-size:12px">${l.product_name || '–'}</td>
+              <td style="font-family:monospace;font-size:11px;color:#e0e0e0">${l.serial_no || '–'}</td>
+              <td style="font-size:12px">${l.purchased_from || '–'}</td>
+              <td style="max-width:180px;font-size:12px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.address||'').replace(/"/g,'&quot;')}">${l.address || '–'}</td>
+              <td style="font-size:12px">${l.pincode || '–'}</td>
+              <td style="font-size:12px">${l.serviceable === true ? '<span style="color:#10b981">✅ '+(l.zone_name||'covered')+'</span>' : l.serviceable === false ? '<span style="color:#f59e0b">⏳ expanding</span>' : '–'}</td>
+              <td style="font-size:11px;color:#aaa">${l.preferred_date ? new Date(l.preferred_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.preferred_slot ? '<br>'+l.preferred_slot : (l.preferred_date ? '' : '–')}</td>
+              <td><span style="background:${INST_STATUS_COLORS[l.status] || '#888'}22;color:${INST_STATUS_COLORS[l.status] || '#888'};border:1px solid ${INST_STATUS_COLORS[l.status] || '#888'}44;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;text-transform:uppercase">${l.status}</span></td>
+              <td>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <button onclick="viewInstallTechnicians('${l.id}','${l.ref}','${l.pincode||''}')" style="padding:4px 8px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">🔧 Find Techs</button>
+                  <select onchange="updateInstallation('${l.id}', this.value)" style="padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:11px">
+                    <option value="">Update…</option>
+                    <option value="contacted">📞 Contacted</option>
+                    <option value="scheduled">📅 Scheduled</option>
+                    <option value="installed">✅ Installed</option>
+                    <option value="cancelled">🚫 Cancel</option>
+                  </select>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  } catch(err) {
+    document.getElementById('installationsTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+async function updateInstallation(id, status) {
+  if (!status) return;
+  await fetch(`${API}/api/admin/installations/${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status })
+  });
+  showToast('Installation updated → ' + status);
+  loadInstallations();
+}
+
+// Show technicians + service providers who can service an installation request's pincode
+async function viewInstallTechnicians(id, ref, pincode) {
+  showModal('🔧 Technicians for ' + ref + (pincode ? ' · ' + pincode : ''), `<div class="loading">Finding technicians near ${pincode || 'this area'}…</div>`);
+  try {
+    const d = await fetch(`${API}/api/admin/installations/${id}/technicians`).then(r => r.json());
+    const matchBadge = (m) => m === 'exact'
+      ? `<span style="background:#10b98122;color:#10b981;border:1px solid #10b98144;padding:1px 7px;border-radius:50px;font-size:10px;font-weight:600">EXACT AREA</span>`
+      : `<span style="background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44;padding:1px 7px;border-radius:50px;font-size:10px;font-weight:600">NEARBY</span>`;
+    const phoneBtns = (p) => {
+      const n = (p || '').replace(/[^0-9]/g, '');
+      return `<div style="display:flex;gap:6px;flex-wrap:wrap">
+        <a href="tel:+${n}" style="font-size:12px;font-weight:600;color:#4caf50;text-decoration:none">+${n}</a>
+        <a href="https://wa.me/${n}" target="_blank" style="font-size:10px;color:#25d366;text-decoration:none">💬 WA</a>
+        <button onclick="copyToClipboard('${n}')" style="font-size:10px;padding:1px 8px;background:#1e3a5a;border:1px solid #2a4a6a;border-radius:4px;color:#e0e0e0;cursor:pointer">📋</button>
+      </div>`;
+    };
+
+    // Registered technicians
+    const techs = d.technicians || [];
+    const techHtml = `
+      <div style="font-size:13px;font-weight:700;color:#64b5f6;text-transform:uppercase;letter-spacing:.5px;margin:4px 0 8px">Registered Technicians (${techs.length})</div>
+      ${!techs.length ? `<div style="padding:12px;color:#888;font-size:13px">No registered technician covers this area yet — use the service providers below to dispatch.</div>` : `
+      <div style="max-height:200px;overflow-y:auto;border:1px solid #1e3a5a;border-radius:8px">
+        ${techs.map(t => `
+          <div style="padding:10px 12px;border-bottom:1px solid #16304a;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#e0e0e0">${t.name || 'Technician'}</span>${matchBadge(t.match)}${t.is_home ? '<span style="font-size:10px;color:#8b5cf6">🏠 home</span>' : ''}</div>
+              <div style="font-size:11px;color:#888;margin-top:3px">⭐ ${t.rating ?? '–'} · ${t.jobs_completed || 0} jobs · zones: ${(t.zones||[]).join(', ')}</div>
+            </div>
+            ${phoneBtns(t.phone)}
+          </div>`).join('')}
+      </div>`}`;
+
+    // Service providers (leads)
+    const parts = d.partners || [];
+    const partHtml = `
+      <div style="font-size:13px;font-weight:700;color:#64b5f6;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">Service Providers Near This Pincode (${parts.length})</div>
+      ${!parts.length ? `<div style="padding:12px;color:#888;font-size:13px">No RO service providers found for this area.</div>` : `
+      <div style="max-height:340px;overflow-y:auto;border:1px solid #1e3a5a;border-radius:8px">
+        ${parts.map(s => `
+          <div style="padding:10px 12px;border-bottom:1px solid #16304a;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div style="min-width:0;flex:1">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px" title="${(s.business_name||'').replace(/"/g,'&quot;')}">${s.business_name}</span>${matchBadge(s.match)}</div>
+              <div style="font-size:11px;color:#888;margin-top:3px">${s.full_address || s.city || '–'}</div>
+              <div style="font-size:11px;margin-top:4px;display:flex;gap:10px;flex-wrap:wrap">
+                ${s.rating ? `<span style="color:#f59e0b">⭐ ${s.rating} <span style="color:#666">(${s.total_ratings||0})</span></span>` : ''}
+                ${s.pincode ? `<span style="color:#4a6a8c">📍 ${s.pincode}</span>` : ''}
+                ${s.google_maps_link ? `<a href="${s.google_maps_link}" target="_blank" style="color:#64b5f6;text-decoration:none">🗺 Maps</a>` : ''}
+              </div>
+            </div>
+            ${phoneBtns(s.intl_phone || s.phone)}
+          </div>`).join('')}
+      </div>`}`;
+
+    const areaLine = d.request?.zone
+      ? `<span style="color:#10b981">✅ ${d.request.zone} (serviced)</span>`
+      : `<span style="color:#f59e0b">⏳ ${pincode || '–'} — outside current service zones; showing nearest providers</span>`;
+    document.getElementById('modalBody').innerHTML =
+      `<div style="font-size:12px;color:#90a4ae;margin-bottom:14px">Area: ${areaLine}</div>` + techHtml + partHtml;
+  } catch (e) {
+    document.getElementById('modalBody').innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Support Tickets ──
+const TKT_STATUS_COLORS = { open: '#f59e0b', in_progress: '#3b82f6', waiting: '#8b5cf6', resolved: '#10b981', closed: '#6b7280' };
+async function loadTickets() {
+  const status = document.getElementById('tkt-filter')?.value || '';
+  const url = `${API}/api/admin/tickets${status ? '?status=' + status : ''}`;
+  try {
+    const rows = await fetch(url).then(r => r.json());
+    document.getElementById('tkt-count').textContent = `Support Tickets (${rows.length})`;
+    if (!rows.length) {
+      document.getElementById('ticketsTable').innerHTML = `<div class="loading" style="color:#4a6a8c">No tickets yet</div>`;
+      return;
+    }
+    document.getElementById('ticketsTable').innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Category</th><th>Serial No.</th><th>Subject</th><th>Description</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          ${rows.map(l => `
+            <tr>
+              <td style="white-space:nowrap;font-size:11px;color:#888">${new Date(l.created_at).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+              <td style="font-family:monospace;font-size:11px;color:#00d4aa">${l.ref}</td>
+              <td style="font-weight:600">${l.name}</td>
+              <td><a href="tel:+${l.phone}" style="color:#4caf50">+${l.phone}</a></td>
+              <td style="font-size:12px">${(l.category||'').replace(/_/g,' ')}</td>
+              <td style="font-family:monospace;font-size:11px;color:#e0e0e0">${l.serial_no || '–'}</td>
+              <td style="max-width:160px;font-size:12px;color:#ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.subject||'').replace(/"/g,'&quot;')}">${l.subject}</td>
+              <td style="max-width:220px;font-size:12px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.description||'').replace(/"/g,'&quot;')}">${l.description}</td>
+              <td><span style="background:${TKT_STATUS_COLORS[l.status] || '#888'}22;color:${TKT_STATUS_COLORS[l.status] || '#888'};border:1px solid ${TKT_STATUS_COLORS[l.status] || '#888'}44;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;text-transform:uppercase">${(l.status||'').replace(/_/g,' ')}</span></td>
+              <td>
+                <select onchange="updateTicket('${l.id}', this.value)" style="padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:11px">
+                  <option value="">Update…</option>
+                  <option value="in_progress">🔧 In Progress</option>
+                  <option value="waiting">⏳ Waiting</option>
+                  <option value="resolved">✅ Resolved</option>
+                  <option value="closed">🚫 Close</option>
+                </select>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  } catch(err) {
+    document.getElementById('ticketsTable').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+async function updateTicket(id, status) {
+  if (!status) return;
+  await fetch(`${API}/api/admin/tickets/${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status })
+  });
+  showToast('Ticket updated → ' + status);
+  loadTickets();
 }
 
 // ── Coverage Map ──
