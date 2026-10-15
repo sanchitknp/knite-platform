@@ -446,17 +446,23 @@ app.patch('/api/admin/leads/:id', admin.updateLeadContact);
 app.post('/api/admin/jobs/:id/broadcast', admin.forceBroadcast);
 app.post('/api/admin/jobs/:id/dispute', admin.resolveDispute);
 app.get('/api/admin/technicians', admin.getTechnicians);
+app.post('/api/admin/technicians', admin.createTechnician);
 app.post('/api/admin/technicians/:id/approve', admin.approveTechnician);
 app.get('/api/admin/zones', admin.getZones);
 app.get('/api/admin/maintenance', admin.getMaintenanceSchedules);
 app.get('/api/admin/ledger', admin.getLedger);
 app.post('/api/admin/ledger/:techId/settle', admin.markSettled);
 app.get('/api/admin/customers', admin.getCustomers);
+app.get('/api/admin/nearest-leads', admin.findNearestLeads);
+app.post('/api/admin/nearest-lead-comments', admin.addLeadComment);
+app.patch('/api/admin/nearest-lead-comments/:id', admin.editLeadComment);
+app.delete('/api/admin/nearest-lead-comments/:id', admin.deleteLeadComment);
 
 // Support admin endpoints — installation requests + support tickets
 app.get  ('/api/admin/installations',      support.adminListInstallations);
 app.patch('/api/admin/installations/:id',  support.adminUpdateInstallation);
 app.get  ('/api/admin/installations/:id/technicians', support.getInstallationTechnicians);
+app.post ('/api/admin/installations/:id/assign', support.assignInstallationTechnician);
 app.get  ('/api/admin/tickets',            support.adminListTickets);
 app.patch('/api/admin/tickets/:id',        support.adminUpdateTicket);
 

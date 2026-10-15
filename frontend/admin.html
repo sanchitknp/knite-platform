@@ -47,6 +47,41 @@
 
   /* Main */
   .main { margin-left: 220px; padding: 24px; }
+
+  /* Mobile top bar + off-canvas sidebar */
+  .mobile-topbar {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0; height: 48px; z-index: 900;
+    background: #0f2035; border-bottom: 1px solid #1e3a55;
+    align-items: center; gap: 12px; padding: 0 14px;
+  }
+  .mobile-topbar .ham { font-size: 22px; line-height: 1; cursor: pointer; color: #00d4aa; background: none; border: none; padding: 4px 6px; }
+  .mobile-topbar .mt-title { color: #fff; font-weight: 600; font-size: 15px; }
+  .mobile-topbar .mt-title span { color: #00d4aa; }
+  .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 899; }
+  .nt-info { display: none; }  /* Info button column: mobile only */
+  @media (max-width: 820px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      width: 240px; z-index: 1000; box-shadow: 2px 0 14px rgba(0,0,0,0.6);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-backdrop.show { display: block; }
+    .main { margin-left: 0; padding: 14px; padding-top: 62px; }
+    .mobile-topbar { display: flex; }
+    table { font-size: 13px; }
+    .nt-hide-mobile { display: none !important; }  /* hide extra columns on mobile */
+    .nt-info { display: table-cell !important; }    /* show Info button on mobile */
+    /* Nearest-techs results become stacked cards on mobile (no horizontal scroll) */
+    #nearestTable thead { display: none; }
+    #nearestTable table, #nearestTable tbody, #nearestTable tr, #nearestTable td { display: block; width: auto; }
+    #nearestTable tbody > tr { border: 1px solid #1e3a55; border-radius: 8px; margin-bottom: 8px; padding: 8px 12px; background: #0d2237; }
+    #nearestTable td { border: none !important; padding: 3px 0; }
+    #nearestTable tbody td:nth-child(3) { font-weight: 600; font-size: 15px; color: #fff; }  /* business name */
+    #nearestTable .nt-info { display: block !important; }
+    #nearestTable tr[id^="ipanel-"], #nearestTable tr[id^="cpanel-"] { background: none; border: none; padding: 0; }
+  }
   .page-title {
     font-size: 24px; font-weight: 700; color: #fff;
     margin-bottom: 4px;
@@ -179,6 +214,12 @@
 </head>
 <body>
 
+<div class="mobile-topbar">
+  <button class="ham" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <div class="mt-title">KNITE <span>Admin</span></div>
+</div>
+<div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
 <div class="sidebar">
   <div class="sidebar-logo">
     KNITE <span>Admin</span>
@@ -189,6 +230,7 @@
     <div class="nav-item" onclick="showSection('units')"><span class="icon">📦</span> Units</div>
     <div class="nav-item" onclick="showSection('jobs')"><span class="icon">🔧</span> Jobs</div>
     <div class="nav-item" onclick="showSection('technicians')"><span class="icon">👨‍🔧</span> Technicians</div>
+    <div class="nav-item" onclick="showSection('nearest')"><span class="icon">🧭</span> Nearest Techs</div>
     <div class="nav-item" onclick="showSection('customers')"><span class="icon">👤</span> Customers</div>
     <div class="nav-item" onclick="showSection('maintenance')"><span class="icon">🔄</span> Maintenance</div>
     <div class="nav-item" onclick="showSection('ledger')"><span class="icon">💰</span> Ledger</div>
@@ -281,6 +323,7 @@
     <div class="page-subtitle">Manage field technician network</div>
     <div class="refresh-bar">
       <button class="btn btn-secondary" onclick="loadTechnicians()">🔄 Refresh</button>
+      <button class="btn btn-primary" onclick="showAddTechForm('','','','')">➕ Add Technician</button>
     </div>
     <div class="card">
       <div class="card-header">
@@ -424,6 +467,35 @@
     </div>
   </div>
 
+  <!-- NEAREST TECHS -->
+  <div class="section" id="section-nearest">
+    <div class="page-title">Nearest Technicians</div>
+    <div class="page-subtitle">Top nearest RO service leads to a location, by latitude / longitude</div>
+    <div class="card">
+      <div class="card-header"><span class="title">Search by Coordinates</span></div>
+      <div class="card-body">
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:12px;color:#6a8aac;margin-bottom:4px">Google Maps URL (optional)</label>
+          <input id="nearUrl" type="text" placeholder="https://maps.google.com/?q=30.302425,77.998886" style="width:100%;max-width:520px;box-sizing:border-box;padding:8px;border-radius:6px;border:1px solid #1a3a5c;background:#0a1e33;color:#e0e0e0" onkeydown="if(event.key==='Enter')findNearestTechs()">
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+          <div><label style="display:block;font-size:12px;color:#6a8aac;margin-bottom:4px">Latitude</label>
+            <input id="nearLat" type="text" placeholder="17.66457" style="padding:8px;border-radius:6px;border:1px solid #1a3a5c;background:#0a1e33;color:#e0e0e0;width:150px"></div>
+          <div><label style="display:block;font-size:12px;color:#6a8aac;margin-bottom:4px">Longitude</label>
+            <input id="nearLng" type="text" placeholder="83.19072" style="padding:8px;border-radius:6px;border:1px solid #1a3a5c;background:#0a1e33;color:#e0e0e0;width:150px"></div>
+          <div><label style="display:block;font-size:12px;color:#6a8aac;margin-bottom:4px">How many</label>
+            <input id="nearLimit" type="number" value="100" min="1" max="500" style="padding:8px;border-radius:6px;border:1px solid #1a3a5c;background:#0a1e33;color:#e0e0e0;width:90px"></div>
+          <button class="btn btn-primary" onclick="findNearestTechs()">🔍 Find Nearest</button>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:#6a8aac">Tip: paste a Google Maps link above (e.g. <code>?q=30.30,77.99</code> or a <code>/@lat,lng/</code> URL), or type "lat, lng" into the Latitude box — either way it auto-fills the coordinates.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title">Results</span> <span id="nearCount" style="color:#6a8aac;font-size:12px"></span></div>
+      <div class="card-body" id="nearestTable"><div class="loading">Enter coordinates and click Find Nearest.</div></div>
+    </div>
+  </div>
+
   <!-- MAINTENANCE -->
   <div class="section" id="section-maintenance">
     <div class="page-title">Maintenance Schedules</div>
@@ -517,6 +589,14 @@ async function logout() {
 }
 
 // ── Navigation ──
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.querySelector('.sidebar-backdrop').classList.toggle('show');
+}
+function closeSidebar() {
+  const sb = document.querySelector('.sidebar'); if (sb) sb.classList.remove('open');
+  const bd = document.querySelector('.sidebar-backdrop'); if (bd) bd.classList.remove('show');
+}
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -544,6 +624,7 @@ function showSection(name) {
     'shop-orders': loadShopOrders,
   };
   if (loaders[name]) loaders[name]();
+  closeSidebar();
 }
 
 // ── Stats ──
@@ -974,6 +1055,209 @@ async function loadCustomers() {
   }
 }
 
+// ── Nearest Technicians (by lat/lng from ro_service_leads) ──
+function _coordsFromMapsUrl(url) {
+  if (!url) return null;
+  try { url = decodeURIComponent(url); } catch (e) {}
+  // ?q=lat,lng / ?query=lat,lng / ?ll=lat,lng / ?destination=lat,lng / ?center=lat,lng
+  let m = url.match(/[?&](?:q|query|ll|destination|center|daddr)=(-?\d+\.?\d*)[,%2C\s]+(-?\d+\.?\d*)/i);
+  if (m) return [m[1], m[2]];
+  // /@lat,lng,zoom  (place/directions URLs)
+  m = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (m) return [m[1], m[2]];
+  // bare "lat,lng" anywhere in the string
+  m = url.match(/(-?\d{1,3}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/);
+  if (m) return [m[1], m[2]];
+  return null;
+}
+function _parseLatLng() {
+  const latEl = document.getElementById('nearLat');
+  const lngEl = document.getElementById('nearLng');
+  const urlEl = document.getElementById('nearUrl');
+  let lat = latEl.value.trim();
+  let lng = lngEl.value.trim();
+  // 1) Google Maps URL field takes precedence
+  const urlVal = urlEl ? urlEl.value.trim() : '';
+  if (urlVal) {
+    const c = _coordsFromMapsUrl(urlVal);
+    if (c) { latEl.value = c[0]; lngEl.value = c[1]; return { lat: c[0], lng: c[1] }; }
+  }
+  // 2) a URL pasted into the Latitude box
+  if (/https?:\/\//i.test(lat)) {
+    const c = _coordsFromMapsUrl(lat);
+    if (c) { latEl.value = c[0]; lngEl.value = c[1]; return { lat: c[0], lng: c[1] }; }
+  }
+  // 3) "lat, lng" pasted into the Latitude box
+  if (lat.includes(',') && !lng) {
+    const parts = lat.split(',').map(s => s.trim());
+    lat = parts[0]; lng = parts[1] || '';
+    latEl.value = lat; lngEl.value = lng;
+  }
+  return { lat, lng };
+}
+async function findNearestTechs() {
+  const { lat, lng } = _parseLatLng();
+  const limit = document.getElementById('nearLimit').value || 100;
+  const box = document.getElementById('nearestTable');
+  const latN = parseFloat(lat), lngN = parseFloat(lng);
+  if (!isFinite(latN) || !isFinite(lngN)) {
+    box.innerHTML = '<div class="loading">Please enter a valid latitude and longitude.</div>';
+    return;
+  }
+  box.innerHTML = '<div class="loading">Searching...</div>';
+  document.getElementById('nearCount').textContent = '';
+  try {
+    const r = await fetch(`${API}/api/admin/nearest-leads?lat=${encodeURIComponent(latN)}&lng=${encodeURIComponent(lngN)}&limit=${encodeURIComponent(limit)}`);
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
+    const rows = await r.json();
+    window._nearest = rows;
+    document.getElementById('nearCount').textContent = rows.length + ' found';
+    if (!rows.length) { box.innerHTML = '<div class="loading">No leads with coordinates found.</div>'; return; }
+    box.innerHTML = `${window._assignTarget ? `<div style="background:#1a3a2a;border:1px solid #2a5a3a;border-radius:8px;padding:8px 12px;margin-bottom:10px;color:#4caf50;font-size:13px">📌 Assigning a technician for <b>${window._assignTarget.ref}</b> — tap <b>✅ Assign</b> on the chosen one. <a href="javascript:void(0)" onclick="clearAssignTarget()" style="color:#f59e0b;margin-left:8px">cancel</a></div>` : ''}
+      <table>
+        <thead><tr><th class="nt-hide-mobile">#</th><th>Distance</th><th>Business</th><th>Phone</th><th class="nt-hide-mobile">Address</th><th class="nt-hide-mobile">City</th><th class="nt-hide-mobile">Pincode</th><th>Rating</th><th class="nt-hide-mobile">Category</th><th class="nt-hide-mobile">Map</th><th class="nt-info">Info</th><th>Comments</th></tr></thead>
+        <tbody>${rows.map((t, i) => `
+          <tr>
+            <td class="nt-hide-mobile">${i + 1}</td>
+            <td><strong>${t.distance_km} km</strong></td>
+            <td>${t.business_name || '–'}</td>
+            <td>${(t.intl_phone || t.phone) ? `<a href="tel:${(t.intl_phone || t.phone).replace(/[^+\d]/g, '')}" style="color:#00d4aa;text-decoration:none;white-space:nowrap">📞 ${_esc(t.phone || t.intl_phone)}</a>${_waNum(t) ? ` <a href="https://wa.me/${_waNum(t)}" target="_blank" style="color:#25D366;text-decoration:none;white-space:nowrap;margin-left:10px">🟢 WhatsApp</a>` : ''}` : '<span style="color:#4a6a8c">–</span>'}</td>
+            <td class="nt-hide-mobile" style="max-width:260px">${t.full_address || '–'}</td>
+            <td class="nt-hide-mobile">${t.city || '–'}</td>
+            <td class="nt-hide-mobile">${t.pincode || '–'}</td>
+            <td>${t.rating ? (t.rating + ' ★ (' + (t.total_ratings || 0) + ')') : '–'}</td>
+            <td class="nt-hide-mobile">${t.primary_category || '–'}</td>
+            <td class="nt-hide-mobile">${t.google_maps_link ? `<a href="${t.google_maps_link}" target="_blank" style="color:#64b5f6;text-decoration:none">🗺 Map</a>` : '–'}</td>
+            <td class="nt-info"><button class="btn btn-secondary" style="padding:4px 8px" onclick="toggleInfo(${i})">ℹ️ Info</button></td>
+            <td><button class="btn btn-secondary" style="padding:4px 8px" onclick="toggleComments(${i})">💬 <span id="cbadge-${i}">${(t.comments || []).length}</span></button>${window._assignTarget ? ` <button onclick="assignNearest(${i})" style="padding:4px 8px;margin-left:6px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">✅ Assign</button>` : ''}</td>
+          </tr>
+          <tr id="ipanel-${i}" style="display:none">
+            <td colspan="12" style="background:#0a1e33">
+              <div style="display:grid;gap:4px;font-size:13px">
+                <div><span style="color:#6a8aac">Address:</span> ${_esc(t.full_address) || '–'}</div>
+                <div><span style="color:#6a8aac">City / Pincode / State:</span> ${_esc(t.city) || '–'} / ${_esc(t.pincode) || '–'} / ${_esc(t.state) || '–'}</div>
+                <div><span style="color:#6a8aac">Category:</span> ${_esc(t.primary_category) || '–'}</div>
+                <div><span style="color:#6a8aac">Status:</span> ${_esc(t.business_status) || '–'}</div>
+                <div><span style="color:#6a8aac">Full phone:</span> ${_esc(t.intl_phone || t.phone) || '–'}</div>
+                ${t.website ? `<div><span style="color:#6a8aac">Website:</span> <a href="${t.website}" target="_blank" style="color:#64b5f6">${_esc(t.website)}</a></div>` : ''}
+                ${t.google_maps_link ? `<div><span style="color:#6a8aac">Map:</span> <a href="${t.google_maps_link}" target="_blank" style="color:#64b5f6">🗺 Open in Google Maps</a></div>` : ''}
+              </div>
+            </td>
+          </tr>
+          <tr id="cpanel-${i}" style="display:none">
+            <td colspan="12" style="background:#0a1e33">
+              <div id="clist-${i}">${_renderComments(t.comments, i, null)}</div>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <input id="cinput-${i}" type="text" placeholder="Add a comment about this technician..." style="flex:1;padding:8px;border-radius:6px;border:1px solid #1a3a5c;background:#071526;color:#e0e0e0" onkeydown="if(event.key==='Enter')addLeadCommentUI(${i})">
+                <button class="btn btn-primary" onclick="addLeadCommentUI(${i})">Add</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    box.innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+function _esc(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
+function _waNum(t) {
+  let n = (t.intl_phone || t.phone || '').replace(/\D/g, '');  // digits only (drops +, spaces)
+  if (!n) return '';
+  if (n.length === 10) n = '91' + n;  // bare Indian local number -> add country code
+  return n;
+}
+function _renderComments(list, i, editingId) {
+  if (!list || !list.length) return '<div style="color:#6a8aac;font-size:12px">No comments yet.</div>';
+  return list.map(c => {
+    const isOwner = _currentUser && c.author === _currentUser.username;
+    if (c.id === editingId) {
+      return `<div style="padding:6px 8px;border-left:2px solid #00d4aa;margin-bottom:6px">
+        <textarea id="cedit-${i}-${c.id}" style="width:100%;box-sizing:border-box;padding:6px;border-radius:6px;border:1px solid #1a3a5c;background:#071526;color:#e0e0e0">${_esc(c.comment)}</textarea>
+        <div style="margin-top:6px;display:flex;gap:6px">
+          <button class="btn btn-primary" style="padding:3px 10px" onclick="saveEditComment(${i}, ${c.id})">Save</button>
+          <button class="btn btn-secondary" style="padding:3px 10px" onclick="cancelEditComment(${i})">Cancel</button>
+        </div>
+      </div>`;
+    }
+    return `<div style="padding:6px 8px;border-left:2px solid #1a3a5c;margin-bottom:6px">
+      <div style="font-size:11px;color:#6a8aac">${_esc(c.author) || 'admin'} · ${new Date(c.created_at).toLocaleString()}</div>
+      <div>${_esc(c.comment)}</div>
+      ${isOwner ? `<div style="margin-top:4px;display:flex;gap:12px">
+        <a href="javascript:void(0)" onclick="startEditComment(${i}, ${c.id})" style="font-size:11px;color:#64b5f6;text-decoration:none">✏️ Edit</a>
+        <a href="javascript:void(0)" onclick="deleteCommentUI(${i}, ${c.id})" style="font-size:11px;color:#ff6b6b;text-decoration:none">🗑 Delete</a>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+function renderCommentList(i, editingId) {
+  const el = document.getElementById('clist-' + i);
+  if (el) el.innerHTML = _renderComments(window._nearest[i].comments, i, editingId || null);
+}
+function startEditComment(i, id) { renderCommentList(i, id); }
+function cancelEditComment(i) { renderCommentList(i, null); }
+async function saveEditComment(i, id) {
+  const ta = document.getElementById('cedit-' + i + '-' + id);
+  const text = ta.value.trim();
+  if (!text) return;
+  try {
+    const r = await fetch(`${API}/api/admin/nearest-lead-comments/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment: text })
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
+    const updated = await r.json();
+    const list = window._nearest[i].comments;
+    const idx = list.findIndex(c => c.id === id);
+    if (idx >= 0) list[idx] = updated;
+    renderCommentList(i, null);
+  } catch (err) { alert('Failed to edit comment: ' + err.message); }
+}
+async function deleteCommentUI(i, id) {
+  if (!confirm('Delete this comment?')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/nearest-lead-comments/${id}`, { method: 'DELETE' });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
+    const list = window._nearest[i].comments;
+    const idx = list.findIndex(c => c.id === id);
+    if (idx >= 0) list.splice(idx, 1);
+    renderCommentList(i, null);
+    const badge = document.getElementById('cbadge-' + i);
+    if (badge) badge.textContent = list.length;
+  } catch (err) { alert('Failed to delete comment: ' + err.message); }
+}
+function toggleComments(i) {
+  const p = document.getElementById('cpanel-' + i);
+  p.style.display = (p.style.display === 'none') ? '' : 'none';
+}
+function toggleInfo(i) {
+  const p = document.getElementById('ipanel-' + i);
+  p.style.display = (p.style.display === 'none') ? '' : 'none';
+}
+async function addLeadCommentUI(i) {
+  const row = window._nearest[i];
+  const inp = document.getElementById('cinput-' + i);
+  const text = inp.value.trim();
+  if (!text) return;
+  try {
+    const r = await fetch(`${API}/api/admin/nearest-lead-comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ place_id: row.place_id, comment: text })
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
+    const c = await r.json();
+    row.comments = row.comments || [];
+    row.comments.push(c);
+    inp.value = '';
+    renderCommentList(i, null);
+    const badge = document.getElementById('cbadge-' + i);
+    if (badge) badge.textContent = row.comments.length;
+  } catch (err) {
+    alert('Failed to add comment: ' + err.message);
+  }
+}
+
 // ── Maintenance ──
 async function loadMaintenance() {
   try {
@@ -1371,6 +1655,58 @@ async function updateWebsiteLead(id, status) {
 
 // ── Installation Requests ──
 const INST_STATUS_COLORS = { new: '#f59e0b', contacted: '#3b82f6', scheduled: '#8b5cf6', installed: '#10b981', cancelled: '#6b7280' };
+function nearestFromInstall(lat, lng, installId, installRef) {
+  window._assignTarget = (installId && installRef) ? { id: installId, ref: installRef } : null;
+  showSection('nearest');
+  document.getElementById('nearLat').value = lat;
+  document.getElementById('nearLng').value = lng;
+  const u = document.getElementById('nearUrl'); if (u) u.value = '';
+  findNearestTechs();
+}
+// ── Assign a technician to an installation request ──
+async function assignInstall(installId, ref, payload) {
+  try {
+    const r = await fetch(`${API}/api/admin/installations/${installId}/assign`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
+    const d = await r.json();
+    showToast('✅ Assigned ' + payload.tech_name + ' to ' + ref + ' — opening WhatsApp…');
+    return d;
+  } catch (err) { alert('Assign failed: ' + err.message); return null; }
+}
+function _openWa(win, url) {
+  if (!url) { if (win) win.close(); return; }
+  if (win && !win.closed) win.location.href = url;
+  else window.open(url, '_blank');   // fallback (may be popup-blocked)
+}
+function clearAssignTarget() { window._assignTarget = null; findNearestTechs(); }
+async function assignNearest(i) {
+  if (!window._assignTarget) return;
+  const waWin = window.open('', '_blank');   // reserve the popup inside the click gesture
+  const t = window._nearest[i];
+  const d = await assignInstall(window._assignTarget.id, window._assignTarget.ref, {
+    tech_name: t.business_name, tech_phone: t.intl_phone || t.phone || '',
+    tech_address: t.full_address || '', tech_city: t.city || '', place_id: t.place_id || '', source: 'nearest'
+  });
+  if (d) { _openWa(waWin, d.whatsapp_url); window._assignTarget = null; showSection('installations'); }
+  else if (waWin) waWin.close();
+}
+async function assignFromModal(kind, idx) {
+  const ctx = window._ftCtx; if (!ctx) return;
+  const waWin = window.open('', '_blank');
+  let payload;
+  if (kind === 'tech') {
+    const t = (window._ftTechs || [])[idx]; if (!t) { if (waWin) waWin.close(); return; }
+    payload = { tech_name: t.name || 'Technician', tech_phone: t.phone || '', source: 'registered' };
+  } else {
+    const s = (window._ftPartners || [])[idx]; if (!s) { if (waWin) waWin.close(); return; }
+    payload = { tech_name: s.business_name, tech_phone: s.intl_phone || s.phone || '', tech_address: s.full_address || '', tech_city: s.city || '', place_id: s.place_id || '', source: 'find-techs' };
+  }
+  const d = await assignInstall(ctx.id, ctx.ref, payload);
+  if (d) { _openWa(waWin, d.whatsapp_url); hideModal(); loadInstallations(); }
+  else if (waWin) waWin.close();
+}
 async function loadInstallations() {
   const status = document.getElementById('inst-filter')?.value || '';
   const url = `${API}/api/admin/installations${status ? '?status=' + status : ''}`;
@@ -1384,7 +1720,7 @@ async function loadInstallations() {
     document.getElementById('installationsTable').innerHTML = `
       <table>
         <thead>
-          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Model</th><th>Serial No.</th><th>Bought</th><th>Address</th><th>Pincode</th><th>Area</th><th>Preferred</th><th>Status</th><th>Action</th></tr>
+          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Model</th><th>Serial No.</th><th>Bought</th><th>Address</th><th>Pincode</th><th>Location</th><th>Area</th><th>Preferred</th><th>Status</th><th>Assigned Tech</th><th>Action</th></tr>
         </thead>
         <tbody>
           ${rows.map(l => `
@@ -1398,12 +1734,15 @@ async function loadInstallations() {
               <td style="font-size:12px">${l.purchased_from || '–'}</td>
               <td style="max-width:180px;font-size:12px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.address||'').replace(/"/g,'&quot;')}">${l.address || '–'}</td>
               <td style="font-size:12px">${l.pincode || '–'}</td>
+              <td style="font-size:11px">${(l.latitude && l.longitude) ? `<a href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank" style="color:#64b5f6">📍 Pin</a>` : (l.maps_link ? `<a href="${l.maps_link}" target="_blank" style="color:#64b5f6">📍 Link</a>` : '–')}</td>
               <td style="font-size:12px">${l.serviceable === true ? '<span style="color:#10b981">✅ '+(l.zone_name||'covered')+'</span>' : l.serviceable === false ? '<span style="color:#f59e0b">⏳ expanding</span>' : '–'}</td>
               <td style="font-size:11px;color:#aaa">${l.preferred_date ? new Date(l.preferred_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.preferred_slot ? '<br>'+l.preferred_slot : (l.preferred_date ? '' : '–')}</td>
               <td><span style="background:${INST_STATUS_COLORS[l.status] || '#888'}22;color:${INST_STATUS_COLORS[l.status] || '#888'};border:1px solid ${INST_STATUS_COLORS[l.status] || '#888'}44;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;text-transform:uppercase">${l.status}</span></td>
+              <td style="font-size:11px">${l.assigned_tech_name ? `<div style="color:#4caf50;font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.assigned_tech_name||'').replace(/"/g,'&quot;')}">${l.assigned_tech_name}</div>${l.assigned_tech_phone ? `<a href="tel:+${(l.assigned_tech_phone||'').replace(/[^0-9]/g,'')}" style="color:#4caf50;font-size:10px">${l.assigned_tech_phone}</a> ` : ''}<div style="color:#888;font-size:10px">${l.assigned_at ? new Date(l.assigned_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.assigned_by ? ' · '+l.assigned_by : ''}</div>` : '<span style="color:#4a6a8c">–</span>'}</td>
               <td>
                 <div style="display:flex;flex-direction:column;gap:6px">
-                  <button onclick="viewInstallTechnicians('${l.id}','${l.ref}','${l.pincode||''}')" style="padding:4px 8px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">🔧 Find Techs</button>
+                  <button onclick="viewInstallTechnicians('${l.id}','${l.ref}','${l.pincode||''}','${l.zone_id||''}')" style="padding:4px 8px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">🔧 Find Techs</button>
+                  ${(l.latitude && l.longitude) ? `<button onclick="nearestFromInstall('${l.latitude}','${l.longitude}','${l.id}','${l.ref}')" style="padding:4px 8px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:6px;color:#64b5f6;font-size:11px;cursor:pointer;white-space:nowrap">🧭 Nearest Techs</button>` : ''}
                   <select onchange="updateInstallation('${l.id}', this.value)" style="padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:11px">
                     <option value="">Update…</option>
                     <option value="contacted">📞 Contacted</option>
@@ -1431,10 +1770,11 @@ async function updateInstallation(id, status) {
 }
 
 // Show technicians + service providers who can service an installation request's pincode
-async function viewInstallTechnicians(id, ref, pincode) {
+async function viewInstallTechnicians(id, ref, pincode, zoneId) {
   showModal('🔧 Technicians for ' + ref + (pincode ? ' · ' + pincode : ''), `<div class="loading">Finding technicians near ${pincode || 'this area'}…</div>`);
   try {
     const d = await fetch(`${API}/api/admin/installations/${id}/technicians`).then(r => r.json());
+    window._ftCtx = { id, ref };
     const matchBadge = (m) => m === 'exact'
       ? `<span style="background:#10b98122;color:#10b981;border:1px solid #10b98144;padding:1px 7px;border-radius:50px;font-size:10px;font-weight:600">EXACT AREA</span>`
       : `<span style="background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44;padding:1px 7px;border-radius:50px;font-size:10px;font-weight:600">NEARBY</span>`;
@@ -1449,27 +1789,29 @@ async function viewInstallTechnicians(id, ref, pincode) {
 
     // Registered technicians
     const techs = d.technicians || [];
+    window._ftTechs = techs;
     const techHtml = `
       <div style="font-size:13px;font-weight:700;color:#64b5f6;text-transform:uppercase;letter-spacing:.5px;margin:4px 0 8px">Registered Technicians (${techs.length})</div>
       ${!techs.length ? `<div style="padding:12px;color:#888;font-size:13px">No registered technician covers this area yet — use the service providers below to dispatch.</div>` : `
       <div style="max-height:200px;overflow-y:auto;border:1px solid #1e3a5a;border-radius:8px">
-        ${techs.map(t => `
+        ${techs.map((t, i) => `
           <div style="padding:10px 12px;border-bottom:1px solid #16304a;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
             <div style="min-width:0">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#e0e0e0">${t.name || 'Technician'}</span>${matchBadge(t.match)}${t.is_home ? '<span style="font-size:10px;color:#8b5cf6">🏠 home</span>' : ''}</div>
               <div style="font-size:11px;color:#888;margin-top:3px">⭐ ${t.rating ?? '–'} · ${t.jobs_completed || 0} jobs · zones: ${(t.zones||[]).join(', ')}</div>
             </div>
-            ${phoneBtns(t.phone)}
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${phoneBtns(t.phone)}<button onclick="assignFromModal('tech', ${i})" style="padding:3px 10px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">✅ Assign</button></div>
           </div>`).join('')}
       </div>`}`;
 
     // Service providers (leads)
     const parts = d.partners || [];
+    window._ftPartners = parts;
     const partHtml = `
       <div style="font-size:13px;font-weight:700;color:#64b5f6;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">Service Providers Near This Pincode (${parts.length})</div>
       ${!parts.length ? `<div style="padding:12px;color:#888;font-size:13px">No RO service providers found for this area.</div>` : `
       <div style="max-height:340px;overflow-y:auto;border:1px solid #1e3a5a;border-radius:8px">
-        ${parts.map(s => `
+        ${parts.map((s, i) => `
           <div style="padding:10px 12px;border-bottom:1px solid #16304a;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
             <div style="min-width:0;flex:1">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px" title="${(s.business_name||'').replace(/"/g,'&quot;')}">${s.business_name}</span>${matchBadge(s.match)}</div>
@@ -1480,17 +1822,81 @@ async function viewInstallTechnicians(id, ref, pincode) {
                 ${s.google_maps_link ? `<a href="${s.google_maps_link}" target="_blank" style="color:#64b5f6;text-decoration:none">🗺 Maps</a>` : ''}
               </div>
             </div>
-            ${phoneBtns(s.intl_phone || s.phone)}
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${phoneBtns(s.intl_phone || s.phone)}<button onclick="assignFromModal('partner', ${i})" style="padding:3px 10px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">✅ Assign</button></div>
           </div>`).join('')}
       </div>`}`;
 
     const areaLine = d.request?.zone
       ? `<span style="color:#10b981">✅ ${d.request.zone} (serviced)</span>`
       : `<span style="color:#f59e0b">⏳ ${pincode || '–'} — outside current service zones; showing nearest providers</span>`;
+    const addBtn = `<button onclick="showAddTechForm('${id}','${ref}','${pincode||''}','${zoneId||''}')" style="padding:6px 12px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:12px;font-weight:600;cursor:pointer">➕ Add a technician for this area</button>`;
     document.getElementById('modalBody').innerHTML =
-      `<div style="font-size:12px;color:#90a4ae;margin-bottom:14px">Area: ${areaLine}</div>` + techHtml + partHtml;
+      `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap"><div style="font-size:12px;color:#90a4ae">Area: ${areaLine}</div>${addBtn}</div>` + techHtml + partHtml;
   } catch (e) {
     document.getElementById('modalBody').innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Manually add a technician (saves to the technicians table + links a zone) ──
+async function showAddTechForm(reqId, ref, pincode, zoneId) {
+  let zones = [];
+  try { zones = await fetch(`${API}/api/admin/zones`).then(r => r.json()); } catch (e) {}
+  const zoneOpts = ['<option value="">Select service zone…</option>']
+    .concat((zones || []).map(z => `<option value="${z.id}" ${z.id === zoneId ? 'selected' : ''}>${z.name}${(z.pincodes||[]).includes(pincode) ? ' — covers '+pincode : ''}</option>`))
+    .join('');
+  const inp = 'width:100%;padding:9px 11px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px;outline:none';
+  const lbl = 'font-size:11px;color:#64b5f6;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px';
+  showModal('➕ Add Technician' + (ref ? ' · for ' + ref : ''), `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><label style="${lbl}">Name *</label><input id="nt-name" style="${inp}" placeholder="Full name"></div>
+      <div><label style="${lbl}">Phone (WhatsApp) *</label><input id="nt-phone" style="${inp}" placeholder="10-digit mobile"></div>
+      <div style="grid-column:1/-1"><label style="${lbl}">Service Zone * <span style="color:#8899aa;text-transform:none">— determines which pincodes this technician covers</span></label><select id="nt-zone" style="${inp}">${zoneOpts}</select></div>
+      <div><label style="${lbl}">Rating</label><input id="nt-rating" type="number" min="1" max="5" step="0.1" value="5.0" style="${inp}"></div>
+      <div><label style="${lbl}">Bank / UPI (optional)</label><input id="nt-upi" style="${inp}" placeholder="name@upi"></div>
+      <div style="grid-column:1/-1;display:flex;gap:20px;margin-top:2px">
+        <label style="font-size:13px;color:#e0e0e0;display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="nt-active" checked style="accent-color:#4caf50">Active</label>
+        <label style="font-size:13px;color:#e0e0e0;display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="nt-verified" checked style="accent-color:#4caf50">Verified</label>
+        <span style="font-size:11px;color:#8899aa;align-self:center">(both on = appears in Find Techs immediately)</span>
+      </div>
+      <div id="nt-err" style="grid-column:1/-1;display:none;color:#ef4444;font-size:12px"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+      ${reqId ? `<button onclick="viewInstallTechnicians('${reqId}','${ref}','${pincode||''}','${zoneId||''}')" style="padding:9px 16px;background:#1e3a5a;border:1px solid #2a4a6a;border-radius:6px;color:#cfe;font-size:13px;cursor:pointer">← Back</button>` : ''}
+      <button id="nt-save" onclick="saveTechnician('${reqId||''}','${ref||''}','${pincode||''}','${zoneId||''}')" style="padding:9px 20px;background:#4caf50;border:none;border-radius:6px;color:#08210f;font-size:13px;font-weight:700;cursor:pointer">Save Technician</button>
+    </div>
+  `);
+}
+
+async function saveTechnician(reqId, ref, pincode, zoneId) {
+  const err = document.getElementById('nt-err');
+  const btn = document.getElementById('nt-save');
+  const payload = {
+    name: document.getElementById('nt-name').value.trim(),
+    phone: document.getElementById('nt-phone').value.trim(),
+    zone_id: document.getElementById('nt-zone').value,
+    rating: document.getElementById('nt-rating').value,
+    bank_upi: document.getElementById('nt-upi').value.trim(),
+    is_active: document.getElementById('nt-active').checked,
+    is_verified: document.getElementById('nt-verified').checked,
+  };
+  err.style.display = 'none'; btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const r = await fetch(`${API}/api/admin/technicians`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (r.ok && d.ok) {
+      showToast('✅ Technician added: ' + payload.name);
+      if (typeof loadTechnicians === 'function') { try { loadTechnicians(); } catch(e){} }
+      if (reqId) viewInstallTechnicians(reqId, ref, pincode, zoneId);
+      else hideModal();
+    } else {
+      btn.disabled = false; btn.textContent = 'Save Technician';
+      err.textContent = '❌ ' + (d.error || 'Could not save'); err.style.display = 'block';
+    }
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Save Technician';
+    err.textContent = '❌ ' + e.message; err.style.display = 'block';
   }
 }
 

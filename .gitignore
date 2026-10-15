@@ -77,3 +77,6 @@ docs/claude-context/
 assets/
 output/
 frontend/products_bak_*/
+
+# local scratch
+tmp/

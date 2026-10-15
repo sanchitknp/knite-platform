@@ -60,7 +60,6 @@ async function createInstallation(req, res) {
   const serialNo = clean(b.serial_no);
   if (!name)            return res.status(400).json({ error: 'Name is required' });
   if (phone.length < 10) return res.status(400).json({ error: 'A valid phone number is required' });
-  if (!serialNo)        return res.status(400).json({ error: 'Serial number is required — it is printed on the side panel of your purifier' });
   if (!clean(b.address) && !clean(b.pincode))
     return res.status(400).json({ error: 'Address or pincode is required' });
 
@@ -73,13 +72,17 @@ async function createInstallation(req, res) {
     serviceable = !!zone;
   }
 
+  const lat = Number.isFinite(parseFloat(b.latitude)) ? parseFloat(b.latitude) : null;
+  const lng = Number.isFinite(parseFloat(b.longitude)) ? parseFloat(b.longitude) : null;
+
   const r = await db.query(
     `INSERT INTO installation_requests
        (ref, name, phone, email, product_slug, product_name, serial_no, purchased_from,
         order_ref, address, city, pincode, zone_id, serviceable,
-        preferred_date, preferred_slot, notes, source, shop_customer_id)
+        preferred_date, preferred_slot, notes, source, shop_customer_id,
+        latitude, longitude, maps_link)
      VALUES ('KN-INST-' || nextval('installation_ref_seq'),
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'website',$17)
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'website',$17,$18,$19,$20)
      RETURNING ref, id, created_at`,
     [
       name, phone, clean(b.email),
@@ -88,6 +91,7 @@ async function createInstallation(req, res) {
       zoneId, serviceable,
       clean(b.preferred_date), clean(b.preferred_slot), clean(b.notes),
       req.shopCustomer?.id || null,
+      lat, lng, clean(b.maps_link),
     ]
   );
 
@@ -111,7 +115,6 @@ async function createTicket(req, res) {
   if (!name)        return res.status(400).json({ error: 'Name is required' });
   if (phone.length < 10) return res.status(400).json({ error: 'A valid phone number is required' });
   if (!category)    return res.status(400).json({ error: 'Please choose a category' });
-  if (!serialNo)    return res.status(400).json({ error: 'Serial number is required — it is on the side wall of your purifier' });
   if (!subject)     return res.status(400).json({ error: 'Subject is required' });
   if (!description) return res.status(400).json({ error: 'Please describe the issue' });
 
@@ -139,18 +142,88 @@ async function createTicket(req, res) {
 // ── ADMIN ───────────────────────────────────────────────────
 async function adminListInstallations(req, res) {
   const { status, limit = 200 } = req.query;
-  const where = status ? `WHERE status = $1` : '';
+  const where = status ? `WHERE i.status = $1` : '';
   const params = status ? [status] : [];
   const r = await db.query(
-    `SELECT i.*, z.name AS zone_name
+    `SELECT i.*, z.name AS zone_name,
+            a.tech_name  AS assigned_tech_name,
+            a.tech_phone AS assigned_tech_phone,
+            a.assigned_at,
+            a.assigned_by
        FROM installation_requests i
        LEFT JOIN zones z ON z.id = i.zone_id
+       LEFT JOIN LATERAL (
+         SELECT tech_name, tech_phone, assigned_at, assigned_by
+           FROM installation_assignments aa
+          WHERE aa.installation_id = i.id
+          ORDER BY aa.assigned_at DESC
+          LIMIT 1
+       ) a ON true
        ${where}
        ORDER BY i.created_at DESC
        LIMIT ${parseInt(limit)}`,
     params
   );
   res.json(r.rows);
+}
+
+// Assign a technician (registered tech or RO service lead) to an installation request.
+async function assignInstallationTechnician(req, res) {
+  const installId = req.params.id;
+  const b = req.body || {};
+  const techName = clean(b.tech_name);
+  if (!techName) return res.status(400).json({ error: 'Technician name is required' });
+
+  const inst = await db.query(`SELECT * FROM installation_requests WHERE id = $1`, [installId]);
+  if (!inst.rowCount) return res.status(404).json({ error: 'Installation request not found' });
+  const I = inst.rows[0];
+
+  const r = await db.query(
+    `INSERT INTO installation_assignments
+       (installation_id, installation_ref, place_id, tech_name, tech_phone,
+        tech_address, tech_city, source, assigned_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+     RETURNING id, tech_name, tech_phone, assigned_by, assigned_at`,
+    [
+      installId, I.ref, clean(b.place_id), techName, clean(b.tech_phone),
+      clean(b.tech_address), clean(b.tech_city), clean(b.source),
+      req.adminUser?.username || 'admin',
+    ]
+  );
+  // Once a technician is assigned, move the request to 'scheduled' (unless already installed/cancelled).
+  await db.query(
+    `UPDATE installation_requests SET status = 'scheduled'
+      WHERE id = $1 AND status IN ('new','contacted')`,
+    [installId]
+  );
+
+  // Build a pre-filled WhatsApp message to the technician with the customer's details.
+  let waNum = (clean(b.tech_phone) || '').replace(/\D/g, '');
+  if (waNum.length === 10) waNum = '91' + waNum;
+  const pdate = I.preferred_date ? new Date(I.preferred_date).toISOString().slice(0, 10) : '';
+  const loc = I.maps_link
+    || (I.latitude && I.longitude ? `https://maps.google.com/?q=${I.latitude},${I.longitude}` : '');
+  const addr = I.address
+    ? `${I.address}${I.city ? ', ' + I.city : ''}${I.pincode ? ' - ' + I.pincode : ''}`
+    : (I.pincode ? I.pincode : '');
+  const message = [
+    `*Knite — New Installation Request ${I.ref}*`,
+    '',
+    `Customer: ${I.name}`,
+    `Phone: ${I.phone}`,
+    addr ? `Address: ${addr}` : '',
+    loc ? `Location: ${loc}` : '',
+    (pdate || I.preferred_slot) ? `Preferred: ${[pdate, I.preferred_slot].filter(Boolean).join(' ')}` : '',
+    I.product_name ? `Product: ${I.product_name}` : '',
+    I.serial_no ? `Serial: ${I.serial_no}` : '',
+    I.notes ? `Notes: ${I.notes}` : '',
+    '',
+    `Please confirm if you can take this installation. — Team Knite`,
+  ].filter(Boolean).join('\n');
+  const whatsapp_url = waNum ? `https://wa.me/${waNum}?text=${encodeURIComponent(message)}` : null;
+
+  console.log(`[SUPPORT ASSIGN] ${I.ref} -> ${techName} (${clean(b.tech_phone) || '–'}) by ${req.adminUser?.username || 'admin'}`);
+  res.json({ ok: true, assignment: r.rows[0], whatsapp_url });
 }
 
 async function adminUpdateInstallation(req, res) {
@@ -274,6 +347,7 @@ module.exports = {
   createTicket,
   adminListInstallations,
   adminUpdateInstallation,
+  assignInstallationTechnician,
   getInstallationTechnicians,
   adminListTickets,
   adminUpdateTicket,

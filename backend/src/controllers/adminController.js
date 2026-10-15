@@ -183,6 +183,56 @@ async function approveTechnician(req, res) {
   res.json(result.rows[0]);
 }
 
+/**
+ * POST /api/admin/technicians — manually add a technician (admin-created).
+ * Requires name, phone and zone_id so the technician is immediately matchable
+ * for that zone's pincodes. Created active + verified by default. Also links
+ * the technician to the zone via technician_zones (is_home=true), inside a txn.
+ */
+async function createTechnician(req, res) {
+  const b = req.body || {};
+  const name = (b.name || '').trim();
+  let phone = (b.phone || '').replace(/[^0-9]/g, '');
+  if (phone.length === 10) phone = '91' + phone;   // normalise to include country code
+  const zoneId = b.zone_id || null;
+  const rating = (b.rating != null && b.rating !== '') ? parseFloat(b.rating) : 5.0;
+  const isActive = b.is_active !== false;
+  const isVerified = b.is_verified !== false;
+  const bankUpi = (b.bank_upi || '').trim() || null;
+
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  if (phone.length < 12) return res.status(400).json({ error: 'A valid 10-digit phone number is required' });
+  if (!zoneId) return res.status(400).json({ error: 'Please choose a service zone (so the technician is matched to its pincodes)' });
+
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const zChk = await client.query(`SELECT id, name FROM zones WHERE id = $1 AND is_active = true`, [zoneId]);
+    if (!zChk.rows[0]) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Zone not found' }); }
+
+    const t = await client.query(
+      `INSERT INTO technicians (name, phone, home_zone_id, is_active, is_verified, rating, bank_upi)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [name, phone, zoneId, isActive, isVerified, rating, bankUpi]
+    );
+    await client.query(
+      `INSERT INTO technician_zones (technician_id, zone_id, is_home)
+       VALUES ($1,$2,true) ON CONFLICT DO NOTHING`,
+      [t.rows[0].id, zoneId]
+    );
+    await client.query('COMMIT');
+    console.log(`[ADMIN] technician added: ${name} ${phone} zone=${zChk.rows[0].name} active=${isActive} verified=${isVerified}`);
+    res.json({ ok: true, technician: t.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err.code === '23505') return res.status(409).json({ error: 'A technician with this phone number already exists' });
+    console.error('[ADMIN createTechnician]', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+}
+
 // ── Zones ──
 async function getZones(req, res) {
   const result = await db.query(`SELECT * FROM zones WHERE is_active = true ORDER BY name`);
@@ -426,11 +476,98 @@ async function getJobOffers(req, res) {
   res.json(r.rows);
 }
 
+// ── Nearest service leads (technicians) by lat/lng from ro_service_leads ──
+async function findNearestLeads(req, res) {
+  const lat = parseFloat(req.query.lat);
+  const lng = parseFloat(req.query.lng);
+  let limit = parseInt(req.query.limit, 10);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) ||
+      lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return res.status(400).json({ error: 'Valid lat and lng query params are required' });
+  }
+  if (!Number.isFinite(limit) || limit < 1) limit = 100;
+  if (limit > 500) limit = 500;
+  const result = await db.query(
+    `SELECT l.business_name, l.phone, l.intl_phone, l.full_address, l.city, l.state, l.pincode,
+            l.latitude, l.longitude, l.rating, l.total_ratings, l.primary_category,
+            l.business_status, l.website, l.google_maps_link, l.place_id,
+            ROUND((6371 * acos(LEAST(1.0,
+              cos(radians($1)) * cos(radians(l.latitude)) * cos(radians(l.longitude) - radians($2))
+              + sin(radians($1)) * sin(radians(l.latitude))
+            )))::numeric, 2) AS distance_km,
+            COALESCE((
+              SELECT json_agg(json_build_object('id', c.id, 'comment', c.comment,
+                                                'author', c.author, 'created_at', c.created_at)
+                              ORDER BY c.created_at)
+                FROM ro_service_lead_comments c WHERE c.place_id = l.place_id
+            ), '[]'::json) AS comments
+       FROM ro_service_leads l
+      WHERE l.latitude IS NOT NULL AND l.longitude IS NOT NULL
+      ORDER BY distance_km ASC
+      LIMIT $3`,
+    [lat, lng, limit]
+  );
+  res.json(result.rows);
+}
+
+// ── Add a comment on a service lead (technician), keyed by place_id ──
+async function addLeadComment(req, res) {
+  const placeId = (req.body.place_id || '').trim();
+  const comment = (req.body.comment || '').trim();
+  if (!placeId || !comment) {
+    return res.status(400).json({ error: 'place_id and comment are required' });
+  }
+  const author = req.adminUser?.username || 'admin';
+  const result = await db.query(
+    `INSERT INTO ro_service_lead_comments (place_id, comment, author)
+     VALUES ($1, $2, $3)
+     RETURNING id, place_id, comment, author, created_at`,
+    [placeId, comment, author]
+  );
+  res.status(201).json(result.rows[0]);
+}
+
+// ── Edit a comment (owner only) ──
+async function editLeadComment(req, res) {
+  const id = parseInt(req.params.id, 10);
+  const comment = (req.body.comment || '').trim();
+  if (!Number.isFinite(id) || !comment) {
+    return res.status(400).json({ error: 'valid id and comment are required' });
+  }
+  const author = req.adminUser?.username || 'admin';
+  const result = await db.query(
+    `UPDATE ro_service_lead_comments SET comment = $1
+      WHERE id = $2 AND author = $3
+      RETURNING id, place_id, comment, author, created_at`,
+    [comment, id, author]
+  );
+  if (!result.rowCount) {
+    return res.status(403).json({ error: 'Comment not found or not yours to edit' });
+  }
+  res.json(result.rows[0]);
+}
+
+// ── Delete a comment (owner only) ──
+async function deleteLeadComment(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: 'valid id required' });
+  const author = req.adminUser?.username || 'admin';
+  const result = await db.query(
+    `DELETE FROM ro_service_lead_comments WHERE id = $1 AND author = $2`,
+    [id, author]
+  );
+  if (!result.rowCount) {
+    return res.status(403).json({ error: 'Comment not found or not yours to delete' });
+  }
+  res.json({ ok: true });
+}
+
 module.exports = {
   getStats, getUnits, getUnit, seedUnit,
   getJobs, getJob, forceBroadcast, resolveDispute,
-  getTechnicians, approveTechnician,
+  getTechnicians, approveTechnician, createTechnician,
   getZones, getRecentMessages,
   getMaintenanceSchedules, getLedger, markSettled,
   getCustomers, getJobSuggestions, sendManualOffer, getJobOffers, updateLeadContact,
+  findNearestLeads, addLeadComment, editLeadComment, deleteLeadComment,
 };
