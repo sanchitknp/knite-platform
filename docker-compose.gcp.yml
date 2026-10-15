@@ -1,0 +1,28 @@
+# GCP production overlay — adds Caddy (auto-HTTPS) and makes everything
+# survive reboots. Use with the base compose + local-db profile:
+#   docker compose -f docker-compose.yml -f docker-compose.gcp.yml --profile local-db up -d
+services:
+  postgres:
+    restart: unless-stopped
+  redis:
+    restart: unless-stopped
+  backend:
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: knite-caddy
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

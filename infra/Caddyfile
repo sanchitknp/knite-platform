@@ -1,0 +1,5 @@
+# Production domain — knite.in (auto HTTPS via Let's Encrypt).
+knite.in, www.knite.in {
+	encode gzip
+	reverse_proxy backend:3000
+}
