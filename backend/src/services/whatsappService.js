@@ -428,6 +428,35 @@ async function sendDocument(toPhone, filePath, meta = {}, opts = {}) {
   }
 }
 
+/**
+ * Send a REAL WhatsApp template message (for proactive messages outside the 24h window).
+ * @param {string} toPhone              international digits, no +
+ * @param {string} templateName
+ * @param {string} languageCode         e.g. 'en_US'
+ * @param {string[]} bodyParams         positional {{1}}, {{2}}, … values (no newlines, non-empty)
+ * @param {{line?: 'tech'|'service', fromPhoneId?: string}} [opts]
+ * @returns {Promise<object|undefined>} Meta response — has messages[0].id on success, error on failure
+ */
+async function sendTemplateMessage(toPhone, templateName, languageCode, bodyParams = [], opts = {}) {
+  const fromPhoneId = resolveFromPhoneId(opts);
+  console.log(`[WA→${toPhone}] from=${fromPhoneId} TEMPLATE: ${templateName} [${bodyParams.join(' | ')}]`);
+  if (MODE === 'production') {
+    return await callMetaAPI({
+      to: toPhone,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: languageCode },
+        components: bodyParams.length
+          ? [{ type: 'body', parameters: bodyParams.map((p) => ({ type: 'text', text: String(p) })) }]
+          : [],
+      },
+    }, fromPhoneId);
+  }
+  await queueSimulator(toPhone, 'template', `[TEMPLATE ${templateName}] ${bodyParams.join(' | ')}`);
+  return { simulated: true };
+}
+
 module.exports = {
   sendText,
   sendButtons,
@@ -436,6 +465,7 @@ module.exports = {
   sendLocation,
   sendLocationRequest,
   sendTemplate,
+  sendTemplateMessage,
   sendDocument,
   getPendingMessages,
   getAllRecentMessages,

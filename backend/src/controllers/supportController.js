@@ -9,6 +9,8 @@
 // ============================================================
 const db = require('../db');
 const zoneService = require('../services/zoneService');
+const wa = require('../services/whatsappService');
+const geocoder = require('../services/geocoder');
 
 // ── helpers ─────────────────────────────────────────────────
 const clean = (v) => (typeof v === 'string' ? v.trim() : v) || null;
@@ -97,6 +99,29 @@ async function createInstallation(req, res) {
 
   const row = r.rows[0];
   console.log(`[SUPPORT INSTALL] ${row.ref} name=${name} phone=${phone} serial=${serialNo} pincode=${pincode || '–'} serviceable=${serviceable}`);
+
+  if (lat != null && lng != null) {
+    // Customer dropped a precise map pin.
+    db.query(`UPDATE installation_requests SET geo_source='pin' WHERE id=$1`, [row.id]).catch(() => {});
+  } else {
+    // No pin → derive approximate coordinates from the typed address IN THE BACKGROUND
+    // (never blocks the customer's form). The admin sees the pin a second or two later.
+    geocoder
+      .geocodeInstallation({ address: clean(b.address), city: clean(b.city), pincode })
+      .then((g) => {
+        if (!g) return;
+        return db
+          .query(
+            `UPDATE installation_requests
+                SET latitude=$1, longitude=$2, geo_source=$3
+              WHERE id=$4 AND latitude IS NULL`,
+            [g.latitude, g.longitude, g.geo_source, row.id]
+          )
+          .then(() => console.log(`[GEOCODE] ${row.ref} -> ${g.latitude},${g.longitude} (${g.geo_source}/${g.precision})`));
+      })
+      .catch((e) => console.error(`[GEOCODE] ${row.ref} failed:`, e.message));
+  }
+
   res.json({ ok: true, ref: row.ref, serviceable });
 }
 
@@ -197,6 +222,32 @@ async function assignInstallationTechnician(req, res) {
     [installId]
   );
 
+  // If this was a manually-entered ("custom") technician, also keep them in the
+  // custom_technicians roster (deduped by canonical phone) for reuse/lookup later.
+  if (clean(b.source) === 'custom') {
+    let canon = (clean(b.tech_phone) || '').replace(/\D/g, '');
+    if (canon.length === 10) canon = '91' + canon;
+    if (canon) {
+      try {
+        await db.query(
+          `INSERT INTO custom_technicians (name, phone, raw_phone, city, address, added_by)
+           VALUES ($1,$2,$3,$4,$5,$6)
+           ON CONFLICT (phone) DO UPDATE
+             SET name             = COALESCE(NULLIF(EXCLUDED.name, ''), custom_technicians.name),
+                 raw_phone        = EXCLUDED.raw_phone,
+                 city             = COALESCE(NULLIF(EXCLUDED.city, ''), custom_technicians.city),
+                 address          = COALESCE(NULLIF(EXCLUDED.address, ''), custom_technicians.address),
+                 times_assigned   = custom_technicians.times_assigned + 1,
+                 last_assigned_at = now()`,
+          [techName, canon, clean(b.tech_phone), clean(b.tech_city), clean(b.tech_address),
+           req.adminUser?.username || 'admin']
+        );
+      } catch (e) {
+        console.error('[CUSTOM_TECH] roster upsert failed:', e.message);
+      }
+    }
+  }
+
   // Build a pre-filled WhatsApp message to the technician with the customer's details.
   let waNum = (clean(b.tech_phone) || '').replace(/\D/g, '');
   if (waNum.length === 10) waNum = '91' + waNum;
@@ -220,6 +271,8 @@ async function assignInstallationTechnician(req, res) {
     '',
     `Please confirm if you can take this installation. — Team Knite`,
   ].filter(Boolean).join('\n');
+  // The admin sends the details manually via WhatsApp (reliable, no first-contact
+  // throttle): we always return a wa.me link pre-filled with the customer's details.
   const whatsapp_url = waNum ? `https://wa.me/${waNum}?text=${encodeURIComponent(message)}` : null;
 
   console.log(`[SUPPORT ASSIGN] ${I.ref} -> ${techName} (${clean(b.tech_phone) || '–'}) by ${req.adminUser?.username || 'admin'}`);
@@ -227,16 +280,41 @@ async function assignInstallationTechnician(req, res) {
 }
 
 async function adminUpdateInstallation(req, res) {
-  const { status, admin_notes } = req.body;
+  const { status, admin_notes, installation_charge } = req.body;
+  const charge = (installation_charge === undefined || installation_charge === null || installation_charge === '')
+    ? null
+    : String(installation_charge).replace(/[^0-9.]/g, '') || null;
   await db.query(
     `UPDATE installation_requests
         SET status = COALESCE($1, status),
             admin_notes = COALESCE($2, admin_notes),
+            installation_charge = COALESCE($3, installation_charge),
             updated_at = now()
-      WHERE id = $3`,
-    [status || null, admin_notes || null, req.params.id]
+      WHERE id = $4`,
+    [status || null, admin_notes || null, charge, req.params.id]
   );
   res.json({ ok: true });
+}
+
+// Admin: on-demand geocode an installation's typed address → store approx coords.
+// Used for requests submitted without a map pin (or where a prior geocode failed).
+async function geocodeInstallationRequest(req, res) {
+  const inst = await db.query(
+    `SELECT id, ref, address, city, pincode FROM installation_requests WHERE id = $1`,
+    [req.params.id]
+  );
+  if (!inst.rowCount) return res.status(404).json({ error: 'Installation request not found' });
+  const I = inst.rows[0];
+  const g = await geocoder.geocodeInstallation({ address: I.address, city: I.city, pincode: I.pincode });
+  if (!g) {
+    return res.status(422).json({ error: 'Could not resolve coordinates for this address' + (geocoder.hasKey ? '' : ' (geocoding key not configured)') });
+  }
+  await db.query(
+    `UPDATE installation_requests SET latitude=$1, longitude=$2, geo_source=$3 WHERE id=$4`,
+    [g.latitude, g.longitude, g.geo_source, I.id]
+  );
+  console.log(`[GEOCODE ADMIN] ${I.ref} -> ${g.latitude},${g.longitude} (${g.geo_source}/${g.precision})`);
+  res.json({ ok: true, latitude: g.latitude, longitude: g.longitude, geo_source: g.geo_source, precision: g.precision });
 }
 
 async function adminListTickets(req, res) {
@@ -347,6 +425,7 @@ module.exports = {
   createTicket,
   adminListInstallations,
   adminUpdateInstallation,
+  geocodeInstallationRequest,
   assignInstallationTechnician,
   getInstallationTechnicians,
   adminListTickets,

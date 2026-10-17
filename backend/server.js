@@ -462,6 +462,7 @@ app.delete('/api/admin/nearest-lead-comments/:id', admin.deleteLeadComment);
 app.get  ('/api/admin/installations',      support.adminListInstallations);
 app.patch('/api/admin/installations/:id',  support.adminUpdateInstallation);
 app.get  ('/api/admin/installations/:id/technicians', support.getInstallationTechnicians);
+app.post ('/api/admin/installations/:id/geocode', support.geocodeInstallationRequest);
 app.post ('/api/admin/installations/:id/assign', support.assignInstallationTechnician);
 app.get  ('/api/admin/tickets',            support.adminListTickets);
 app.patch('/api/admin/tickets/:id',        support.adminUpdateTicket);
@@ -640,6 +641,44 @@ async function start() {
     await db.query(`ALTER TABLE technicians ADD COLUMN IF NOT EXISTS kyc_doc_back_url TEXT`);
   } catch (err) {
     console.error('[SCHEMA_MIGRATE] kyc_doc_back_url:', err.message);
+  }
+  try {
+    await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS installation_charge NUMERIC`);
+  } catch (err) {
+    console.error('[SCHEMA_MIGRATE] installation_charge:', err.message);
+  }
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS custom_technicians (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name             TEXT,
+        phone            TEXT UNIQUE NOT NULL,
+        raw_phone        TEXT,
+        city             TEXT,
+        address          TEXT,
+        added_by         TEXT,
+        times_assigned   INTEGER NOT NULL DEFAULT 1,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_assigned_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_custom_tech_phone ON custom_technicians(phone)`);
+  } catch (err) {
+    console.error('[SCHEMA_MIGRATE] custom_technicians:', err.message);
+  }
+  try {
+    // Where a request's coordinates came from: pin (user), geocoded (address), pincode (centroid).
+    await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS geo_source TEXT`);
+    // Pincode → centroid cache (self-populated by the geocoder; offline + free thereafter).
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS pincode_geo (
+        pincode    TEXT PRIMARY KEY,
+        lat        NUMERIC NOT NULL,
+        lng        NUMERIC NOT NULL,
+        source     TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`);
+  } catch (err) {
+    console.error('[SCHEMA_MIGRATE] geo_source/pincode_geo:', err.message);
   }
 
   app.listen(PORT, '0.0.0.0', () => {

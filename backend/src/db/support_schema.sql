@@ -41,6 +41,8 @@ ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS serial_no TEXT;
 ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS latitude  NUMERIC;
 ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS longitude NUMERIC;
 ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS maps_link TEXT;
+ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS installation_charge NUMERIC;
+ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS geo_source TEXT;   -- pin | geocoded | pincode
 
 CREATE INDEX IF NOT EXISTS idx_install_status  ON installation_requests(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_install_pincode ON installation_requests(pincode);
@@ -99,3 +101,38 @@ CREATE TABLE IF NOT EXISTS installation_assignments (
   assigned_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_install_assign_install ON installation_assignments(installation_id);
+
+-- ─────────────────────────────────────────────
+-- CUSTOM TECHNICIANS ROSTER
+-- A deduplicated list of technicians entered manually (by name + mobile) via the
+-- admin "➕ Custom Tech" flow — kept so they can be reused/looked up later. One row
+-- per unique phone; times_assigned/last_assigned_at track reuse. Per-installation
+-- dispatch history still lives in installation_assignments (source = 'custom').
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS custom_technicians (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name             TEXT,
+  phone            TEXT UNIQUE NOT NULL,   -- canonical digits, 91-prefixed
+  raw_phone        TEXT,                   -- exactly as the admin typed it
+  city             TEXT,
+  address          TEXT,
+  added_by         TEXT,                   -- admin username
+  times_assigned   INTEGER NOT NULL DEFAULT 1,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_assigned_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_custom_tech_phone ON custom_technicians(phone);
+
+-- ─────────────────────────────────────────────
+-- PINCODE → CENTROID CACHE
+-- Self-populated by the geocoder service: the first time a 6-digit pincode is seen
+-- it is geocoded once via Google and cached here, so repeat pincodes resolve
+-- offline/free afterwards. Used as the fallback when a full-address geocode fails.
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS pincode_geo (
+  pincode    TEXT PRIMARY KEY,
+  lat        NUMERIC NOT NULL,
+  lng        NUMERIC NOT NULL,
+  source     TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

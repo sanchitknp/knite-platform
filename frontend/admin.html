@@ -1113,7 +1113,7 @@ async function findNearestTechs() {
     window._nearest = rows;
     document.getElementById('nearCount').textContent = rows.length + ' found';
     if (!rows.length) { box.innerHTML = '<div class="loading">No leads with coordinates found.</div>'; return; }
-    box.innerHTML = `${window._assignTarget ? `<div style="background:#1a3a2a;border:1px solid #2a5a3a;border-radius:8px;padding:8px 12px;margin-bottom:10px;color:#4caf50;font-size:13px">📌 Assigning a technician for <b>${window._assignTarget.ref}</b> — tap <b>✅ Assign</b> on the chosen one. <a href="javascript:void(0)" onclick="clearAssignTarget()" style="color:#f59e0b;margin-left:8px">cancel</a></div>` : ''}
+    box.innerHTML = `${window._assignTarget ? `<div style="background:#1a3a2a;border:1px solid #2a5a3a;border-radius:8px;padding:8px 12px;margin-bottom:10px;color:#4caf50;font-size:13px">📌 Assigning a technician for <b>${window._assignTarget.ref}</b> — tap <b>📲 WhatsApp</b> on the one who confirms to send the customer details. <a href="javascript:void(0)" onclick="clearAssignTarget()" style="color:#f59e0b;margin-left:8px">cancel</a></div>` : ''}
       <table>
         <thead><tr><th class="nt-hide-mobile">#</th><th>Distance</th><th>Business</th><th>Phone</th><th class="nt-hide-mobile">Address</th><th class="nt-hide-mobile">City</th><th class="nt-hide-mobile">Pincode</th><th>Rating</th><th class="nt-hide-mobile">Category</th><th class="nt-hide-mobile">Map</th><th class="nt-info">Info</th><th>Comments</th></tr></thead>
         <tbody>${rows.map((t, i) => `
@@ -1121,7 +1121,7 @@ async function findNearestTechs() {
             <td class="nt-hide-mobile">${i + 1}</td>
             <td><strong>${t.distance_km} km</strong></td>
             <td>${t.business_name || '–'}</td>
-            <td>${(t.intl_phone || t.phone) ? `<a href="tel:${(t.intl_phone || t.phone).replace(/[^+\d]/g, '')}" style="color:#00d4aa;text-decoration:none;white-space:nowrap">📞 ${_esc(t.phone || t.intl_phone)}</a>${_waNum(t) ? ` <a href="https://wa.me/${_waNum(t)}" target="_blank" style="color:#25D366;text-decoration:none;white-space:nowrap;margin-left:10px">🟢 WhatsApp</a>` : ''}` : '<span style="color:#4a6a8c">–</span>'}</td>
+            <td>${(t.intl_phone || t.phone) ? `<a href="tel:${(t.intl_phone || t.phone).replace(/[^+\d]/g, '')}" style="color:#00d4aa;text-decoration:none;white-space:nowrap">📞 ${_esc(t.phone || t.intl_phone)}</a>${!window._assignTarget && _waNum(t) ? ` <a href="https://wa.me/${_waNum(t)}" target="_blank" style="color:#25D366;text-decoration:none;white-space:nowrap;margin-left:10px">🟢 WhatsApp</a>` : ''}` : '<span style="color:#4a6a8c">–</span>'}</td>
             <td class="nt-hide-mobile" style="max-width:260px">${t.full_address || '–'}</td>
             <td class="nt-hide-mobile">${t.city || '–'}</td>
             <td class="nt-hide-mobile">${t.pincode || '–'}</td>
@@ -1129,7 +1129,7 @@ async function findNearestTechs() {
             <td class="nt-hide-mobile">${t.primary_category || '–'}</td>
             <td class="nt-hide-mobile">${t.google_maps_link ? `<a href="${t.google_maps_link}" target="_blank" style="color:#64b5f6;text-decoration:none">🗺 Map</a>` : '–'}</td>
             <td class="nt-info"><button class="btn btn-secondary" style="padding:4px 8px" onclick="toggleInfo(${i})">ℹ️ Info</button></td>
-            <td><button class="btn btn-secondary" style="padding:4px 8px" onclick="toggleComments(${i})">💬 <span id="cbadge-${i}">${(t.comments || []).length}</span></button>${window._assignTarget ? ` <button onclick="assignNearest(${i})" style="padding:4px 8px;margin-left:6px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">✅ Assign</button>` : ''}</td>
+            <td><button class="btn btn-secondary" style="padding:4px 8px" onclick="toggleComments(${i})">💬 <span id="cbadge-${i}">${(t.comments || []).length}</span></button>${window._assignTarget ? ` <button onclick="assignNearest(${i})" style="padding:4px 8px;margin-left:6px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">📲 WhatsApp</button>` : ''}</td>
           </tr>
           <tr id="ipanel-${i}" style="display:none">
             <td colspan="12" style="background:#0a1e33">
@@ -1671,7 +1671,6 @@ async function assignInstall(installId, ref, payload) {
     });
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
     const d = await r.json();
-    showToast('✅ Assigned ' + payload.tech_name + ' to ' + ref + ' — opening WhatsApp…');
     return d;
   } catch (err) { alert('Assign failed: ' + err.message); return null; }
 }
@@ -1679,6 +1678,10 @@ function _openWa(win, url) {
   if (!url) { if (win) win.close(); return; }
   if (win && !win.closed) win.location.href = url;
   else window.open(url, '_blank');   // fallback (may be popup-blocked)
+}
+function postAssign(d, waWin, techName, ref) {
+  showToast('✅ Assigned ' + techName + ' to ' + ref + ' — opening WhatsApp with customer details');
+  _openWa(waWin, d.whatsapp_url);
 }
 function clearAssignTarget() { window._assignTarget = null; findNearestTechs(); }
 async function assignNearest(i) {
@@ -1689,7 +1692,7 @@ async function assignNearest(i) {
     tech_name: t.business_name, tech_phone: t.intl_phone || t.phone || '',
     tech_address: t.full_address || '', tech_city: t.city || '', place_id: t.place_id || '', source: 'nearest'
   });
-  if (d) { _openWa(waWin, d.whatsapp_url); window._assignTarget = null; showSection('installations'); }
+  if (d) { postAssign(d, waWin, t.business_name, window._assignTarget.ref); window._assignTarget = null; showSection('installations'); }
   else if (waWin) waWin.close();
 }
 async function assignFromModal(kind, idx) {
@@ -1704,14 +1707,179 @@ async function assignFromModal(kind, idx) {
     payload = { tech_name: s.business_name, tech_phone: s.intl_phone || s.phone || '', tech_address: s.full_address || '', tech_city: s.city || '', place_id: s.place_id || '', source: 'find-techs' };
   }
   const d = await assignInstall(ctx.id, ctx.ref, payload);
-  if (d) { _openWa(waWin, d.whatsapp_url); hideModal(); loadInstallations(); }
+  if (d) { postAssign(d, waWin, payload.tech_name, ctx.ref); hideModal(); loadInstallations(); }
   else if (waWin) waWin.close();
 }
+
+// Manually assign a technician by typing their name + mobile number (not from the
+// Find/Nearest lists). Reuses the same assign flow → WhatsApps the customer's
+// details to the technician; the row's "📲 Notify Customer" then covers the reverse.
+function customTech(id) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (!l) { showToast('Could not find this installation — refresh'); return; }
+  showModal('➕ Custom Technician for ' + l.ref, `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:12px;color:#8aa">Enter the technician's details. We'll WhatsApp them the customer's details to confirm, and you can notify the customer afterwards.</div>
+      <label style="font-size:12px;color:#aaa">Technician name
+        <input id="ct-name" type="text" placeholder="e.g. Ramesh Verma" autocomplete="off"
+          style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
+      </label>
+      <label style="font-size:12px;color:#aaa">Technician mobile number *
+        <input id="ct-phone" type="tel" inputmode="numeric" placeholder="10-digit mobile (or with +91)" autocomplete="off"
+          style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
+      </label>
+      <button onclick="submitCustomTech('${l.id}')"
+        style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">📲 Assign & send customer details on WhatsApp</button>
+    </div>`);
+  setTimeout(() => { const el = document.getElementById('ct-name'); if (el) el.focus(); }, 60);
+}
+async function submitCustomTech(id) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (!l) { showToast('Could not find this installation — refresh'); return; }
+  const name = (document.getElementById('ct-name')?.value || '').trim();
+  const phoneRaw = (document.getElementById('ct-phone')?.value || '').trim();
+  const digits = phoneRaw.replace(/\D/g, '');
+  if (!digits || digits.length < 10) { showToast('Enter a valid mobile number'); return; }
+  const waWin = window.open('', '_blank');   // reserve popup within the click gesture
+  const d = await assignInstall(l.id, l.ref, {
+    tech_name: name || 'Technician',
+    tech_phone: phoneRaw,
+    source: 'custom'
+  });
+  if (d) { postAssign(d, waWin, name || 'Technician', l.ref); hideModal(); loadInstallations(); }
+  else if (waWin) waWin.close();
+}
+// Build a pre-filled WhatsApp link to the CUSTOMER with the assigned technician's
+// details (used once a technician is scheduled). Returns '' if we can't message.
+function custWaUrl(l) {
+  let num = String(l.phone || '').replace(/\D/g, '');
+  if (num.length === 10) num = '91' + num;
+  if (!num || !l.assigned_tech_name) return '';
+  const techPhone = (l.assigned_tech_phone || '').toString().trim();
+  const charge = (l.installation_charge != null && String(l.installation_charge).trim() !== '')
+    ? String(l.installation_charge).trim() : '';
+  const msg = [
+    `*Knite — Installation Scheduled (${l.ref})*`,
+    '',
+    `Hi ${l.name || 'there'}, your Knite water purifier installation has been scheduled. ✅`,
+    '',
+    `Our technician will coordinate the visit with you:`,
+    techPhone ? `Technician's number: ${techPhone}` : '',
+    charge ? `Installation charges: ₹${charge}` : '',
+    '',
+    `Feel free to call the technician directly to confirm the timing. — Team Knite`,
+  ].filter(Boolean).join('\n');
+  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+}
+
+// One-click WhatsApp to the CUSTOMER asking (simply) whether their RO is installed.
+// Returns '' if the customer has no phone number.
+function askStatusWaUrl(l) {
+  let num = String(l.phone || '').replace(/\D/g, '');
+  if (num.length === 10) num = '91' + num;
+  if (!num) return '';
+  const msg = `Hi ${l.name || 'Sir/Madam'}, is your Knite RO water purifier installed? Please reply *YES* or *NO*. — Team Knite`;
+  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+}
+
+// Prompt for installation charges, persist to DB, then open WhatsApp to the customer
+// with the technician number + charges pre-filled.
+async function notifyCustomer(id) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (!l) { showToast('Could not find this installation — refresh'); return; }
+  if (!l.assigned_tech_name) { showToast('Assign a technician first'); return; }
+  const existing = (l.installation_charge != null && String(l.installation_charge).trim() !== '')
+    ? String(l.installation_charge).trim() : '';
+  const input = prompt('Installation charges (₹) for ' + l.ref + ':', existing);
+  if (input === null) return;                                  // cancelled
+  const charge = String(input).trim().replace(/[^0-9.]/g, '');
+  if (!charge) { showToast('Enter a valid amount'); return; }
+  const waWin = window.open('', '_blank');                     // reserve popup within the click
+  try {
+    await fetch(`${API}/api/admin/installations/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ installation_charge: charge })
+    });
+  } catch (e) { /* still open WhatsApp even if the save hiccups */ }
+  l.installation_charge = charge;
+  _openWa(waWin, custWaUrl(l));
+  showToast('💰 Charges ₹' + charge + ' saved — opening WhatsApp to notify customer');
+  loadInstallations();                                         // reflect saved charge in the list
+}
+
+// On-demand: derive approximate coordinates from an installation's typed address
+// (for requests submitted without a Google Maps pin).
+async function geocodeInstall(id) {
+  showToast('📍 Locating from address…');
+  try {
+    const r = await fetch(`${API}/api/admin/installations/${id}/geocode`, { method: 'POST' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { showToast('Could not locate: ' + (d.error || ('HTTP ' + r.status))); return; }
+    showToast(`📍 Located (${d.geo_source}) — ${Number(d.latitude).toFixed(4)}, ${Number(d.longitude).toFixed(4)}`);
+    loadInstallations();
+  } catch (e) { showToast('Locate failed: ' + e.message); }
+}
+
+// Knite's live Amazon.in listings (product → ASIN), from the Category Listings Report.
+// Used to build the "Send Review" dropdown + the Amazon review link.
+const KNITE_PRODUCTS = [
+  { label: 'Core 7-Stage (11L)',            asin: 'B0HBKVG455' },
+  { label: 'Edge 10-Stage — Titanium Grey', asin: 'B0HBKZN3GM' },
+  { label: 'Edge 10-Stage — Silver',        asin: 'B0HBKS56MD' },
+  { label: 'Prime 10-Stage — Black',        asin: 'B0HBKL9SYF' },
+  { label: 'Prime 10-Stage — White',        asin: 'B0HBKVZVVS' },
+  { label: 'Shield 10-Stage — Copper',      asin: 'B0HBKL9119' },
+  { label: 'Shield 10-Stage — Silver',      asin: 'B0HBL5VBJ1' },
+  { label: 'Flux 7-Stage — White (10L)',    asin: 'B0H6NSN3PB' },
+  { label: 'Flux 7-Stage — Black',          asin: 'B0H6SNBZTS' },
+  { label: 'Aqua Flux 11-Stage — White',    asin: 'B0HJSQDWXS' },
+];
+
+// Ask the admin which product the customer bought, then open WhatsApp with a short
+// review request + the Amazon review link for that product.
+function sendReview(id) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (!l) { showToast('Could not find this installation — refresh'); return; }
+  const opts = KNITE_PRODUCTS.map(p => `<option value="${p.asin}">${_esc(p.label)}</option>`).join('');
+  showModal('⭐ Send Review Request · ' + l.ref, `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:12px;color:#8aa">Select the product the customer purchased. We'll open WhatsApp with a short review request and the Amazon link.</div>
+      <label style="font-size:12px;color:#aaa">Product purchased
+        <select id="rev-product" style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">${opts}</select>
+      </label>
+      <button onclick="submitReview('${l.id}')" style="padding:10px;background:#2a2410;border:1px solid #ffd166;border-radius:6px;color:#ffd166;font-size:14px;font-weight:600;cursor:pointer">⭐ Send review request on WhatsApp</button>
+    </div>`);
+}
+function submitReview(id) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (!l) { showToast('Could not find this installation — refresh'); return; }
+  const sel = document.getElementById('rev-product');
+  const asin = sel && sel.value;
+  const label = (sel && sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].text) || 'Knite RO';
+  if (!asin) { showToast('Please select a product'); return; }
+  let num = String(l.phone || '').replace(/\D/g, '');
+  if (num.length === 10) num = '91' + num;
+  if (!num) { showToast('Customer has no phone number'); return; }
+  const url = `https://www.amazon.in/review/create-review?asin=${asin}`;
+  const msg = [
+    `Hi ${l.name || 'there'}, I hope your Knite ${label} was installed successfully and it was a hassle-free experience for you. 😊`,
+    '',
+    `If you liked the product, we would sincerely request you to share your genuine feedback on Amazon:`,
+    `👉 ${url}`,
+    '',
+    `Your review will help us grow and give us the confidence to serve you better going forward. Thank you! 🙏 — Team Knite`,
+  ].join('\n');
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+  hideModal();
+  showToast('⭐ Opening WhatsApp with the review request');
+}
+
 async function loadInstallations() {
   const status = document.getElementById('inst-filter')?.value || '';
   const url = `${API}/api/admin/installations${status ? '?status=' + status : ''}`;
   try {
     const rows = await fetch(url).then(r => r.json());
+    window._installRows = rows;
     document.getElementById('inst-count').textContent = `Installation Requests (${rows.length})`;
     if (!rows.length) {
       document.getElementById('installationsTable').innerHTML = `<div class="loading" style="color:#4a6a8c">No installation requests yet</div>`;
@@ -1734,7 +1902,11 @@ async function loadInstallations() {
               <td style="font-size:12px">${l.purchased_from || '–'}</td>
               <td style="max-width:180px;font-size:12px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.address||'').replace(/"/g,'&quot;')}">${l.address || '–'}</td>
               <td style="font-size:12px">${l.pincode || '–'}</td>
-              <td style="font-size:11px">${(l.latitude && l.longitude) ? `<a href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank" style="color:#64b5f6">📍 Pin</a>` : (l.maps_link ? `<a href="${l.maps_link}" target="_blank" style="color:#64b5f6">📍 Link</a>` : '–')}</td>
+              <td style="font-size:11px">${(l.latitude && l.longitude)
+                ? `<a href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank" style="color:#64b5f6" title="${l.geo_source === 'pincode' ? 'Approximate — pincode area centre' : l.geo_source === 'geocoded' ? 'Approximate — derived from typed address' : 'Precise — customer-dropped pin'}">📍 ${l.geo_source === 'pincode' ? 'Area~' : l.geo_source === 'geocoded' ? 'Approx~' : 'Pin'}</a>`
+                : (l.maps_link
+                    ? `<a href="${l.maps_link}" target="_blank" style="color:#64b5f6">📍 Link</a>`
+                    : `<button onclick="geocodeInstall('${l.id}')" style="padding:3px 7px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:6px;color:#64b5f6;font-size:10px;cursor:pointer;white-space:nowrap" title="Derive approximate coordinates from the typed address">📍 Locate</button>`)}</td>
               <td style="font-size:12px">${l.serviceable === true ? '<span style="color:#10b981">✅ '+(l.zone_name||'covered')+'</span>' : l.serviceable === false ? '<span style="color:#f59e0b">⏳ expanding</span>' : '–'}</td>
               <td style="font-size:11px;color:#aaa">${l.preferred_date ? new Date(l.preferred_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.preferred_slot ? '<br>'+l.preferred_slot : (l.preferred_date ? '' : '–')}</td>
               <td><span style="background:${INST_STATUS_COLORS[l.status] || '#888'}22;color:${INST_STATUS_COLORS[l.status] || '#888'};border:1px solid ${INST_STATUS_COLORS[l.status] || '#888'}44;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;text-transform:uppercase">${l.status}</span></td>
@@ -1743,6 +1915,10 @@ async function loadInstallations() {
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <button onclick="viewInstallTechnicians('${l.id}','${l.ref}','${l.pincode||''}','${l.zone_id||''}')" style="padding:4px 8px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">🔧 Find Techs</button>
                   ${(l.latitude && l.longitude) ? `<button onclick="nearestFromInstall('${l.latitude}','${l.longitude}','${l.id}','${l.ref}')" style="padding:4px 8px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:6px;color:#64b5f6;font-size:11px;cursor:pointer;white-space:nowrap">🧭 Nearest Techs</button>` : ''}
+                  <button onclick="customTech('${l.id}')" style="padding:4px 8px;background:#2a1f3a;border:1px solid #6a4a8c;border-radius:6px;color:#b98cf6;font-size:11px;cursor:pointer;white-space:nowrap">➕ Custom Tech</button>
+                  ${(l.assigned_tech_name && custWaUrl(l)) ? `<button onclick="notifyCustomer('${l.id}')" style="padding:4px 8px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;text-align:center;white-space:nowrap">📲 Notify Customer${(l.installation_charge != null && String(l.installation_charge).trim() !== '') ? ' · ₹' + String(l.installation_charge).trim() : ''}</button>` : ''}
+                  ${(l.assigned_tech_name && askStatusWaUrl(l)) ? `<a href="${askStatusWaUrl(l)}" target="_blank" style="padding:4px 8px;background:#2a2410;border:1px solid #f59e0b;border-radius:6px;color:#f59e0b;font-size:11px;font-weight:600;text-decoration:none;text-align:center;white-space:nowrap">✅ Ask Install Status</a>` : ''}
+                  <button onclick="sendReview('${l.id}')" style="padding:4px 8px;background:#2a2410;border:1px solid #ffd166;border-radius:6px;color:#ffd166;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">⭐ Send Review</button>
                   <select onchange="updateInstallation('${l.id}', this.value)" style="padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:11px">
                     <option value="">Update…</option>
                     <option value="contacted">📞 Contacted</option>
@@ -1800,7 +1976,7 @@ async function viewInstallTechnicians(id, ref, pincode, zoneId) {
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#e0e0e0">${t.name || 'Technician'}</span>${matchBadge(t.match)}${t.is_home ? '<span style="font-size:10px;color:#8b5cf6">🏠 home</span>' : ''}</div>
               <div style="font-size:11px;color:#888;margin-top:3px">⭐ ${t.rating ?? '–'} · ${t.jobs_completed || 0} jobs · zones: ${(t.zones||[]).join(', ')}</div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${phoneBtns(t.phone)}<button onclick="assignFromModal('tech', ${i})" style="padding:3px 10px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">✅ Assign</button></div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${phoneBtns(t.phone)}<button onclick="assignFromModal('tech', ${i})" style="padding:3px 10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">📲 WhatsApp</button></div>
           </div>`).join('')}
       </div>`}`;
 
@@ -1822,7 +1998,7 @@ async function viewInstallTechnicians(id, ref, pincode, zoneId) {
                 ${s.google_maps_link ? `<a href="${s.google_maps_link}" target="_blank" style="color:#64b5f6;text-decoration:none">🗺 Maps</a>` : ''}
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${phoneBtns(s.intl_phone || s.phone)}<button onclick="assignFromModal('partner', ${i})" style="padding:3px 10px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">✅ Assign</button></div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${phoneBtns(s.intl_phone || s.phone)}<button onclick="assignFromModal('partner', ${i})" style="padding:3px 10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">📲 WhatsApp</button></div>
           </div>`).join('')}
       </div>`}`;
 
