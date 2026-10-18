@@ -361,6 +361,7 @@
     <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-secondary" onclick="loadInstallations()">🔄 Refresh</button>
       <select id="inst-filter" onchange="loadInstallations()" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+        <option value="active" selected>Active (New · Contacted · Scheduled)</option>
         <option value="">All Statuses</option>
         <option value="new">New</option>
         <option value="contacted">Contacted</option>
@@ -368,6 +369,22 @@
         <option value="installed">Installed</option>
         <option value="cancelled">Cancelled</option>
       </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#8aa">🌐 WhatsApp language
+        <select id="wa-lang" onchange="setWaLang(this.value)" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+          <option value="en">English</option>
+          <option value="hi">Hindi · हिन्दी</option>
+          <option value="ta">Tamil · தமிழ்</option>
+          <option value="te">Telugu · తెలుగు</option>
+          <option value="kn">Kannada · ಕನ್ನಡ</option>
+          <option value="ml">Malayalam · മലയാളം</option>
+          <option value="bn">Bengali · বাংলা</option>
+          <option value="mr">Marathi · मराठी</option>
+          <option value="gu">Gujarati · ગુજરાતી</option>
+          <option value="pa">Punjabi · ਪੰਜਾਬੀ</option>
+          <option value="or">Odia · ଓଡ଼ିଆ</option>
+          <option value="ur">Urdu · اردو</option>
+        </select>
+      </label>
     </div>
     <div class="card">
       <div class="card-header"><span class="title" id="inst-count">Installation Requests</span></div>
@@ -1667,7 +1684,8 @@ function nearestFromInstall(lat, lng, installId, installRef) {
 async function assignInstall(installId, ref, payload) {
   try {
     const r = await fetch(`${API}/api/admin/installations/${installId}/assign`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, lang: getWaLang() })   // backend translates the dispatch message
     });
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
     const d = await r.json();
@@ -1749,16 +1767,51 @@ async function submitCustomTech(id) {
   if (d) { postAssign(d, waWin, name || 'Technician', l.ref); hideModal(); loadInstallations(); }
   else if (waWin) waWin.close();
 }
-// Build a pre-filled WhatsApp link to the CUSTOMER with the assigned technician's
-// details (used once a technician is scheduled). Returns '' if we can't message.
-function custWaUrl(l) {
-  let num = String(l.phone || '').replace(/\D/g, '');
+// ── WhatsApp message language (applies to all tech/customer messages here) ──
+function getWaLang() {
+  try { return window._waLang || localStorage.getItem('knite_wa_lang') || 'en'; }
+  catch (e) { return window._waLang || 'en'; }
+}
+function setWaLang(v) {
+  window._waLang = v || 'en';
+  try { localStorage.setItem('knite_wa_lang', window._waLang); } catch (e) {}
+  const label = document.getElementById('wa-lang')?.selectedOptions?.[0]?.text || v;
+  showToast('🌐 WhatsApp language set to ' + label);
+}
+// Translate a message into the chosen language via the backend (best-effort).
+async function translateMsg(text) {
+  const lang = getWaLang();
+  if (!lang || lang === 'en') return text;
+  try {
+    const r = await fetch(`${API}/api/admin/translate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, lang })
+    });
+    const d = await r.json().catch(() => ({}));
+    return (r.ok && d.text) ? d.text : text;
+  } catch (e) { return text; }
+}
+// Reserve a popup within the click, translate, then navigate it to wa.me.
+async function openWaTranslated(phone, message, waWin) {
+  let num = String(phone || '').replace(/\D/g, '');
   if (num.length === 10) num = '91' + num;
-  if (!num || !l.assigned_tech_name) return '';
+  const win = waWin || window.open('', '_blank');
+  const translated = await translateMsg(message);
+  const url = `https://wa.me/${num}?text=${encodeURIComponent(translated)}`;
+  if (win && !win.closed) win.location.href = url; else window.open(url, '_blank');
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('wa-lang');
+  if (el) el.value = getWaLang();
+});
+
+// ── Customer "installation scheduled" message (tech number + charges) ──
+function custWaNum(l) { let n = String(l.phone || '').replace(/\D/g, ''); if (n.length === 10) n = '91' + n; return n; }
+function custMsg(l) {
   const techPhone = (l.assigned_tech_phone || '').toString().trim();
   const charge = (l.installation_charge != null && String(l.installation_charge).trim() !== '')
     ? String(l.installation_charge).trim() : '';
-  const msg = [
+  return [
     `*Knite — Installation Scheduled (${l.ref})*`,
     '',
     `Hi ${l.name || 'there'}, your Knite water purifier installation has been scheduled. ✅`,
@@ -1769,17 +1822,29 @@ function custWaUrl(l) {
     '',
     `Feel free to call the technician directly to confirm the timing. — Team Knite`,
   ].filter(Boolean).join('\n');
-  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+}
+// Kept for the row's button-visibility check (English URL; actual send is translated).
+function custWaUrl(l) {
+  const num = custWaNum(l);
+  if (!num || !l.assigned_tech_name) return '';
+  return `https://wa.me/${num}?text=${encodeURIComponent(custMsg(l))}`;
 }
 
 // One-click WhatsApp to the CUSTOMER asking (simply) whether their RO is installed.
-// Returns '' if the customer has no phone number.
-function askStatusWaUrl(l) {
+function askStatusMsg(l) {
+  return `Hi ${l.name || 'Sir/Madam'}, is your Knite RO water purifier installed? Please reply *YES* or *NO*. — Team Knite`;
+}
+function askStatusWaUrl(l) {  // kept for button-visibility check
   let num = String(l.phone || '').replace(/\D/g, '');
   if (num.length === 10) num = '91' + num;
   if (!num) return '';
-  const msg = `Hi ${l.name || 'Sir/Madam'}, is your Knite RO water purifier installed? Please reply *YES* or *NO*. — Team Knite`;
-  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+  return `https://wa.me/${num}?text=${encodeURIComponent(askStatusMsg(l))}`;
+}
+async function askStatus(id) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (!l) { showToast('Could not find this installation — refresh'); return; }
+  const waWin = window.open('', '_blank');   // reserve popup within the click
+  await openWaTranslated(l.phone, askStatusMsg(l), waWin);
 }
 
 // Prompt for installation charges, persist to DB, then open WhatsApp to the customer
@@ -1802,7 +1867,7 @@ async function notifyCustomer(id) {
     });
   } catch (e) { /* still open WhatsApp even if the save hiccups */ }
   l.installation_charge = charge;
-  _openWa(waWin, custWaUrl(l));
+  await openWaTranslated(custWaNum(l), custMsg(l), waWin);
   showToast('💰 Charges ₹' + charge + ' saved — opening WhatsApp to notify customer');
   loadInstallations();                                         // reflect saved charge in the list
 }
@@ -1860,6 +1925,7 @@ function submitReview(id) {
   let num = String(l.phone || '').replace(/\D/g, '');
   if (num.length === 10) num = '91' + num;
   if (!num) { showToast('Customer has no phone number'); return; }
+  const waWin = window.open('', '_blank');   // reserve popup within the click
   const url = `https://www.amazon.in/review/create-review?asin=${asin}`;
   const msg = [
     `Hi ${l.name || 'there'}, I hope your Knite ${label} was installed successfully and it was a hassle-free experience for you. 😊`,
@@ -1869,10 +1935,81 @@ function submitReview(id) {
     '',
     `Your review will help us grow and give us the confidence to serve you better going forward. Thank you! 🙏 — Team Knite`,
   ].join('\n');
-  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
   hideModal();
+  openWaTranslated(l.phone, msg, waWin);
   showToast('⭐ Opening WhatsApp with the review request');
 }
+
+// Full address for the hover tooltip — address + city + pincode, de-duplicated
+// (the typed address often already contains the city/pincode).
+function fullAddr(l) {
+  const parts = [l.address, l.city, l.pincode].map(s => (s == null ? '' : String(s).trim())).filter(Boolean);
+  let out = parts[0] || '';
+  for (const p of parts.slice(1)) { if (!out.toLowerCase().includes(p.toLowerCase())) out += ', ' + p; }
+  return out || '–';
+}
+// Derive the state for an installation: prefer a state name present in the typed
+// address (accurate), else map from the pincode (first 3-digit overrides, else 2-digit).
+const _INDIA_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh','Puducherry','Chandigarh','Andaman & Nicobar','Daman & Diu','Lakshadweep'];
+function pinToState(pin) {
+  const p = String(pin || '').replace(/\D/g, '');
+  if (p.length !== 6) return '';
+  const o3 = {'160':'Chandigarh','194':'Ladakh','246':'Uttarakhand','247':'Uttarakhand','248':'Uttarakhand','249':'Uttarakhand','262':'Uttarakhand','263':'Uttarakhand','396':'Daman & Diu','403':'Goa','605':'Puducherry','737':'Sikkim','744':'Andaman & Nicobar','790':'Arunachal Pradesh','791':'Arunachal Pradesh','792':'Arunachal Pradesh','793':'Meghalaya','794':'Meghalaya','795':'Manipur','796':'Mizoram','797':'Nagaland','798':'Nagaland','799':'Tripura','811':'Bihar','812':'Bihar','813':'Bihar','814':'Jharkhand','826':'Jharkhand','831':'Jharkhand','834':'Jharkhand'};
+  if (o3[p.slice(0, 3)]) return o3[p.slice(0, 3)];
+  const m = {'11':'Delhi','12':'Haryana','13':'Haryana','14':'Punjab','15':'Punjab','16':'Punjab','17':'Himachal Pradesh','18':'Jammu & Kashmir','19':'Jammu & Kashmir','20':'Uttar Pradesh','21':'Uttar Pradesh','22':'Uttar Pradesh','23':'Uttar Pradesh','24':'Uttar Pradesh','25':'Uttar Pradesh','26':'Uttar Pradesh','27':'Uttar Pradesh','28':'Uttar Pradesh','30':'Rajasthan','31':'Rajasthan','32':'Rajasthan','33':'Rajasthan','34':'Rajasthan','36':'Gujarat','37':'Gujarat','38':'Gujarat','39':'Gujarat','40':'Maharashtra','41':'Maharashtra','42':'Maharashtra','43':'Maharashtra','44':'Maharashtra','45':'Madhya Pradesh','46':'Madhya Pradesh','47':'Madhya Pradesh','48':'Madhya Pradesh','49':'Chhattisgarh','50':'Telangana','51':'Andhra Pradesh','52':'Andhra Pradesh','53':'Andhra Pradesh','56':'Karnataka','57':'Karnataka','58':'Karnataka','59':'Karnataka','60':'Tamil Nadu','61':'Tamil Nadu','62':'Tamil Nadu','63':'Tamil Nadu','64':'Tamil Nadu','65':'Tamil Nadu','67':'Kerala','68':'Kerala','69':'Kerala','70':'West Bengal','71':'West Bengal','72':'West Bengal','73':'West Bengal','74':'West Bengal','75':'Odisha','76':'Odisha','77':'Odisha','78':'Assam','79':'Assam','80':'Bihar','81':'Jharkhand','82':'Jharkhand','83':'Jharkhand','84':'Bihar','85':'Bihar'};
+  return m[p.slice(0, 2)] || '';
+}
+function stateFor(l) {
+  const addr = String(l.address || '').toLowerCase();
+  for (const s of _INDIA_STATES) { if (addr.includes(s.toLowerCase())) return s; }
+  return pinToState(l.pincode);
+}
+
+// Copy the full address to the clipboard.
+async function copyAddr(id) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (!l) { showToast('Could not find this installation — refresh'); return; }
+  const text = fullAddr(l);
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    showToast('📋 Address copied');
+  } catch (e) { showToast('Copy failed: ' + e.message); }
+}
+// Floating tooltip that shows the complete address on hover (not clipped by the table).
+(function initAddrTip() {
+  function setup() {
+    if (document.getElementById('addrTip')) return;
+    const tip = document.createElement('div');
+    tip.id = 'addrTip';
+    tip.style.cssText = 'position:fixed;z-index:10000;max-width:360px;padding:8px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:8px;color:#e0e0e0;font-size:12px;line-height:1.5;box-shadow:0 8px 28px rgba(0,0,0,.55);white-space:pre-wrap;pointer-events:none;display:none';
+    document.body.appendChild(tip);
+    document.addEventListener('mouseover', e => {
+      const c = e.target.closest && e.target.closest('.addr-cell');
+      if (c && c.dataset.full) { tip.textContent = c.dataset.full; tip.style.display = 'block'; }
+    });
+    document.addEventListener('mousemove', e => {
+      if (tip.style.display !== 'block') return;
+      let x = e.clientX + 14, y = e.clientY + 16;
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      if (x + w > window.innerWidth - 8) x = e.clientX - w - 14;
+      if (y + h > window.innerHeight - 8) y = e.clientY - h - 16;
+      tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+    });
+    document.addEventListener('mouseout', e => {
+      const from = e.target.closest && e.target.closest('.addr-cell');
+      const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.addr-cell');
+      if (from && from !== to) tip.style.display = 'none';
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+})();
 
 async function loadInstallations() {
   const status = document.getElementById('inst-filter')?.value || '';
@@ -1888,7 +2025,7 @@ async function loadInstallations() {
     document.getElementById('installationsTable').innerHTML = `
       <table>
         <thead>
-          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Model</th><th>Serial No.</th><th>Bought</th><th>Address</th><th>Pincode</th><th>Location</th><th>Area</th><th>Preferred</th><th>Status</th><th>Assigned Tech</th><th>Action</th></tr>
+          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Model</th><th>Serial No.</th><th>Bought</th><th>Address</th><th>City / State</th><th>Pincode</th><th>Location</th><th>Area</th><th>Preferred</th><th>Status</th><th>Assigned Tech</th><th>Action</th></tr>
         </thead>
         <tbody>
           ${rows.map(l => `
@@ -1900,7 +2037,13 @@ async function loadInstallations() {
               <td style="font-size:12px">${l.product_name || '–'}</td>
               <td style="font-family:monospace;font-size:11px;color:#e0e0e0">${l.serial_no || '–'}</td>
               <td style="font-size:12px">${l.purchased_from || '–'}</td>
-              <td style="max-width:180px;font-size:12px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.address||'').replace(/"/g,'&quot;')}">${l.address || '–'}</td>
+              <td class="addr-cell" data-full="${_esc(fullAddr(l))}" title="${_esc(fullAddr(l))}" style="max-width:200px;font-size:12px;color:#ccc">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help;flex:1 1 auto;min-width:0">${l.address || '–'}</span>
+                  ${l.address ? `<button onclick="copyAddr('${l.id}')" title="Copy full address" style="flex:0 0 auto;padding:2px 6px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:5px;color:#64b5f6;font-size:11px;cursor:pointer;line-height:1.4">📋</button>` : ''}
+                </div>
+              </td>
+              <td style="font-size:12px;color:#ccc;white-space:nowrap">${l.city ? _esc(l.city) : '<span style="color:#4a6a8c">–</span>'}${stateFor(l) ? `<div style="font-size:11px;color:#888">${_esc(stateFor(l))}</div>` : ''}</td>
               <td style="font-size:12px">${l.pincode || '–'}</td>
               <td style="font-size:11px">${(l.latitude && l.longitude)
                 ? `<a href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank" style="color:#64b5f6" title="${l.geo_source === 'pincode' ? 'Approximate — pincode area centre' : l.geo_source === 'geocoded' ? 'Approximate — derived from typed address' : 'Precise — customer-dropped pin'}">📍 ${l.geo_source === 'pincode' ? 'Area~' : l.geo_source === 'geocoded' ? 'Approx~' : 'Pin'}</a>`
@@ -1917,7 +2060,7 @@ async function loadInstallations() {
                   ${(l.latitude && l.longitude) ? `<button onclick="nearestFromInstall('${l.latitude}','${l.longitude}','${l.id}','${l.ref}')" style="padding:4px 8px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:6px;color:#64b5f6;font-size:11px;cursor:pointer;white-space:nowrap">🧭 Nearest Techs</button>` : ''}
                   <button onclick="customTech('${l.id}')" style="padding:4px 8px;background:#2a1f3a;border:1px solid #6a4a8c;border-radius:6px;color:#b98cf6;font-size:11px;cursor:pointer;white-space:nowrap">➕ Custom Tech</button>
                   ${(l.assigned_tech_name && custWaUrl(l)) ? `<button onclick="notifyCustomer('${l.id}')" style="padding:4px 8px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;text-align:center;white-space:nowrap">📲 Notify Customer${(l.installation_charge != null && String(l.installation_charge).trim() !== '') ? ' · ₹' + String(l.installation_charge).trim() : ''}</button>` : ''}
-                  ${(l.assigned_tech_name && askStatusWaUrl(l)) ? `<a href="${askStatusWaUrl(l)}" target="_blank" style="padding:4px 8px;background:#2a2410;border:1px solid #f59e0b;border-radius:6px;color:#f59e0b;font-size:11px;font-weight:600;text-decoration:none;text-align:center;white-space:nowrap">✅ Ask Install Status</a>` : ''}
+                  ${(l.assigned_tech_name && askStatusWaUrl(l)) ? `<button onclick="askStatus('${l.id}')" style="padding:4px 8px;background:#2a2410;border:1px solid #f59e0b;border-radius:6px;color:#f59e0b;font-size:11px;font-weight:600;cursor:pointer;text-align:center;white-space:nowrap">✅ Ask Install Status</button>` : ''}
                   <button onclick="sendReview('${l.id}')" style="padding:4px 8px;background:#2a2410;border:1px solid #ffd166;border-radius:6px;color:#ffd166;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">⭐ Send Review</button>
                   <select onchange="updateInstallation('${l.id}', this.value)" style="padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:11px">
                     <option value="">Update…</option>

@@ -463,6 +463,7 @@ app.get  ('/api/admin/installations',      support.adminListInstallations);
 app.patch('/api/admin/installations/:id',  support.adminUpdateInstallation);
 app.get  ('/api/admin/installations/:id/technicians', support.getInstallationTechnicians);
 app.post ('/api/admin/installations/:id/geocode', support.geocodeInstallationRequest);
+app.post ('/api/admin/translate', support.translateMessage);
 app.post ('/api/admin/installations/:id/assign', support.assignInstallationTechnician);
 app.get  ('/api/admin/tickets',            support.adminListTickets);
 app.patch('/api/admin/tickets/:id',        support.adminUpdateTicket);

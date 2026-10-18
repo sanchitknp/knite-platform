@@ -457,6 +457,39 @@ async function sendTemplateMessage(toPhone, templateName, languageCode, bodyPara
   return { simulated: true };
 }
 
+/**
+ * Send an OTP via an approved AUTHENTICATION template. Unlike free-form text, this
+ * delivers even when the user has NOT messaged the business in the last 24h — which
+ * is exactly what login OTP needs. Auth templates require the code in BOTH the body
+ * and the copy-code button component.
+ * @param {string} toPhone       international digits, no +
+ * @param {string} code          the OTP code
+ * @param {string} templateName  approved AUTHENTICATION template name
+ * @param {string} languageCode  e.g. 'en_US'
+ * @param {{line?: 'tech'|'service', fromPhoneId?: string}} [opts]
+ * @returns {Promise<object|undefined>} Meta response — messages[0].id on success
+ */
+async function sendOtpTemplate(toPhone, code, templateName, languageCode = 'en_US', opts = {}) {
+  const fromPhoneId = resolveFromPhoneId(opts);
+  console.log(`[WA→${toPhone}] from=${fromPhoneId} OTP_TEMPLATE: ${templateName}`);
+  if (MODE === 'production') {
+    return await callMetaAPI({
+      to: toPhone,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: languageCode },
+        components: [
+          { type: 'body', parameters: [{ type: 'text', text: String(code) }] },
+          { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: String(code) }] },
+        ],
+      },
+    }, fromPhoneId);
+  }
+  await queueSimulator(toPhone, 'template', `[OTP ${templateName}] ${code}`);
+  return { simulated: true };
+}
+
 module.exports = {
   sendText,
   sendButtons,
@@ -466,6 +499,7 @@ module.exports = {
   sendLocationRequest,
   sendTemplate,
   sendTemplateMessage,
+  sendOtpTemplate,
   sendDocument,
   getPendingMessages,
   getAllRecentMessages,

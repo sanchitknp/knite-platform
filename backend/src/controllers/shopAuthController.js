@@ -5,6 +5,7 @@
 const crypto = require('crypto');
 const db = require('../db');
 const wa = require('../services/whatsappService');
+const sms = require('../services/smsService');
 
 const OTP_EXPIRY_MIN = 10;
 const SESSION_DAYS   = 90;
@@ -64,10 +65,44 @@ async function sendOtp(req, res) {
       `Your verification code is:\n*${otp}*\n\n` +
       `Valid for ${OTP_EXPIRY_MIN} minutes. Do not share this with anyone.\n\n` +
       `If you didn't request this, ignore this message.`;
-    // Send via the TECH line (real Indian business number +91 91960 68335)
-    // so users recognise the sender. The SERVICE line is the US test number.
-    await wa.sendText('91' + phone, msg, { line: 'tech' })
-      .catch(e => console.error('[SHOP-AUTH] WA send failed:', e.message));
+    // Send via the TECH line (real Indian business number) so users recognise the
+    // sender. OTP MUST go via an approved AUTHENTICATION template — free-form text
+    // only delivers inside a 24h customer-initiated window, so first-time / returning
+    // logins would silently never arrive. Fall back to text only if the template send
+    // fails (e.g. an already-open session).
+    let delivered = false;
+    let channel = null;
+
+    // 1) PRIMARY: SMS via MSG91 (most reliable for login in India).
+    if (sms.isConfigured()) {
+      try {
+        const r = await sms.sendOtpSms(phone, otp);
+        delivered = !!r.ok;
+        if (delivered) channel = 'sms';
+        else console.error('[SHOP-AUTH] SMS OTP failed:', r.error || JSON.stringify(r.raw));
+      } catch (e) {
+        console.error('[SHOP-AUTH] SMS OTP error:', e.message);
+      }
+    }
+
+    // 2) FALLBACK: WhatsApp authentication template, then free-form text.
+    if (!delivered) {
+      const OTP_TEMPLATE = process.env.WA_OTP_TEMPLATE || 'knite_login_otp';
+      try {
+        const resp = await wa.sendOtpTemplate('91' + phone, otp, OTP_TEMPLATE, 'en_US', { line: 'tech' });
+        delivered = !!(resp && (resp.simulated || resp.messages?.[0]?.id));
+        if (delivered) channel = 'whatsapp-template';
+        else console.error('[SHOP-AUTH] OTP template not accepted:', JSON.stringify(resp?.error || resp));
+      } catch (e) {
+        console.error('[SHOP-AUTH] OTP template send error:', e.message);
+      }
+    }
+    if (!delivered) {
+      await wa.sendText('91' + phone, msg, { line: 'tech' })
+        .then(() => { channel = 'whatsapp-text'; })
+        .catch(e => console.error('[SHOP-AUTH] WA text fallback failed:', e.message));
+    }
+    console.log(`[SHOP-AUTH] OTP channel=${channel || 'none'} for ${phone}`);
 
     console.log(`[SHOP-AUTH] OTP sent to ${phone} (dev=${process.env.NODE_ENV === 'development' ? otp : '***'})`);
     res.json({ ok: true, message: 'OTP sent to your WhatsApp', expires_in: OTP_EXPIRY_MIN * 60 });

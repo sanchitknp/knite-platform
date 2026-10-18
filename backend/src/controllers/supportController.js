@@ -11,6 +11,7 @@ const db = require('../db');
 const zoneService = require('../services/zoneService');
 const wa = require('../services/whatsappService');
 const geocoder = require('../services/geocoder');
+const translator = require('../services/translateService');
 
 // ── helpers ─────────────────────────────────────────────────
 const clean = (v) => (typeof v === 'string' ? v.trim() : v) || null;
@@ -167,8 +168,15 @@ async function createTicket(req, res) {
 // ── ADMIN ───────────────────────────────────────────────────
 async function adminListInstallations(req, res) {
   const { status, limit = 200 } = req.query;
-  const where = status ? `WHERE i.status = $1` : '';
-  const params = status ? [status] : [];
+  // 'active' = the default view: everything except completed/cancelled.
+  let where = '';
+  const params = [];
+  if (status === 'active') {
+    where = `WHERE i.status IN ('new','contacted','scheduled')`;
+  } else if (status) {
+    where = `WHERE i.status = $1`;
+    params.push(status);
+  }
   const r = await db.query(
     `SELECT i.*, z.name AS zone_name,
             a.tech_name  AS assigned_tech_name,
@@ -257,7 +265,7 @@ async function assignInstallationTechnician(req, res) {
   const addr = I.address
     ? `${I.address}${I.city ? ', ' + I.city : ''}${I.pincode ? ' - ' + I.pincode : ''}`
     : (I.pincode ? I.pincode : '');
-  const message = [
+  let message = [
     `*Knite — New Installation Request ${I.ref}*`,
     '',
     `Customer: ${I.name}`,
@@ -271,12 +279,23 @@ async function assignInstallationTechnician(req, res) {
     '',
     `Please confirm if you can take this installation. — Team Knite`,
   ].filter(Boolean).join('\n');
+  // Optionally translate the whole message into the admin-chosen language (best-effort).
+  message = await translator.translate(message, clean(b.lang));
   // The admin sends the details manually via WhatsApp (reliable, no first-contact
   // throttle): we always return a wa.me link pre-filled with the customer's details.
   const whatsapp_url = waNum ? `https://wa.me/${waNum}?text=${encodeURIComponent(message)}` : null;
 
   console.log(`[SUPPORT ASSIGN] ${I.ref} -> ${techName} (${clean(b.tech_phone) || '–'}) by ${req.adminUser?.username || 'admin'}`);
   res.json({ ok: true, assignment: r.rows[0], whatsapp_url });
+}
+
+// Admin: translate a WhatsApp message body into a chosen language (best-effort).
+async function translateMessage(req, res) {
+  const text = (req.body && req.body.text) || '';
+  const lang = (req.body && req.body.lang) || '';
+  if (!text) return res.status(400).json({ error: 'text required' });
+  const translated = await translator.translate(text, lang);
+  res.json({ ok: true, text: translated, lang });
 }
 
 async function adminUpdateInstallation(req, res) {
@@ -425,6 +444,7 @@ module.exports = {
   createTicket,
   adminListInstallations,
   adminUpdateInstallation,
+  translateMessage,
   geocodeInstallationRequest,
   assignInstallationTechnician,
   getInstallationTechnicians,
