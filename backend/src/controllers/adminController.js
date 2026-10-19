@@ -500,7 +500,15 @@ async function findNearestLeads(req, res) {
                                                 'author', c.author, 'created_at', c.created_at)
                               ORDER BY c.created_at)
                 FROM ro_service_lead_comments c WHERE c.place_id = l.place_id
-            ), '[]'::json) AS comments
+            ), '[]'::json) AS comments,
+            COALESCE((
+              SELECT count(*) FROM installation_assignments aa WHERE aa.place_id = l.place_id
+            ), 0) AS install_count,
+            COALESCE((
+              SELECT count(*) FROM installation_assignments aa
+                JOIN installation_requests ir ON ir.id = aa.installation_id
+               WHERE aa.place_id = l.place_id AND ir.status = 'installed'
+            ), 0) AS completed_count
        FROM ro_service_leads l
       WHERE l.latitude IS NOT NULL AND l.longitude IS NOT NULL
       ORDER BY distance_km ASC

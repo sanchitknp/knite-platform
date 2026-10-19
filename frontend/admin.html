@@ -1132,7 +1132,7 @@ async function findNearestTechs() {
     if (!rows.length) { box.innerHTML = '<div class="loading">No leads with coordinates found.</div>'; return; }
     box.innerHTML = `${window._assignTarget ? `<div style="background:#1a3a2a;border:1px solid #2a5a3a;border-radius:8px;padding:8px 12px;margin-bottom:10px;color:#4caf50;font-size:13px">📌 Assigning a technician for <b>${window._assignTarget.ref}</b> — tap <b>📲 WhatsApp</b> on the one who confirms to send the customer details. <a href="javascript:void(0)" onclick="clearAssignTarget()" style="color:#f59e0b;margin-left:8px">cancel</a></div>` : ''}
       <table>
-        <thead><tr><th class="nt-hide-mobile">#</th><th>Distance</th><th>Business</th><th>Phone</th><th class="nt-hide-mobile">Address</th><th class="nt-hide-mobile">City</th><th class="nt-hide-mobile">Pincode</th><th>Rating</th><th class="nt-hide-mobile">Category</th><th class="nt-hide-mobile">Map</th><th class="nt-info">Info</th><th>Comments</th></tr></thead>
+        <thead><tr><th class="nt-hide-mobile">#</th><th>Distance</th><th>Business</th><th>Phone</th><th class="nt-hide-mobile">Address</th><th class="nt-hide-mobile">City</th><th class="nt-hide-mobile">Pincode</th><th>Rating</th><th>Installs</th><th class="nt-hide-mobile">Category</th><th class="nt-hide-mobile">Map</th><th class="nt-info">Info</th><th>Comments</th></tr></thead>
         <tbody>${rows.map((t, i) => `
           <tr>
             <td class="nt-hide-mobile">${i + 1}</td>
@@ -1143,6 +1143,7 @@ async function findNearestTechs() {
             <td class="nt-hide-mobile">${t.city || '–'}</td>
             <td class="nt-hide-mobile">${t.pincode || '–'}</td>
             <td>${t.rating ? (t.rating + ' ★ (' + (t.total_ratings || 0) + ')') : '–'}</td>
+            <td style="white-space:nowrap">${(t.install_count || 0) > 0 ? `<span title="Knite installations assigned to this technician${(t.completed_count||0)>0 ? ' · '+t.completed_count+' marked installed' : ''}" style="color:#4caf50;font-weight:600">🔧 ${t.install_count}</span>${(t.completed_count||0) > 0 ? `<span style="color:#888;font-size:11px"> (${t.completed_count}✓)</span>` : ''}` : '<span style="color:#4a6a8c">0</span>'}</td>
             <td class="nt-hide-mobile">${t.primary_category || '–'}</td>
             <td class="nt-hide-mobile">${t.google_maps_link ? `<a href="${t.google_maps_link}" target="_blank" style="color:#64b5f6;text-decoration:none">🗺 Map</a>` : '–'}</td>
             <td class="nt-info"><button class="btn btn-secondary" style="padding:4px 8px" onclick="toggleInfo(${i})">ℹ️ Info</button></td>
