@@ -299,7 +299,7 @@ async function translateMessage(req, res) {
 }
 
 async function adminUpdateInstallation(req, res) {
-  const { status, admin_notes, installation_charge } = req.body;
+  const { status, admin_notes, installation_charge, product_slug, product_name } = req.body;
   const charge = (installation_charge === undefined || installation_charge === null || installation_charge === '')
     ? null
     : String(installation_charge).replace(/[^0-9.]/g, '') || null;
@@ -308,11 +308,26 @@ async function adminUpdateInstallation(req, res) {
         SET status = COALESCE($1, status),
             admin_notes = COALESCE($2, admin_notes),
             installation_charge = COALESCE($3, installation_charge),
+            product_slug = COALESCE($4, product_slug),
+            product_name = COALESCE($5, product_name),
             updated_at = now()
-      WHERE id = $4`,
-    [status || null, admin_notes || null, charge, req.params.id]
+      WHERE id = $6`,
+    [status || null, admin_notes || null, charge, clean(product_slug), clean(product_name), req.params.id]
   );
   res.json({ ok: true });
+}
+
+// Admin: record that a WhatsApp communication was sent (state tracking per installation).
+async function logCommunication(req, res) {
+  const type = (req.body && req.body.type) || '';
+  const col = { notify: 'notified_at', ask_status: 'status_asked_at', review: 'review_sent_at' }[type];
+  if (!col) return res.status(400).json({ error: 'invalid communication type' });
+  await db.query(
+    `UPDATE installation_requests SET ${col} = now(), updated_at = now() WHERE id = $1`,
+    [req.params.id]
+  );
+  console.log(`[SUPPORT COMM] ${req.params.id} ${type} by ${req.adminUser?.username || 'admin'}`);
+  res.json({ ok: true, type, at: new Date().toISOString() });
 }
 
 // Admin: on-demand geocode an installation's typed address → store approx coords.
@@ -445,6 +460,7 @@ module.exports = {
   adminListInstallations,
   adminUpdateInstallation,
   translateMessage,
+  logCommunication,
   geocodeInstallationRequest,
   assignInstallationTechnician,
   getInstallationTechnicians,

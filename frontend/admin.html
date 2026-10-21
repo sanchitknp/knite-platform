@@ -237,6 +237,8 @@
     <div class="nav-item" onclick="showSection('zones')"><span class="icon">🗺️</span> Zones</div>
     <div class="nav-item" onclick="showSection('website-leads')"><span class="icon">🌐</span> Website Leads</div>
     <div class="nav-item" onclick="showSection('installations')"><span class="icon">🧰</span> Installations</div>
+    <div class="nav-item" onclick="showSection('communications')"><span class="icon">💬</span> Communications</div>
+    <div class="nav-item" onclick="showSection('safety-claims')"><span class="icon">🛡️</span> Safety Claims</div>
     <div class="nav-item" onclick="showSection('tickets')"><span class="icon">🎫</span> Support Tickets</div>
     <div class="nav-item" onclick="showSection('coverage')"><span class="icon">🗺️</span> Coverage Map</div>
     <div class="nav-item" onclick="showSection('shop-products')"><span class="icon">📦</span> Shop Products</div>
@@ -369,26 +371,64 @@
         <option value="installed">Installed</option>
         <option value="cancelled">Cancelled</option>
       </select>
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#8aa">🌐 WhatsApp language
-        <select id="wa-lang" onchange="setWaLang(this.value)" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
-          <option value="en">English</option>
-          <option value="hi">Hindi · हिन्दी</option>
-          <option value="ta">Tamil · தமிழ்</option>
-          <option value="te">Telugu · తెలుగు</option>
-          <option value="kn">Kannada · ಕನ್ನಡ</option>
-          <option value="ml">Malayalam · മലയാളം</option>
-          <option value="bn">Bengali · বাংলা</option>
-          <option value="mr">Marathi · मराठी</option>
-          <option value="gu">Gujarati · ગુજરાતી</option>
-          <option value="pa">Punjabi · ਪੰਜਾਬੀ</option>
-          <option value="or">Odia · ଓଡ଼ିଆ</option>
-          <option value="ur">Urdu · اردو</option>
-        </select>
-      </label>
     </div>
     <div class="card">
       <div class="card-header"><span class="title" id="inst-count">Installation Requests</span></div>
       <div class="card-body" id="installationsTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- COMMUNICATIONS -->
+  <div class="section" id="section-communications">
+    <div class="page-title">Communications</div>
+    <div class="page-subtitle">WhatsApp messages to customers &amp; technicians — with sent/pending status</div>
+    <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="loadCommunications()">🔄 Refresh</button>
+      <select id="comm-filter" onchange="renderCommTable()" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+        <option value="active" selected>Active (New · Contacted · Scheduled)</option>
+        <option value="">All</option>
+        <option value="pending">Pending comms only</option>
+        <option value="assigned">Assigned only</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title" id="comm-count">Communications</span></div>
+      <div class="card-body" id="commTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SAFETY CLAIMS -->
+  <div class="section" id="section-safety-claims">
+    <div class="page-title">Amazon Safety Claims</div>
+    <div class="page-subtitle">Stash return photos + order ID now; download the ZIP and file on Amazon once the refund is initiated</div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><span class="title">➕ Add evidence</span></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:560px">
+          <label style="font-size:12px;color:#aaa">Amazon Order ID
+            <input id="sc-order" type="text" placeholder="403-1234567-1234567" autocomplete="off" style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px;font-family:monospace">
+          </label>
+          <label style="font-size:12px;color:#aaa">Return photos (select multiple)
+            <input id="sc-files" type="file" accept="image/*" multiple style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+          </label>
+          <label style="font-size:12px;color:#aaa">Notes (optional)
+            <input id="sc-notes" type="text" placeholder="reason / SKU / condition" autocomplete="off" style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
+          </label>
+          <button id="sc-save-btn" onclick="uploadSafetyImages()" style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">⬆ Save evidence</button>
+        </div>
+      </div>
+    </div>
+    <div class="refresh-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="loadSafetyClaims()">🔄 Refresh</button>
+      <select id="sc-filter" onchange="loadSafetyClaims()" style="padding:6px 12px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:13px">
+        <option value="pending" selected>Pending (not filed)</option>
+        <option value="filed">Filed</option>
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="title" id="sc-count">Safety Claims</span></div>
+      <div class="card-body" id="safetyClaimsTable"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
@@ -635,6 +675,8 @@ function showSection(name) {
     users: loadUsers,
     'website-leads': loadWebsiteLeads,
     installations: loadInstallations,
+    communications: loadCommunications,
+    'safety-claims': loadSafetyClaims,
     tickets: loadTickets,
     coverage: loadCoverage,
     'shop-products': loadShopProducts,
@@ -1703,31 +1745,36 @@ function postAssign(d, waWin, techName, ref) {
   _openWa(waWin, d.whatsapp_url);
 }
 function clearAssignTarget() { window._assignTarget = null; findNearestTechs(); }
-async function assignNearest(i) {
+function assignNearest(i) {
   if (!window._assignTarget) return;
-  const waWin = window.open('', '_blank');   // reserve the popup inside the click gesture
   const t = window._nearest[i];
-  const d = await assignInstall(window._assignTarget.id, window._assignTarget.ref, {
-    tech_name: t.business_name, tech_phone: t.intl_phone || t.phone || '',
-    tech_address: t.full_address || '', tech_city: t.city || '', place_id: t.place_id || '', source: 'nearest'
+  const target = window._assignTarget;
+  pickLang('📲 Assign ' + (t.business_name || 'technician'), '📲 Assign & send on WhatsApp', async () => {
+    const waWin = window.open('', '_blank');   // reserve inside the confirm gesture
+    const d = await assignInstall(target.id, target.ref, {
+      tech_name: t.business_name, tech_phone: t.intl_phone || t.phone || '',
+      tech_address: t.full_address || '', tech_city: t.city || '', place_id: t.place_id || '', source: 'nearest'
+    });
+    if (d) { postAssign(d, waWin, t.business_name, target.ref); window._assignTarget = null; showSection('installations'); }
+    else if (waWin) waWin.close();
   });
-  if (d) { postAssign(d, waWin, t.business_name, window._assignTarget.ref); window._assignTarget = null; showSection('installations'); }
-  else if (waWin) waWin.close();
 }
-async function assignFromModal(kind, idx) {
+function assignFromModal(kind, idx) {
   const ctx = window._ftCtx; if (!ctx) return;
-  const waWin = window.open('', '_blank');
   let payload;
   if (kind === 'tech') {
-    const t = (window._ftTechs || [])[idx]; if (!t) { if (waWin) waWin.close(); return; }
+    const t = (window._ftTechs || [])[idx]; if (!t) return;
     payload = { tech_name: t.name || 'Technician', tech_phone: t.phone || '', source: 'registered' };
   } else {
-    const s = (window._ftPartners || [])[idx]; if (!s) { if (waWin) waWin.close(); return; }
+    const s = (window._ftPartners || [])[idx]; if (!s) return;
     payload = { tech_name: s.business_name, tech_phone: s.intl_phone || s.phone || '', tech_address: s.full_address || '', tech_city: s.city || '', place_id: s.place_id || '', source: 'find-techs' };
   }
-  const d = await assignInstall(ctx.id, ctx.ref, payload);
-  if (d) { postAssign(d, waWin, payload.tech_name, ctx.ref); hideModal(); loadInstallations(); }
-  else if (waWin) waWin.close();
+  pickLang('📲 Assign ' + payload.tech_name, '📲 Assign & send on WhatsApp', async () => {
+    const waWin = window.open('', '_blank');
+    const d = await assignInstall(ctx.id, ctx.ref, payload);
+    if (d) { postAssign(d, waWin, payload.tech_name, ctx.ref); hideModal(); loadInstallations(); }
+    else if (waWin) waWin.close();
+  });
 }
 
 // Manually assign a technician by typing their name + mobile number (not from the
@@ -1747,6 +1794,7 @@ function customTech(id) {
         <input id="ct-phone" type="tel" inputmode="numeric" placeholder="10-digit mobile (or with +91)" autocomplete="off"
           style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
       </label>
+      <label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('ct-lang')}</label>
       <button onclick="submitCustomTech('${l.id}')"
         style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">📲 Assign & send customer details on WhatsApp</button>
     </div>`);
@@ -1759,6 +1807,7 @@ async function submitCustomTech(id) {
   const phoneRaw = (document.getElementById('ct-phone')?.value || '').trim();
   const digits = phoneRaw.replace(/\D/g, '');
   if (!digits || digits.length < 10) { showToast('Enter a valid mobile number'); return; }
+  window._waLang = document.getElementById('ct-lang')?.value || 'en';
   const waWin = window.open('', '_blank');   // reserve popup within the click gesture
   const d = await assignInstall(l.id, l.ref, {
     tech_name: name || 'Technician',
@@ -1768,16 +1817,33 @@ async function submitCustomTech(id) {
   if (d) { postAssign(d, waWin, name || 'Technician', l.ref); hideModal(); loadInstallations(); }
   else if (waWin) waWin.close();
 }
-// ── WhatsApp message language (applies to all tech/customer messages here) ──
-function getWaLang() {
-  try { return window._waLang || localStorage.getItem('knite_wa_lang') || 'en'; }
-  catch (e) { return window._waLang || 'en'; }
+// ── WhatsApp message language (asked per send; default English) ──
+const WA_LANGS = [
+  { code:'en', label:'English' }, { code:'hi', label:'Hindi · हिन्दी' },
+  { code:'ta', label:'Tamil · தமிழ்' }, { code:'te', label:'Telugu · తెలుగు' },
+  { code:'kn', label:'Kannada · ಕನ್ನಡ' }, { code:'ml', label:'Malayalam · മലയാളം' },
+  { code:'bn', label:'Bengali · বাংলা' }, { code:'mr', label:'Marathi · मराठी' },
+  { code:'gu', label:'Gujarati · ગુજરાતી' }, { code:'pa', label:'Punjabi · ਪੰਜਾਬੀ' },
+  { code:'or', label:'Odia · ଓଡ଼ିଆ' }, { code:'ur', label:'Urdu · اردو' },
+];
+// Current send language — set transiently by each action's language picker.
+function getWaLang() { return window._waLang || 'en'; }
+// A language <select> (English default), for embedding in an action's modal.
+function langSelectHtml(id) {
+  return `<select id="${id}" style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">`
+    + WA_LANGS.map(l => `<option value="${l.code}">${l.label}</option>`).join('') + `</select>`;
 }
-function setWaLang(v) {
-  window._waLang = v || 'en';
-  try { localStorage.setItem('knite_wa_lang', window._waLang); } catch (e) {}
-  const label = document.getElementById('wa-lang')?.selectedOptions?.[0]?.text || v;
-  showToast('🌐 WhatsApp language set to ' + label);
+// Standalone language-picker modal → runs onPick(lang) inside the confirm click gesture.
+function pickLang(title, confirmLabel, onPick) {
+  showModal(title, `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:12px;color:#aaa">🌐 Send message in
+        ${langSelectHtml('pl-lang')}
+      </label>
+      <button id="pl-go" style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">${confirmLabel}</button>
+    </div>`);
+  const go = document.getElementById('pl-go');
+  if (go) go.onclick = () => { window._waLang = document.getElementById('pl-lang')?.value || 'en'; hideModal(); onPick(window._waLang); };
 }
 // Translate a message into the chosen language via the backend (best-effort).
 async function translateMsg(text) {
@@ -1801,11 +1867,18 @@ async function openWaTranslated(phone, message, waWin) {
   const url = `https://wa.me/${num}?text=${encodeURIComponent(translated)}`;
   if (win && !win.closed) win.location.href = url; else window.open(url, '_blank');
 }
-window.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('wa-lang');
-  if (el) el.value = getWaLang();
-});
-
+// Record a WhatsApp communication as sent (updates the installation's comm timestamps
+// and refreshes the Communications view so it shows ✓ Sent).
+async function logComm(id, type) {
+  try {
+    await fetch(`${API}/api/admin/installations/${id}/log-comm`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type })
+    });
+  } catch (e) { /* non-blocking */ }
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (l) { const col = { notify: 'notified_at', ask_status: 'status_asked_at', review: 'review_sent_at' }[type]; if (col) l[col] = new Date().toISOString(); }
+  if (document.getElementById('section-communications')?.classList.contains('active')) renderCommTable();
+}
 // ── Customer "installation scheduled" message (tech number + charges) ──
 function custWaNum(l) { let n = String(l.phone || '').replace(/\D/g, ''); if (n.length === 10) n = '91' + n; return n; }
 function custMsg(l) {
@@ -1841,36 +1914,52 @@ function askStatusWaUrl(l) {  // kept for button-visibility check
   if (!num) return '';
   return `https://wa.me/${num}?text=${encodeURIComponent(askStatusMsg(l))}`;
 }
-async function askStatus(id) {
+function askStatus(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
-  const waWin = window.open('', '_blank');   // reserve popup within the click
-  await openWaTranslated(l.phone, askStatusMsg(l), waWin);
+  pickLang('✅ Ask Install Status · ' + l.ref, '✅ Send on WhatsApp', () => {
+    const waWin = window.open('', '_blank');   // reserve popup within the confirm click
+    openWaTranslated(l.phone, askStatusMsg(l), waWin);
+    logComm(l.id, 'ask_status');
+  });
 }
 
-// Prompt for installation charges, persist to DB, then open WhatsApp to the customer
-// with the technician number + charges pre-filled.
-async function notifyCustomer(id) {
+// Modal: enter installation charges + pick language, then WhatsApp the customer
+// (technician number + charges), persisting the charge to the DB.
+function notifyCustomer(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
   if (!l.assigned_tech_name) { showToast('Assign a technician first'); return; }
   const existing = (l.installation_charge != null && String(l.installation_charge).trim() !== '')
     ? String(l.installation_charge).trim() : '';
-  const input = prompt('Installation charges (₹) for ' + l.ref + ':', existing);
-  if (input === null) return;                                  // cancelled
-  const charge = String(input).trim().replace(/[^0-9.]/g, '');
-  if (!charge) { showToast('Enter a valid amount'); return; }
-  const waWin = window.open('', '_blank');                     // reserve popup within the click
-  try {
-    await fetch(`${API}/api/admin/installations/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ installation_charge: charge })
-    });
-  } catch (e) { /* still open WhatsApp even if the save hiccups */ }
-  l.installation_charge = charge;
-  await openWaTranslated(custWaNum(l), custMsg(l), waWin);
-  showToast('💰 Charges ₹' + charge + ' saved — opening WhatsApp to notify customer');
-  loadInstallations();                                         // reflect saved charge in the list
+  showModal('📲 Notify Customer · ' + l.ref, `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:12px;color:#aaa">Installation charges (₹)
+        <input id="nc-charge" type="text" inputmode="decimal" value="${existing}" placeholder="e.g. 1499"
+          style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
+      </label>
+      <label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('nc-lang')}</label>
+      <button id="nc-go" style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">📲 Save & send on WhatsApp</button>
+    </div>`);
+  setTimeout(() => document.getElementById('nc-charge')?.focus(), 60);
+  const go = document.getElementById('nc-go');
+  if (go) go.onclick = async () => {
+    const charge = String(document.getElementById('nc-charge')?.value || '').trim().replace(/[^0-9.]/g, '');
+    if (!charge) { showToast('Enter a valid amount'); return; }
+    window._waLang = document.getElementById('nc-lang')?.value || 'en';
+    const waWin = window.open('', '_blank');                    // reserve within the gesture
+    try {
+      await fetch(`${API}/api/admin/installations/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ installation_charge: charge })
+      });
+    } catch (e) { /* still open WhatsApp even if the save hiccups */ }
+    l.installation_charge = charge;
+    hideModal();
+    await openWaTranslated(custWaNum(l), custMsg(l), waWin);
+    logComm(id, 'notify');
+    showToast('💰 Charges ₹' + charge + ' saved — WhatsApp opened to notify customer');
+  };
 }
 
 // On-demand: derive approximate coordinates from an installation's typed address
@@ -1886,33 +1975,35 @@ async function geocodeInstall(id) {
   } catch (e) { showToast('Locate failed: ' + e.message); }
 }
 
-// Knite's live Amazon.in listings (product → ASIN), from the Category Listings Report.
-// Used to build the "Send Review" dropdown + the Amazon review link.
-const KNITE_PRODUCTS = [
-  { label: 'Core 7-Stage (11L)',            asin: 'B0HBKVG455' },
-  { label: 'Edge 10-Stage — Titanium Grey', asin: 'B0HBKZN3GM' },
-  { label: 'Edge 10-Stage — Silver',        asin: 'B0HBKS56MD' },
-  { label: 'Prime 10-Stage — Black',        asin: 'B0HBKL9SYF' },
-  { label: 'Prime 10-Stage — White',        asin: 'B0HBKVZVVS' },
-  { label: 'Shield 10-Stage — Copper',      asin: 'B0HBKL9119' },
-  { label: 'Shield 10-Stage — Silver',      asin: 'B0HBL5VBJ1' },
-  { label: 'Flux 7-Stage — White (10L)',    asin: 'B0H6NSN3PB' },
-  { label: 'Flux 7-Stage — Black',          asin: 'B0H6SNBZTS' },
-  { label: 'Aqua Flux 11-Stage — White',    asin: 'B0HJSQDWXS' },
-];
+// Website product slug → Amazon.in ASIN (from the Category Listings Report 2026-10-03).
+// Drives the "Send Review" Amazon link, keyed by the product on the installation.
+const KNITE_ASIN = {
+  'knite-aqua-flux':    'B0HJSQDWXS',  // Aqua Flux 11-Stage (KNITE-FLUX-LITE-WHITE)
+  'knite-core':         'B0HBKVG455',
+  'knite-flux':         'B0H6SNBZTS',  // Flux 7-Stage Black
+  'knite-flux-white':   'B0H6NSN3PB',  // Flux 7-Stage White
+  'knite-prime-white':  'B0HBKVZVVS',
+  'knite-prime-black':  'B0HBKL9SYF',
+  'knite-shield-copper':'B0HBKL9119',
+  'knite-shield-silver':'B0HBL5VBJ1',
+  'knite-edge-black':   'B0HBKZN3GM',  // Edge Titanium Grey/Black
+  'knite-edge-silver':  'B0HBKS56MD',
+};
 
-// Ask the admin which product the customer bought, then open WhatsApp with a short
-// review request + the Amazon review link for that product.
+// Confirm the product (defaults to the one on the installation) + language, then
+// WhatsApp the customer a short review request with that product's Amazon link.
 function sendReview(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
-  const opts = KNITE_PRODUCTS.map(p => `<option value="${p.asin}">${_esc(p.label)}</option>`).join('');
+  const cat = window._catalog || [];
+  const opts = cat.map(p => `<option value="${p.slug}"${l.product_slug === p.slug ? ' selected' : ''}>${_esc(p.name)}</option>`).join('');
   showModal('⭐ Send Review Request · ' + l.ref, `
     <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="font-size:12px;color:#8aa">Select the product the customer purchased. We'll open WhatsApp with a short review request and the Amazon link.</div>
-      <label style="font-size:12px;color:#aaa">Product purchased
+      <div style="font-size:12px;color:#8aa">${l.product_name ? 'Customer\'s product: <b>' + _esc(l.product_name) + '</b>. ' : ''}Confirm the product, then we'll open WhatsApp with the Amazon review link.</div>
+      <label style="font-size:12px;color:#aaa">Product
         <select id="rev-product" style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">${opts}</select>
       </label>
+      <label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('rev-lang')}</label>
       <button onclick="submitReview('${l.id}')" style="padding:10px;background:#2a2410;border:1px solid #ffd166;border-radius:6px;color:#ffd166;font-size:14px;font-weight:600;cursor:pointer">⭐ Send review request on WhatsApp</button>
     </div>`);
 }
@@ -1920,16 +2011,19 @@ function submitReview(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
   const sel = document.getElementById('rev-product');
-  const asin = sel && sel.value;
-  const label = (sel && sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].text) || 'Knite RO';
-  if (!asin) { showToast('Please select a product'); return; }
+  const slug = sel && sel.value;
+  const label = (sel && sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].text) || 'Knite RO purifier';
+  if (!slug) { showToast('Please select a product'); return; }
+  const asin = KNITE_ASIN[slug];
+  if (!asin) { showToast('No Amazon ASIN mapped for this product'); return; }
   let num = String(l.phone || '').replace(/\D/g, '');
   if (num.length === 10) num = '91' + num;
   if (!num) { showToast('Customer has no phone number'); return; }
+  window._waLang = document.getElementById('rev-lang')?.value || 'en';
   const waWin = window.open('', '_blank');   // reserve popup within the click
   const url = `https://www.amazon.in/review/create-review?asin=${asin}`;
   const msg = [
-    `Hi ${l.name || 'there'}, I hope your Knite ${label} was installed successfully and it was a hassle-free experience for you. 😊`,
+    `Hi ${l.name || 'there'}, I hope your ${label} was installed successfully and it was a hassle-free experience for you. 😊`,
     '',
     `If you liked the product, we would sincerely request you to share your genuine feedback on Amazon:`,
     `👉 ${url}`,
@@ -1938,6 +2032,7 @@ function submitReview(id) {
   ].join('\n');
   hideModal();
   openWaTranslated(l.phone, msg, waWin);
+  logComm(id, 'review');
   showToast('⭐ Opening WhatsApp with the review request');
 }
 
@@ -2018,6 +2113,15 @@ async function loadInstallations() {
   try {
     const rows = await fetch(url).then(r => r.json());
     window._installRows = rows;
+    if (!window._catalog) {
+      try { window._catalog = await fetch(`${API}/api/shop/products`).then(r => r.json()); }
+      catch (e) { window._catalog = []; }
+      if (!Array.isArray(window._catalog)) window._catalog = [];
+      // Aqua Flux is an Amazon-only SKU not in the website catalogue — add it at the top.
+      if (!window._catalog.some(p => p.slug === 'knite-aqua-flux')) {
+        window._catalog.unshift({ slug: 'knite-aqua-flux', name: 'Knite Aqua Flux' });
+      }
+    }
     document.getElementById('inst-count').textContent = `Installation Requests (${rows.length})`;
     if (!rows.length) {
       document.getElementById('installationsTable').innerHTML = `<div class="loading" style="color:#4a6a8c">No installation requests yet</div>`;
@@ -2026,7 +2130,7 @@ async function loadInstallations() {
     document.getElementById('installationsTable').innerHTML = `
       <table>
         <thead>
-          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Model</th><th>Serial No.</th><th>Bought</th><th>Address</th><th>City / State</th><th>Pincode</th><th>Location</th><th>Area</th><th>Preferred</th><th>Status</th><th>Assigned Tech</th><th>Action</th></tr>
+          <tr><th>Date</th><th>Ref</th><th>Name</th><th>Phone</th><th>Model</th><th>Bought</th><th>Address</th><th>City / State</th><th>Pincode</th><th>Location</th><th>Status</th><th>Assigned Tech</th><th>Action</th></tr>
         </thead>
         <tbody>
           ${rows.map(l => `
@@ -2035,8 +2139,13 @@ async function loadInstallations() {
               <td style="font-family:monospace;font-size:11px;color:#00d4aa">${l.ref}</td>
               <td style="font-weight:600">${l.name}</td>
               <td><a href="tel:+${l.phone}" style="color:#4caf50">+${l.phone}</a></td>
-              <td style="font-size:12px">${l.product_name || '–'}</td>
-              <td style="font-family:monospace;font-size:11px;color:#e0e0e0">${l.serial_no || '–'}</td>
+              <td style="font-size:12px">
+                ${(() => { const hasProd = !!(l.product_slug || l.product_name); const matched = (window._catalog || []).some(p => p.slug === l.product_slug);
+                  return `<select onchange="setInstallProduct('${l.id}', this.value, this.options[this.selectedIndex].text)" title="${hasProd ? 'Product: ' + _esc(l.product_name || '') : 'Customer did not specify a product — select one'}" style="max-width:150px;padding:3px 6px;background:${hasProd ? '#0d1f2d' : '#2a1f10'};border:1px solid ${hasProd ? '#2a4a6a' : '#f59e0b'};border-radius:5px;color:#e0e0e0;font-size:11px">
+                    ${hasProd ? (matched ? '<option value="">— change —</option>' : `<option value="" selected>${_esc(l.product_name)}</option>`) : '<option value="" selected>⚠ Select product…</option>'}
+                    ${(window._catalog || []).map(p => `<option value="${p.slug}"${l.product_slug === p.slug ? ' selected' : ''}>${_esc(p.name)}</option>`).join('')}
+                  </select>`; })()}
+              </td>
               <td style="font-size:12px">${l.purchased_from || '–'}</td>
               <td class="addr-cell" data-full="${_esc(fullAddr(l))}" title="${_esc(fullAddr(l))}" style="max-width:200px;font-size:12px;color:#ccc">
                 <div style="display:flex;align-items:center;gap:6px">
@@ -2051,25 +2160,14 @@ async function loadInstallations() {
                 : (l.maps_link
                     ? `<a href="${l.maps_link}" target="_blank" style="color:#64b5f6">📍 Link</a>`
                     : `<button onclick="geocodeInstall('${l.id}')" style="padding:3px 7px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:6px;color:#64b5f6;font-size:10px;cursor:pointer;white-space:nowrap" title="Derive approximate coordinates from the typed address">📍 Locate</button>`)}</td>
-              <td style="font-size:12px">${l.serviceable === true ? '<span style="color:#10b981">✅ '+(l.zone_name||'covered')+'</span>' : l.serviceable === false ? '<span style="color:#f59e0b">⏳ expanding</span>' : '–'}</td>
-              <td style="font-size:11px;color:#aaa">${l.preferred_date ? new Date(l.preferred_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.preferred_slot ? '<br>'+l.preferred_slot : (l.preferred_date ? '' : '–')}</td>
-              <td><span style="background:${INST_STATUS_COLORS[l.status] || '#888'}22;color:${INST_STATUS_COLORS[l.status] || '#888'};border:1px solid ${INST_STATUS_COLORS[l.status] || '#888'}44;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;text-transform:uppercase">${l.status}</span></td>
+              <td><select onchange="updateInstallation('${l.id}', this.value)" title="Change status" style="padding:3px 10px;background:#0d1f2d;border:1px solid ${INST_STATUS_COLORS[l.status] || '#888'};border-radius:50px;color:${INST_STATUS_COLORS[l.status] || '#e0e0e0'};font-size:11px;font-weight:600;text-transform:uppercase;cursor:pointer">${['new','contacted','scheduled','installed','cancelled'].map(s => `<option value="${s}"${l.status === s ? ' selected' : ''}>${s}</option>`).join('')}</select></td>
               <td style="font-size:11px">${l.assigned_tech_name ? `<div style="color:#4caf50;font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.assigned_tech_name||'').replace(/"/g,'&quot;')}">${l.assigned_tech_name}</div>${l.assigned_tech_phone ? `<a href="tel:+${(l.assigned_tech_phone||'').replace(/[^0-9]/g,'')}" style="color:#4caf50;font-size:10px">${l.assigned_tech_phone}</a> ` : ''}<div style="color:#888;font-size:10px">${l.assigned_at ? new Date(l.assigned_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.assigned_by ? ' · '+l.assigned_by : ''}</div>` : '<span style="color:#4a6a8c">–</span>'}</td>
               <td>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <button onclick="viewInstallTechnicians('${l.id}','${l.ref}','${l.pincode||''}','${l.zone_id||''}')" style="padding:4px 8px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">🔧 Find Techs</button>
                   ${(l.latitude && l.longitude) ? `<button onclick="nearestFromInstall('${l.latitude}','${l.longitude}','${l.id}','${l.ref}')" style="padding:4px 8px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:6px;color:#64b5f6;font-size:11px;cursor:pointer;white-space:nowrap">🧭 Nearest Techs</button>` : ''}
                   <button onclick="customTech('${l.id}')" style="padding:4px 8px;background:#2a1f3a;border:1px solid #6a4a8c;border-radius:6px;color:#b98cf6;font-size:11px;cursor:pointer;white-space:nowrap">➕ Custom Tech</button>
-                  ${(l.assigned_tech_name && custWaUrl(l)) ? `<button onclick="notifyCustomer('${l.id}')" style="padding:4px 8px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;text-align:center;white-space:nowrap">📲 Notify Customer${(l.installation_charge != null && String(l.installation_charge).trim() !== '') ? ' · ₹' + String(l.installation_charge).trim() : ''}</button>` : ''}
-                  ${(l.assigned_tech_name && askStatusWaUrl(l)) ? `<button onclick="askStatus('${l.id}')" style="padding:4px 8px;background:#2a2410;border:1px solid #f59e0b;border-radius:6px;color:#f59e0b;font-size:11px;font-weight:600;cursor:pointer;text-align:center;white-space:nowrap">✅ Ask Install Status</button>` : ''}
-                  <button onclick="sendReview('${l.id}')" style="padding:4px 8px;background:#2a2410;border:1px solid #ffd166;border-radius:6px;color:#ffd166;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">⭐ Send Review</button>
-                  <select onchange="updateInstallation('${l.id}', this.value)" style="padding:4px 8px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:11px">
-                    <option value="">Update…</option>
-                    <option value="contacted">📞 Contacted</option>
-                    <option value="scheduled">📅 Scheduled</option>
-                    <option value="installed">✅ Installed</option>
-                    <option value="cancelled">🚫 Cancel</option>
-                  </select>
+                  <button onclick="goToComms('${l.id}')" title="Open this customer's communications" style="padding:4px 8px;background:#0d2a33;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">💬 Comms${(() => { const n = [l.notified_at, l.status_asked_at, l.review_sent_at].filter(Boolean).length; return n ? ' · ' + n + '/3' : ''; })()}</button>
                 </div>
               </td>
             </tr>
@@ -2087,6 +2185,252 @@ async function updateInstallation(id, status) {
   });
   showToast('Installation updated → ' + status);
   loadInstallations();
+}
+// Admin sets/changes the product for an installation (used when the customer didn't specify one).
+async function setInstallProduct(id, slug, name) {
+  if (!slug) return;   // placeholder / "— change —" selected
+  const prod = (window._catalog || []).find(p => p.slug === slug);
+  const pname = prod ? prod.name : name;
+  try {
+    await fetch(`${API}/api/admin/installations/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_slug: slug, product_name: pname })
+    });
+    const l = (window._installRows || []).find(r => String(r.id) === String(id));
+    if (l) { l.product_slug = slug; l.product_name = pname; }
+    showToast('✅ Product set: ' + pname);
+    loadInstallations();
+  } catch (e) { showToast('Could not set product: ' + e.message); }
+}
+
+// ── Communications tab: WhatsApp sends with sent/pending state ──
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+async function loadCommunications() {
+  const el = document.getElementById('commTable');
+  try {
+    const rows = await fetch(`${API}/api/admin/installations`).then(r => r.json());
+    window._installRows = Array.isArray(rows) ? rows : [];
+    if (!window._catalog) {
+      try { window._catalog = await fetch(`${API}/api/shop/products`).then(r => r.json()); } catch (e) { window._catalog = []; }
+      if (!Array.isArray(window._catalog)) window._catalog = [];
+      if (!window._catalog.some(p => p.slug === 'knite-aqua-flux')) window._catalog.unshift({ slug: 'knite-aqua-flux', name: 'Knite Aqua Flux' });
+    }
+    renderCommTable();
+  } catch (err) { el.innerHTML = `<div class="loading">Error: ${err.message}</div>`; }
+}
+function commCell(sentAt, onclick, label, color) {
+  const btn = onclick
+    ? `<button onclick="${onclick}" style="padding:4px 8px;background:${color}1a;border:1px solid ${color};border-radius:6px;color:${color};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${label}${sentAt ? ' ↻' : ''}</button>`
+    : `<span style="color:#4a6a8c;font-size:11px">assign first</span>`;
+  const state = sentAt
+    ? `<div style="color:#10b981;font-size:10px;margin-top:4px;white-space:nowrap" title="${new Date(sentAt).toLocaleString('en-IN')}">✓ sent · ${timeAgo(sentAt)}</div>`
+    : `<div style="color:#f59e0b;font-size:10px;margin-top:4px">pending</div>`;
+  return btn + state;
+}
+// Jump from an installation row straight to its communications.
+function goToComms(id) { window._commTarget = String(id); showSection('communications'); }
+function renderCommTable() {
+  const el = document.getElementById('commTable');
+  const all = window._installRows || [];
+  let rows = all;
+  const f = document.getElementById('comm-filter')?.value ?? 'active';
+  if (f === 'active') rows = rows.filter(l => ['new', 'contacted', 'scheduled'].includes(l.status));
+  else if (f === 'assigned') rows = rows.filter(l => l.assigned_tech_name);
+  else if (f === 'pending') rows = rows.filter(l => !l.notified_at || !l.status_asked_at || !l.review_sent_at);
+  // If we arrived from a specific installation, make sure its row is shown (even if filtered out) and on top.
+  if (window._commTarget) {
+    const t = all.find(l => String(l.id) === window._commTarget);
+    if (t) rows = [t, ...rows.filter(l => String(l.id) !== window._commTarget)];
+  }
+  document.getElementById('comm-count').textContent = `Communications (${rows.length})`;
+  if (!rows.length) { el.innerHTML = `<div class="loading" style="color:#4a6a8c">Nothing to show</div>`; return; }
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Ref</th><th>Customer</th><th>Assigned Tech</th><th>Notify Customer</th><th>Ask Status</th><th>Review</th></tr></thead>
+      <tbody>${rows.map(l => `
+        <tr data-id="${l.id}">
+          <td style="font-family:monospace;font-size:11px;color:#00d4aa">${l.ref}<div style="color:#888;font-size:10px">${new Date(l.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div></td>
+          <td><div style="font-weight:600">${_esc(l.name || '')}</div><a href="tel:+${l.phone}" style="color:#4caf50;font-size:11px">+${l.phone}</a>${l.product_name ? `<div style="color:#888;font-size:10px">${_esc(l.product_name)}</div>` : ''}</td>
+          <td style="font-size:11px">${l.assigned_tech_name ? `<span style="color:#4caf50;font-weight:600">✅ ${_esc(l.assigned_tech_name)}</span>${l.assigned_at ? `<div style="color:#888;font-size:10px">${timeAgo(l.assigned_at)}</div>` : ''}` : '<span style="color:#f59e0b">⏳ assign on Installations</span>'}</td>
+          <td>${commCell(l.notified_at, l.assigned_tech_name ? `notifyCustomer('${l.id}')` : null, '📲 Notify', '#25d366')}</td>
+          <td>${commCell(l.status_asked_at, `askStatus('${l.id}')`, '✅ Ask', '#f59e0b')}</td>
+          <td>${commCell(l.review_sent_at, `sendReview('${l.id}')`, '⭐ Review', '#ffd166')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  // Scroll to + flash-highlight the row we came from (then clear the target).
+  if (window._commTarget) {
+    const tr = el.querySelector(`tr[data-id="${window._commTarget}"]`);
+    window._commTarget = null;
+    if (tr) {
+      tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      tr.style.transition = 'background 0.4s';
+      tr.style.background = '#1a3a2a';
+      setTimeout(() => { tr.style.background = ''; }, 1800);
+    }
+  }
+}
+
+// ── Safety Claims (Amazon return evidence) ──
+// Amazon Seller Central SAFE-T claim filing page (Amazon.in). Clicking an order id
+// copies it + opens this page so you can paste it, attach the ZIP photos, and file.
+const AMAZON_SAFET_URL = 'https://sellercentral.amazon.in/safet-claims/create-v2?ref_=ag_sfdcf_cont_safet';
+async function openSafeT(order) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(order);
+    else { const ta = document.createElement('textarea'); ta.value = order; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+    showToast('📋 Order ID copied — paste it on Amazon\'s SAFE-T page, attach photos & file');
+  } catch (e) { showToast('Opening Amazon SAFE-T…'); }
+  window.open(AMAZON_SAFET_URL, '_blank');
+}
+function _fileToB64(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).replace(/^data:[^,]+,/, ''));
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+function _loadJSZip() {
+  return new Promise((resolve, reject) => {
+    if (window.JSZip) return resolve(window.JSZip);
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => resolve(window.JSZip);
+    s.onerror = () => reject(new Error('Could not load ZIP library'));
+    document.head.appendChild(s);
+  });
+}
+async function uploadSafetyImages() {
+  const order = (document.getElementById('sc-order')?.value || '').trim();
+  const notes = (document.getElementById('sc-notes')?.value || '').trim();
+  const files = document.getElementById('sc-files')?.files;
+  if (!order) { showToast('Enter an Amazon Order ID'); return; }
+  if (!files || !files.length) { showToast('Select at least one photo'); return; }
+
+  const btn = document.getElementById('sc-save-btn');
+  if (btn.disabled) return;                       // guard against double-clicks
+  const origHtml = btn.innerHTML;
+  const setBtn = (html, busy) => {
+    btn.disabled = busy; btn.innerHTML = html;
+    btn.style.opacity = busy ? '0.65' : '';
+    btn.style.cursor = busy ? 'wait' : 'pointer';
+  };
+  setBtn('⏳ Uploading… (0/' + files.length + ')', true);
+
+  let ok = 0, failed = 0;
+  try {
+    // create/ensure the claim first
+    await fetch(`${API}/api/admin/safety-claims`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_id: order, notes })
+    });
+    // upload each photo sequentially; the button stays in its loading state
+    // until every file is done (success shown only after all complete).
+    for (let i = 0; i < files.length; i++) {
+      setBtn('⏳ Uploading… (' + (i + 1) + '/' + files.length + ')', true);
+      try {
+        const data = await _fileToB64(files[i]);
+        const r = await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}/images`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data, contentType: files[i].type, filename: files[i].name })
+        });
+        if (r.ok) ok++; else { failed++; console.warn('upload failed', files[i].name, (await r.json().catch(() => ({}))).error); }
+      } catch (e) { failed++; console.warn('upload err', files[i].name, e.message); }
+    }
+  } catch (e) {
+    showToast('Upload failed: ' + e.message);
+  } finally {
+    setBtn(origHtml, false);                        // button visible/enabled again only now
+  }
+
+  if (failed) {
+    showToast(`⚠ Uploaded ${ok}/${files.length} — ${failed} failed, please retry`);
+  } else {
+    showToast(`✅ All ${ok} photo(s) saved for ${order}`);
+    document.getElementById('sc-order').value = '';
+    document.getElementById('sc-notes').value = '';
+    document.getElementById('sc-files').value = '';
+  }
+  loadSafetyClaims();
+}
+async function loadSafetyClaims() {
+  const status = document.getElementById('sc-filter')?.value ?? 'pending';
+  const el = document.getElementById('safetyClaimsTable');
+  try {
+    const rows = await fetch(`${API}/api/admin/safety-claims${status ? '?status=' + status : ''}`).then(r => r.json());
+    window._safetyClaims = Array.isArray(rows) ? rows : [];
+    renderSafetyClaims();
+  } catch (e) { el.innerHTML = `<div class="loading">Error: ${e.message}</div>`; }
+}
+function renderSafetyClaims() {
+  const rows = window._safetyClaims || [];
+  document.getElementById('sc-count').textContent = `Safety Claims (${rows.length})`;
+  const el = document.getElementById('safetyClaimsTable');
+  if (!rows.length) { el.innerHTML = `<div class="loading" style="color:#4a6a8c">No claims yet</div>`; return; }
+  const btn = (fn, label, color) => `<button onclick="${fn}" style="padding:4px 8px;background:${color}1a;border:1px solid ${color};border-radius:6px;color:${color};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${label}</button>`;
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Order ID</th><th>Status</th><th>Photos</th><th>Created</th><th>Expires</th><th>Actions</th></tr></thead>
+      <tbody>${rows.map(c => {
+        const expired = c.images_expired || c.image_count === 0;
+        const expDays = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / 86400000);
+        return `<tr>
+          <td style="font-family:monospace;font-weight:600"><a onclick="openSafeT('${_esc(c.order_id)}')" title="Copy Order ID & open Amazon SAFE-T claim to file" style="color:#00d4aa;text-decoration:underline;cursor:pointer">${_esc(c.order_id)} ↗</a>${c.notes ? `<div style="color:#888;font-size:10px;font-weight:400;font-family:inherit">${_esc(c.notes)}</div>` : ''}</td>
+          <td>${c.status === 'filed'
+            ? `<span style="color:#10b981;font-weight:600">✅ Filed</span>${c.filed_at ? `<div style="color:#888;font-size:10px">${new Date(c.filed_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>` : ''}`
+            : '<span style="color:#f59e0b;font-weight:600">⏳ Pending</span>'}</td>
+          <td style="font-size:12px">${expired ? '<span style="color:#ef5350;font-size:11px">⌛ expired</span>' : '📷 ' + c.image_count}</td>
+          <td style="font-size:11px;color:#aaa">${new Date(c.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
+          <td style="font-size:11px">${(expired || c.status === 'filed') ? '<span style="color:#4a6a8c">–</span>' : `<span style="color:${expDays <= 7 ? '#ef5350' : '#888'}">${expDays > 0 ? expDays + 'd left' : 'today'}</span>`}</td>
+          <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${(!expired && c.image_count > 0) ? btn(`downloadClaimZip('${_esc(c.order_id)}')`, `⬇ ZIP (${c.image_count})`, '#64b5f6') : ''}
+            ${c.status === 'filed' ? btn(`markClaim('${_esc(c.order_id)}', false)`, '↩ Reopen', '#f59e0b') : btn(`markClaim('${_esc(c.order_id)}', true)`, '✅ Mark Filed', '#25d366')}
+            ${btn(`deleteSafetyClaim('${_esc(c.order_id)}')`, '🗑', '#ef5350')}
+          </div></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+async function downloadClaimZip(order) {
+  showToast('📦 Preparing ZIP for ' + order + '…');
+  try {
+    const JSZip = await _loadJSZip();
+    const { images } = await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}/images`).then(r => r.json());
+    if (!images || !images.length) { showToast('No photos to zip'); return; }
+    const zip = new JSZip();
+    const folder = zip.folder(order);
+    for (const name of images) {
+      const blob = await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}/image/${encodeURIComponent(name)}`).then(r => r.blob());
+      folder.file(name, blob);
+    }
+    const out = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(out);
+    a.download = `${order}-safety-claim.zip`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    showToast(`⬇ ZIP ready — ${images.length} photo(s)`);
+  } catch (e) { showToast('ZIP failed: ' + e.message); }
+}
+async function markClaim(order, filed) {
+  await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}/file`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filed })
+  });
+  showToast(filed ? `✅ ${order} marked as filed` : `↩ ${order} reopened`);
+  loadSafetyClaims();
+}
+async function deleteSafetyClaim(order) {
+  if (!confirm('Delete the claim and all photos for ' + order + '? This cannot be undone.')) return;
+  await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}`, { method: 'DELETE' });
+  showToast('🗑 Deleted ' + order);
+  loadSafetyClaims();
 }
 
 // Show technicians + service providers who can service an installation request's pincode

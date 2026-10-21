@@ -14,6 +14,7 @@ const shop  = require('./src/controllers/shopController');
 const shopAuth = require('./src/controllers/shopAuthController');
 const reviews = require('./src/controllers/reviewsController');
 const support = require('./src/controllers/supportController');
+const safetyClaims = require('./src/controllers/safetyClaimsController');
 const payment = require('./src/controllers/paymentController');
 const adminAuth = require('./src/controllers/adminAuthController');
 const { adminAuth: requireAdmin } = require('./src/middleware/adminAuth');
@@ -41,7 +42,7 @@ app.post('/api/flow-exchange', express.json(), handleFlowExchange);
 
 // JSON body parser — also capture raw body for webhook signature verification
 app.use(express.json({
-  limit: '10mb',
+  limit: '20mb',   // headroom for base64 safety-claim photos (controller caps each at 15 MB)
   verify: (req, res, buf) => { req.rawBody = buf.toString('utf8'); },
 }));
 
@@ -463,7 +464,17 @@ app.get  ('/api/admin/installations',      support.adminListInstallations);
 app.patch('/api/admin/installations/:id',  support.adminUpdateInstallation);
 app.get  ('/api/admin/installations/:id/technicians', support.getInstallationTechnicians);
 app.post ('/api/admin/installations/:id/geocode', support.geocodeInstallationRequest);
+app.post ('/api/admin/installations/:id/log-comm', support.logCommunication);
 app.post ('/api/admin/translate', support.translateMessage);
+
+// Amazon safety claims (customer-return evidence)
+app.get   ('/api/admin/safety-claims',                     safetyClaims.listClaims);
+app.post  ('/api/admin/safety-claims',                     safetyClaims.createClaim);
+app.post  ('/api/admin/safety-claims/:orderId/images',     safetyClaims.uploadImage);
+app.get   ('/api/admin/safety-claims/:orderId/images',     safetyClaims.listImages);
+app.get   ('/api/admin/safety-claims/:orderId/image/:name', safetyClaims.getImage);
+app.post  ('/api/admin/safety-claims/:orderId/file',       safetyClaims.markFiled);
+app.delete('/api/admin/safety-claims/:orderId',            safetyClaims.deleteClaim);
 app.post ('/api/admin/installations/:id/assign', support.assignInstallationTechnician);
 app.get  ('/api/admin/tickets',            support.adminListTickets);
 app.patch('/api/admin/tickets/:id',        support.adminUpdateTicket);
@@ -667,6 +678,31 @@ async function start() {
     console.error('[SCHEMA_MIGRATE] custom_technicians:', err.message);
   }
   try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS safety_claims (
+        id             SERIAL PRIMARY KEY,
+        order_id       TEXT UNIQUE NOT NULL,
+        status         TEXT NOT NULL DEFAULT 'pending',   -- pending | filed
+        image_count    INTEGER NOT NULL DEFAULT 0,
+        images_expired BOOLEAN NOT NULL DEFAULT false,
+        notes          TEXT,
+        created_by     TEXT,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        filed_at       TIMESTAMPTZ
+      )`);
+  } catch (err) {
+    console.error('[SCHEMA_MIGRATE] safety_claims:', err.message);
+  }
+  try {
+    // Communication state tracking (WhatsApp sends) per installation.
+    await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS notified_at    TIMESTAMPTZ`);
+    await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS status_asked_at TIMESTAMPTZ`);
+    await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS review_sent_at TIMESTAMPTZ`);
+  } catch (err) {
+    console.error('[SCHEMA_MIGRATE] comm timestamps:', err.message);
+  }
+  try {
     // Where a request's coordinates came from: pin (user), geocoded (address), pincode (centroid).
     await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS geo_source TEXT`);
     // Pincode → centroid cache (self-populated by the geocoder; offline + free thereafter).
@@ -691,6 +727,11 @@ async function start() {
 
   // Start background cron jobs
   crons.startAll();
+
+  // Safety-claim images lifecycle: purge images older than the retention window,
+  // on boot and once a day.
+  safetyClaims.cleanupExpired();
+  setInterval(() => safetyClaims.cleanupExpired(), 24 * 60 * 60 * 1000);
 }
 
 start().catch(console.error);

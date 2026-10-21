@@ -80,3 +80,4 @@ frontend/products_bak_*/
 
 # local scratch
 tmp/
+backend/data/
