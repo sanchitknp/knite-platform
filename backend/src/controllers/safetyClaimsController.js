@@ -105,6 +105,28 @@ async function markFiled(req, res) {
   res.json({ ok: true, order_id, status: filed ? 'filed' : 'pending' });
 }
 
+// PATCH /api/admin/safety-claims/:orderId   { new_order_id }
+// Rename a claim's order id (also moves its images folder on disk).
+async function renameClaim(req, res) {
+  const oldId = safeOrder(req.params.orderId);
+  const newId = safeOrder(req.body?.new_order_id || req.body?.order_id);
+  if (!newId) return res.status(400).json({ error: 'new_order_id required' });
+  if (newId === oldId) return res.json({ ok: true, order_id: newId });
+  const clash = await db.query(`SELECT 1 FROM safety_claims WHERE order_id = $1`, [newId]);
+  if (clash.rowCount) return res.status(409).json({ error: 'A claim with that order id already exists' });
+  try {
+    const src = orderDir(oldId), dst = orderDir(newId);
+    if (fs.existsSync(src)) fs.renameSync(src, dst);
+  } catch (e) { console.error('[SAFETY_CLAIMS] rename dir failed:', e.message); }
+  const r = await db.query(
+    `UPDATE safety_claims SET order_id = $1, updated_at = now() WHERE order_id = $2 RETURNING order_id`,
+    [newId, oldId]
+  );
+  if (!r.rowCount) return res.status(404).json({ error: 'claim not found' });
+  console.log(`[SAFETY_CLAIMS] renamed ${oldId} -> ${newId}`);
+  res.json({ ok: true, order_id: newId });
+}
+
 // DELETE /api/admin/safety-claims/:orderId
 async function deleteClaim(req, res) {
   const order_id = safeOrder(req.params.orderId);
@@ -130,5 +152,5 @@ async function cleanupExpired() {
 }
 
 module.exports = {
-  createClaim, uploadImage, listClaims, listImages, getImage, markFiled, deleteClaim, cleanupExpired,
+  createClaim, uploadImage, listClaims, listImages, getImage, markFiled, renameClaim, deleteClaim, cleanupExpired,
 };

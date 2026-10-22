@@ -287,6 +287,9 @@ app.post('/api/shop/payment/create-order', shopAuth.requireShopCustomer, payment
 app.post('/api/shop/payment/verify',       shopAuth.requireShopCustomer, payment.verifyPayment);
 app.post('/api/webhooks/cashfree',         payment.cashfreeWebhook);
 
+// Voice-agent (Servum AI) webhook — single endpoint; body { type, ... }. Public, auth via ?key=
+app.post('/api/webhooks/voice', support.voiceWebhook);
+
 // Shop customer auth — OTP via WhatsApp
 app.post('/api/shop/auth/send-otp',    shopAuth.sendOtp);
 app.post('/api/shop/auth/verify-otp',  shopAuth.verifyOtp);
@@ -474,6 +477,7 @@ app.post  ('/api/admin/safety-claims/:orderId/images',     safetyClaims.uploadIm
 app.get   ('/api/admin/safety-claims/:orderId/images',     safetyClaims.listImages);
 app.get   ('/api/admin/safety-claims/:orderId/image/:name', safetyClaims.getImage);
 app.post  ('/api/admin/safety-claims/:orderId/file',       safetyClaims.markFiled);
+app.patch ('/api/admin/safety-claims/:orderId',            safetyClaims.renameClaim);
 app.delete('/api/admin/safety-claims/:orderId',            safetyClaims.deleteClaim);
 app.post ('/api/admin/installations/:id/assign', support.assignInstallationTechnician);
 app.get  ('/api/admin/tickets',            support.adminListTickets);

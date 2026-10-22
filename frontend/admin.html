@@ -1749,11 +1749,12 @@ function assignNearest(i) {
   if (!window._assignTarget) return;
   const t = window._nearest[i];
   const target = window._assignTarget;
-  pickLang('📲 Assign ' + (t.business_name || 'technician'), '📲 Assign & send on WhatsApp', async () => {
+  pickChargeAndLang('📲 Assign ' + (t.business_name || 'technician'), '📲 Assign & send on WhatsApp', async (lang, charge) => {
     const waWin = window.open('', '_blank');   // reserve inside the confirm gesture
     const d = await assignInstall(target.id, target.ref, {
       tech_name: t.business_name, tech_phone: t.intl_phone || t.phone || '',
-      tech_address: t.full_address || '', tech_city: t.city || '', place_id: t.place_id || '', source: 'nearest'
+      tech_address: t.full_address || '', tech_city: t.city || '', place_id: t.place_id || '', source: 'nearest',
+      installation_charge: charge
     });
     if (d) { postAssign(d, waWin, t.business_name, target.ref); window._assignTarget = null; showSection('installations'); }
     else if (waWin) waWin.close();
@@ -1769,9 +1770,9 @@ function assignFromModal(kind, idx) {
     const s = (window._ftPartners || [])[idx]; if (!s) return;
     payload = { tech_name: s.business_name, tech_phone: s.intl_phone || s.phone || '', tech_address: s.full_address || '', tech_city: s.city || '', place_id: s.place_id || '', source: 'find-techs' };
   }
-  pickLang('📲 Assign ' + payload.tech_name, '📲 Assign & send on WhatsApp', async () => {
+  pickChargeAndLang('📲 Assign ' + payload.tech_name, '📲 Assign & send on WhatsApp', async (lang, charge) => {
     const waWin = window.open('', '_blank');
-    const d = await assignInstall(ctx.id, ctx.ref, payload);
+    const d = await assignInstall(ctx.id, ctx.ref, { ...payload, installation_charge: charge });
     if (d) { postAssign(d, waWin, payload.tech_name, ctx.ref); hideModal(); loadInstallations(); }
     else if (waWin) waWin.close();
   });
@@ -1794,6 +1795,10 @@ function customTech(id) {
         <input id="ct-phone" type="tel" inputmode="numeric" placeholder="10-digit mobile (or with +91)" autocomplete="off"
           style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
       </label>
+      <label style="font-size:12px;color:#aaa">Installation charges (₹)
+        <input id="ct-charge" type="text" inputmode="decimal" placeholder="e.g. 1499" autocomplete="off"
+          style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
+      </label>
       <label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('ct-lang')}</label>
       <button onclick="submitCustomTech('${l.id}')"
         style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">📲 Assign & send customer details on WhatsApp</button>
@@ -1808,10 +1813,12 @@ async function submitCustomTech(id) {
   const digits = phoneRaw.replace(/\D/g, '');
   if (!digits || digits.length < 10) { showToast('Enter a valid mobile number'); return; }
   window._waLang = document.getElementById('ct-lang')?.value || 'en';
+  const charge = String(document.getElementById('ct-charge')?.value || '').trim().replace(/[^0-9.]/g, '');
   const waWin = window.open('', '_blank');   // reserve popup within the click gesture
   const d = await assignInstall(l.id, l.ref, {
     tech_name: name || 'Technician',
     tech_phone: phoneRaw,
+    installation_charge: charge,
     source: 'custom'
   });
   if (d) { postAssign(d, waWin, name || 'Technician', l.ref); hideModal(); loadInstallations(); }
@@ -1844,6 +1851,27 @@ function pickLang(title, confirmLabel, onPick) {
     </div>`);
   const go = document.getElementById('pl-go');
   if (go) go.onclick = () => { window._waLang = document.getElementById('pl-lang')?.value || 'en'; hideModal(); onPick(window._waLang); };
+}
+// Modal that collects installation charges + language, then runs onPick(lang, charge)
+// inside the confirm click. Used at ASSIGN time (charge flows to tech + later to customer).
+function pickChargeAndLang(title, confirmLabel, onPick) {
+  showModal(title, `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:12px;color:#aaa">Installation charges (₹)
+        <input id="pcl-charge" type="text" inputmode="decimal" placeholder="e.g. 1499"
+          style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
+      </label>
+      <label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('pcl-lang')}</label>
+      <button id="pcl-go" style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">${confirmLabel}</button>
+    </div>`);
+  setTimeout(() => document.getElementById('pcl-charge')?.focus(), 60);
+  const go = document.getElementById('pcl-go');
+  if (go) go.onclick = () => {
+    const charge = String(document.getElementById('pcl-charge')?.value || '').trim().replace(/[^0-9.]/g, '');
+    window._waLang = document.getElementById('pcl-lang')?.value || 'en';
+    hideModal();
+    onPick(window._waLang, charge);
+  };
 }
 // Translate a message into the chosen language via the backend (best-effort).
 async function translateMsg(text) {
@@ -1904,12 +1932,18 @@ function custWaUrl(l) {
   return `https://wa.me/${num}?text=${encodeURIComponent(custMsg(l))}`;
 }
 
-// One-click WhatsApp to the CUSTOMER asking (simply) whether their RO is installed.
+// One-click WhatsApp to the TECHNICIAN asking whether the installation is done.
 function askStatusMsg(l) {
-  return `Hi ${l.name || 'Sir/Madam'}, is your Knite RO water purifier installed? Please reply *YES* or *NO*. — Team Knite`;
+  const cust = l.name || 'the customer';
+  const custPhone = l.phone ? ' (' + l.phone + ')' : '';
+  return [
+    `*Knite — Installation Status (${l.ref})*`,
+    `Hi${l.assigned_tech_name ? ' ' + l.assigned_tech_name : ''}, has the installation for ${cust}${custPhone} been completed?`,
+    `Please reply *YES* if done, or *NO* if still pending. — Team Knite`,
+  ].join('\n');
 }
-function askStatusWaUrl(l) {  // kept for button-visibility check
-  let num = String(l.phone || '').replace(/\D/g, '');
+function askStatusWaUrl(l) {  // kept for button-visibility check — now the technician's number
+  let num = String(l.assigned_tech_phone || '').replace(/\D/g, '');
   if (num.length === 10) num = '91' + num;
   if (!num) return '';
   return `https://wa.me/${num}?text=${encodeURIComponent(askStatusMsg(l))}`;
@@ -1917,49 +1951,26 @@ function askStatusWaUrl(l) {  // kept for button-visibility check
 function askStatus(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
-  pickLang('✅ Ask Install Status · ' + l.ref, '✅ Send on WhatsApp', () => {
+  if (!l.assigned_tech_name || !l.assigned_tech_phone) { showToast('Assign a technician first'); return; }
+  pickLang('✅ Ask Install Status · ' + l.ref, '✅ Send to technician', () => {
     const waWin = window.open('', '_blank');   // reserve popup within the confirm click
-    openWaTranslated(l.phone, askStatusMsg(l), waWin);
+    openWaTranslated(l.assigned_tech_phone, askStatusMsg(l), waWin);   // to the TECHNICIAN
     logComm(l.id, 'ask_status');
   });
 }
 
-// Modal: enter installation charges + pick language, then WhatsApp the customer
-// (technician number + charges), persisting the charge to the DB.
+// Notify the customer (technician number + the charges already set at assign time).
+// Only asks for the message language — does NOT re-ask for charges.
 function notifyCustomer(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
   if (!l.assigned_tech_name) { showToast('Assign a technician first'); return; }
-  const existing = (l.installation_charge != null && String(l.installation_charge).trim() !== '')
-    ? String(l.installation_charge).trim() : '';
-  showModal('📲 Notify Customer · ' + l.ref, `
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <label style="font-size:12px;color:#aaa">Installation charges (₹)
-        <input id="nc-charge" type="text" inputmode="decimal" value="${existing}" placeholder="e.g. 1499"
-          style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">
-      </label>
-      <label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('nc-lang')}</label>
-      <button id="nc-go" style="padding:10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:14px;font-weight:600;cursor:pointer">📲 Save & send on WhatsApp</button>
-    </div>`);
-  setTimeout(() => document.getElementById('nc-charge')?.focus(), 60);
-  const go = document.getElementById('nc-go');
-  if (go) go.onclick = async () => {
-    const charge = String(document.getElementById('nc-charge')?.value || '').trim().replace(/[^0-9.]/g, '');
-    if (!charge) { showToast('Enter a valid amount'); return; }
-    window._waLang = document.getElementById('nc-lang')?.value || 'en';
-    const waWin = window.open('', '_blank');                    // reserve within the gesture
-    try {
-      await fetch(`${API}/api/admin/installations/${id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ installation_charge: charge })
-      });
-    } catch (e) { /* still open WhatsApp even if the save hiccups */ }
-    l.installation_charge = charge;
-    hideModal();
+  pickLang('📲 Notify Customer · ' + l.ref, '📲 Send on WhatsApp', async () => {
+    const waWin = window.open('', '_blank');   // reserve within the confirm gesture
     await openWaTranslated(custWaNum(l), custMsg(l), waWin);
     logComm(id, 'notify');
-    showToast('💰 Charges ₹' + charge + ' saved — WhatsApp opened to notify customer');
-  };
+    showToast('📲 WhatsApp opened to notify customer');
+  });
 }
 
 // On-demand: derive approximate coordinates from an installation's typed address
@@ -2259,7 +2270,7 @@ function renderCommTable() {
           <td><div style="font-weight:600">${_esc(l.name || '')}</div><a href="tel:+${l.phone}" style="color:#4caf50;font-size:11px">+${l.phone}</a>${l.product_name ? `<div style="color:#888;font-size:10px">${_esc(l.product_name)}</div>` : ''}</td>
           <td style="font-size:11px">${l.assigned_tech_name ? `<span style="color:#4caf50;font-weight:600">✅ ${_esc(l.assigned_tech_name)}</span>${l.assigned_at ? `<div style="color:#888;font-size:10px">${timeAgo(l.assigned_at)}</div>` : ''}` : '<span style="color:#f59e0b">⏳ assign on Installations</span>'}</td>
           <td>${commCell(l.notified_at, l.assigned_tech_name ? `notifyCustomer('${l.id}')` : null, '📲 Notify', '#25d366')}</td>
-          <td>${commCell(l.status_asked_at, `askStatus('${l.id}')`, '✅ Ask', '#f59e0b')}</td>
+          <td>${commCell(l.status_asked_at, l.assigned_tech_name ? `askStatus('${l.id}')` : null, '✅ Ask', '#f59e0b')}</td>
           <td>${commCell(l.review_sent_at, `sendReview('${l.id}')`, '⭐ Review', '#ffd166')}</td>
         </tr>`).join('')}
       </tbody>
@@ -2281,13 +2292,19 @@ function renderCommTable() {
 // Amazon Seller Central SAFE-T claim filing page (Amazon.in). Clicking an order id
 // copies it + opens this page so you can paste it, attach the ZIP photos, and file.
 const AMAZON_SAFET_URL = 'https://sellercentral.amazon.in/safet-claims/create-v2?ref_=ag_sfdcf_cont_safet';
-async function openSafeT(order) {
+function openSafeT(order) {
+  // 1) open Amazon SAFE-T in a new tab (within the click gesture), order id in the hash
+  //    so the Knite userscript/bookmarklet can auto-fill it.
+  window.open(AMAZON_SAFET_URL + '#knite_order=' + encodeURIComponent(order), '_blank');
+  // 2) copy the order id (best-effort fallback for pasting)
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(order);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(order);
     else { const ta = document.createElement('textarea'); ta.value = order; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
-    showToast('📋 Order ID copied — paste it on Amazon\'s SAFE-T page, attach photos & file');
-  } catch (e) { showToast('Opening Amazon SAFE-T…'); }
-  window.open(AMAZON_SAFET_URL, '_blank');
+  } catch (e) {}
+  showToast('📋 Order ID copied · Amazon opened · preparing photos…');
+  // 3) download ALL photos as one ZIP (browsers block multiple separate downloads
+  //    from a single click; the ZIP holds files named <orderId>-1, <orderId>-2, …).
+  downloadClaimZip(order);
 }
 function _fileToB64(file) {
   return new Promise((resolve, reject) => {
@@ -2382,7 +2399,7 @@ function renderSafetyClaims() {
         const expired = c.images_expired || c.image_count === 0;
         const expDays = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / 86400000);
         return `<tr>
-          <td style="font-family:monospace;font-weight:600"><a onclick="openSafeT('${_esc(c.order_id)}')" title="Copy Order ID & open Amazon SAFE-T claim to file" style="color:#00d4aa;text-decoration:underline;cursor:pointer">${_esc(c.order_id)} ↗</a>${c.notes ? `<div style="color:#888;font-size:10px;font-weight:400;font-family:inherit">${_esc(c.notes)}</div>` : ''}</td>
+          <td style="font-family:monospace;font-weight:600"><a onclick="openSafeT('${_esc(c.order_id)}')" title="Copy Order ID & open Amazon SAFE-T claim to file" style="color:#00d4aa;text-decoration:underline;cursor:pointer">${_esc(c.order_id)} ↗</a><a onclick="editClaimOrderId('${_esc(c.order_id)}')" title="Edit Order ID" style="color:#8aa;cursor:pointer;margin-left:8px;font-size:11px;text-decoration:none">✎</a>${c.notes ? `<div style="color:#888;font-size:10px;font-weight:400;font-family:inherit">${_esc(c.notes)}</div>` : ''}</td>
           <td>${c.status === 'filed'
             ? `<span style="color:#10b981;font-weight:600">✅ Filed</span>${c.filed_at ? `<div style="color:#888;font-size:10px">${new Date(c.filed_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>` : ''}`
             : '<span style="color:#f59e0b;font-weight:600">⏳ Pending</span>'}</td>
@@ -2406,9 +2423,10 @@ async function downloadClaimZip(order) {
     if (!images || !images.length) { showToast('No photos to zip'); return; }
     const zip = new JSZip();
     const folder = zip.folder(order);
-    for (const name of images) {
-      const blob = await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}/image/${encodeURIComponent(name)}`).then(r => r.blob());
-      folder.file(name, blob);
+    for (let i = 0; i < images.length; i++) {
+      const ext = (images[i].split('.').pop() || 'jpg').toLowerCase();
+      const blob = await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}/image/${encodeURIComponent(images[i])}`).then(r => r.blob());
+      folder.file(`${order}-${i + 1}.${ext}`, blob);
     }
     const out = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 9 } });
     const a = document.createElement('a');
@@ -2418,6 +2436,22 @@ async function downloadClaimZip(order) {
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     showToast(`⬇ ZIP ready — ${images.length} photo(s)`);
   } catch (e) { showToast('ZIP failed: ' + e.message); }
+}
+async function editClaimOrderId(order) {
+  const next = prompt('Edit Order ID:', order);
+  if (next === null) return;
+  const newId = next.trim();
+  if (!newId || newId === order) return;
+  try {
+    const r = await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_order_id: newId })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { showToast('Could not update: ' + (d.error || ('HTTP ' + r.status))); return; }
+    showToast('✅ Order ID updated to ' + d.order_id);
+    loadSafetyClaims();
+  } catch (e) { showToast('Update failed: ' + e.message); }
 }
 async function markClaim(order, filed) {
   await fetch(`${API}/api/admin/safety-claims/${encodeURIComponent(order)}/file`, {

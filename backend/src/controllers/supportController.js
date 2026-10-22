@@ -165,6 +165,54 @@ async function createTicket(req, res) {
   res.json({ ok: true, ref: row.ref });
 }
 
+// ── VOICE-AGENT WEBHOOKS (Servum AI) ─────────────────────────
+// Public endpoints the voice agent calls. Auth via ?key= or x-webhook-key header.
+function voiceKeyOk(req) {
+  const k = req.query.key || req.headers['x-webhook-key'];
+  return !!process.env.WEBHOOK_VOICE_KEY && k === process.env.WEBHOOK_VOICE_KEY;
+}
+
+// POST /api/webhooks/voice   { type: "installation" | "support_ticket", whatsapp_number|phone, ... }
+// Single endpoint; `type` decides whether an installation request or a support ticket is created.
+async function voiceWebhook(req, res) {
+  if (!voiceKeyOk(req)) return res.status(401).json({ error: 'unauthorized' });
+  const b = req.body || {};
+  const type = String(b.type || '').toLowerCase().replace(/[^a-z]/g, '');
+  const phone = normPhone(b.whatsapp_number || b.phone || b.mobile || b.whatsapp);
+  if (phone.length < 10) return res.status(400).json({ error: 'whatsapp_number (or phone) is required' });
+  const name = clean(b.name || b.customer_name) || 'Voice caller';
+
+  if (['installation', 'install', 'installationrequest'].includes(type)) {
+    const notes = ['Installation request via voice agent.',
+      b.delivered != null ? 'Delivered: ' + b.delivered : '',
+      clean(b.delivered_when) ? 'When: ' + clean(b.delivered_when) : '',
+      clean(b.notes)].filter(Boolean).join(' ');
+    const r = await db.query(
+      `INSERT INTO installation_requests (ref, name, phone, order_ref, notes, source)
+       VALUES ('KN-INST-' || nextval('installation_ref_seq'), $1,$2,$3,$4,'voice-agent')
+       RETURNING ref, id`,
+      [name, phone, clean(b.order_id || b.amazon_order_id), notes]
+    );
+    console.log(`[VOICE WEBHOOK] installation ${r.rows[0].ref} phone=${phone}`);
+    return res.json({ ok: true, type: 'installation', ref: r.rows[0].ref, id: r.rows[0].id });
+  }
+
+  if (['supportticket', 'support', 'ticket', 'service', 'servicerequest'].includes(type)) {
+    const problem = clean(b.problem || b.issue || b.description) || 'Reported via voice agent (no detail captured).';
+    const model = clean(b.model || b.product || b.product_name);
+    const r = await db.query(
+      `INSERT INTO support_tickets (ref, name, phone, category, product_name, subject, description, source)
+       VALUES ('KN-TKT-' || nextval('ticket_ref_seq'), $1,$2,'other',$3,$4,$5,'voice-agent')
+       RETURNING ref, id`,
+      [name, phone, model, model ? (model + ' — reported via voice') : 'Voice support request', problem]
+    );
+    console.log(`[VOICE WEBHOOK] ticket ${r.rows[0].ref} phone=${phone} model=${model || '-'}`);
+    return res.json({ ok: true, type: 'support_ticket', ref: r.rows[0].ref, id: r.rows[0].id });
+  }
+
+  return res.status(400).json({ error: 'type must be "installation" or "support_ticket"' });
+}
+
 // ── ADMIN ───────────────────────────────────────────────────
 async function adminListInstallations(req, res) {
   const { status, limit = 200 } = req.query;
@@ -230,6 +278,13 @@ async function assignInstallationTechnician(req, res) {
     [installId]
   );
 
+  // Installation charges are entered by the admin at assign time: save them so the
+  // technician message carries them AND the later customer notification reuses them.
+  const charge = (clean(b.installation_charge) || '').replace(/[^0-9.]/g, '');
+  if (charge) {
+    await db.query(`UPDATE installation_requests SET installation_charge = $1 WHERE id = $2`, [charge, installId]);
+  }
+
   // If this was a manually-entered ("custom") technician, also keep them in the
   // custom_technicians roster (deduped by canonical phone) for reuse/lookup later.
   if (clean(b.source) === 'custom') {
@@ -276,6 +331,7 @@ async function assignInstallationTechnician(req, res) {
     I.product_name ? `Product: ${I.product_name}` : '',
     I.serial_no ? `Serial: ${I.serial_no}` : '',
     I.notes ? `Notes: ${I.notes}` : '',
+    charge ? `Installation charges: ₹${charge}` : '',
     '',
     `Please confirm if you can take this installation. — Team Knite`,
   ].filter(Boolean).join('\n');
@@ -457,6 +513,7 @@ module.exports = {
   checkPincode,
   createInstallation,
   createTicket,
+  voiceWebhook,
   adminListInstallations,
   adminUpdateInstallation,
   translateMessage,
