@@ -1873,6 +1873,16 @@ function pickChargeAndLang(title, confirmLabel, onPick) {
     onPick(window._waLang, charge);
   };
 }
+// Persist a per-installation language choice (tech_lang or cust_lang) so we don't ask again.
+async function saveLang(id, field, lang) {
+  const l = (window._installRows || []).find(r => String(r.id) === String(id));
+  if (l) l[field] = lang;
+  try {
+    await fetch(`${API}/api/admin/installations/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: lang })
+    });
+  } catch (e) { /* non-blocking */ }
+}
 // Translate a message into the chosen language via the backend (best-effort).
 async function translateMsg(text) {
   const lang = getWaLang();
@@ -1952,11 +1962,13 @@ function askStatus(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
   if (!l.assigned_tech_name || !l.assigned_tech_phone) { showToast('Assign a technician first'); return; }
-  pickLang('✅ Ask Install Status · ' + l.ref, '✅ Send to technician', () => {
-    const waWin = window.open('', '_blank');   // reserve popup within the confirm click
-    openWaTranslated(l.assigned_tech_phone, askStatusMsg(l), waWin);   // to the TECHNICIAN
+  const send = () => {   // to the TECHNICIAN, in the saved tech language
+    const waWin = window.open('', '_blank');
+    openWaTranslated(l.assigned_tech_phone, askStatusMsg(l), waWin);
     logComm(l.id, 'ask_status');
-  });
+  };
+  if (l.tech_lang) { window._waLang = l.tech_lang; send(); return; }   // language already chosen at assign — don't ask
+  pickLang('✅ Ask Install Status · ' + l.ref, '✅ Send to technician', (lang) => { saveLang(l.id, 'tech_lang', lang); send(); });
 }
 
 // Notify the customer (technician number + the charges already set at assign time).
@@ -1965,12 +1977,14 @@ function notifyCustomer(id) {
   const l = (window._installRows || []).find(r => String(r.id) === String(id));
   if (!l) { showToast('Could not find this installation — refresh'); return; }
   if (!l.assigned_tech_name) { showToast('Assign a technician first'); return; }
-  pickLang('📲 Notify Customer · ' + l.ref, '📲 Send on WhatsApp', async () => {
-    const waWin = window.open('', '_blank');   // reserve within the confirm gesture
-    await openWaTranslated(custWaNum(l), custMsg(l), waWin);
+  const send = () => {
+    const waWin = window.open('', '_blank');
+    openWaTranslated(custWaNum(l), custMsg(l), waWin);
     logComm(id, 'notify');
     showToast('📲 WhatsApp opened to notify customer');
-  });
+  };
+  if (l.cust_lang) { window._waLang = l.cust_lang; send(); return; }   // customer language already set — don't ask
+  pickLang('📲 Notify Customer · ' + l.ref, '📲 Send on WhatsApp', (lang) => { saveLang(id, 'cust_lang', lang); send(); });
 }
 
 // On-demand: derive approximate coordinates from an installation's typed address
@@ -2014,7 +2028,7 @@ function sendReview(id) {
       <label style="font-size:12px;color:#aaa">Product
         <select id="rev-product" style="width:100%;margin-top:4px;padding:8px 10px;background:#0d1f2d;border:1px solid #2a4a6a;border-radius:6px;color:#e0e0e0;font-size:14px">${opts}</select>
       </label>
-      <label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('rev-lang')}</label>
+      ${l.cust_lang ? '' : `<label style="font-size:12px;color:#aaa">🌐 Send message in ${langSelectHtml('rev-lang')}</label>`}
       <button onclick="submitReview('${l.id}')" style="padding:10px;background:#2a2410;border:1px solid #ffd166;border-radius:6px;color:#ffd166;font-size:14px;font-weight:600;cursor:pointer">⭐ Send review request on WhatsApp</button>
     </div>`);
 }
@@ -2030,7 +2044,9 @@ function submitReview(id) {
   let num = String(l.phone || '').replace(/\D/g, '');
   if (num.length === 10) num = '91' + num;
   if (!num) { showToast('Customer has no phone number'); return; }
-  window._waLang = document.getElementById('rev-lang')?.value || 'en';
+  const lang = l.cust_lang || document.getElementById('rev-lang')?.value || 'en';
+  window._waLang = lang;
+  if (!l.cust_lang) saveLang(id, 'cust_lang', lang);   // remember for next customer message
   const waWin = window.open('', '_blank');   // reserve popup within the click
   const url = `https://www.amazon.in/review/create-review?asin=${asin}`;
   const msg = [

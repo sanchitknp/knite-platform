@@ -47,6 +47,8 @@ ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS geo_source TEXT;   --
 ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS notified_at     TIMESTAMPTZ;
 ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS status_asked_at TIMESTAMPTZ;
 ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS review_sent_at  TIMESTAMPTZ;
+ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS tech_lang TEXT;   -- saved WhatsApp language (technician)
+ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS cust_lang TEXT;   -- saved WhatsApp language (customer)
 
 CREATE INDEX IF NOT EXISTS idx_install_status  ON installation_requests(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_install_pincode ON installation_requests(pincode);

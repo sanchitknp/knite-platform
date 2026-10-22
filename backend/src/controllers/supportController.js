@@ -284,6 +284,11 @@ async function assignInstallationTechnician(req, res) {
   if (charge) {
     await db.query(`UPDATE installation_requests SET installation_charge = $1 WHERE id = $2`, [charge, installId]);
   }
+  // Remember the technician-side language for this installation (reused for all tech messages).
+  const techLang = clean(b.lang);
+  if (techLang) {
+    await db.query(`UPDATE installation_requests SET tech_lang = $1 WHERE id = $2`, [techLang, installId]);
+  }
 
   // If this was a manually-entered ("custom") technician, also keep them in the
   // custom_technicians roster (deduped by canonical phone) for reuse/lookup later.
@@ -355,7 +360,7 @@ async function translateMessage(req, res) {
 }
 
 async function adminUpdateInstallation(req, res) {
-  const { status, admin_notes, installation_charge, product_slug, product_name } = req.body;
+  const { status, admin_notes, installation_charge, product_slug, product_name, tech_lang, cust_lang } = req.body;
   const charge = (installation_charge === undefined || installation_charge === null || installation_charge === '')
     ? null
     : String(installation_charge).replace(/[^0-9.]/g, '') || null;
@@ -366,9 +371,12 @@ async function adminUpdateInstallation(req, res) {
             installation_charge = COALESCE($3, installation_charge),
             product_slug = COALESCE($4, product_slug),
             product_name = COALESCE($5, product_name),
+            tech_lang = COALESCE($6, tech_lang),
+            cust_lang = COALESCE($7, cust_lang),
             updated_at = now()
-      WHERE id = $6`,
-    [status || null, admin_notes || null, charge, clean(product_slug), clean(product_name), req.params.id]
+      WHERE id = $8`,
+    [status || null, admin_notes || null, charge, clean(product_slug), clean(product_name),
+     clean(tech_lang), clean(cust_lang), req.params.id]
   );
   res.json({ ok: true });
 }

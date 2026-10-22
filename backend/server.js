@@ -703,6 +703,8 @@ async function start() {
     await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS notified_at    TIMESTAMPTZ`);
     await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS status_asked_at TIMESTAMPTZ`);
     await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS review_sent_at TIMESTAMPTZ`);
+    await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS tech_lang TEXT`);
+    await db.query(`ALTER TABLE installation_requests ADD COLUMN IF NOT EXISTS cust_lang TEXT`);
   } catch (err) {
     console.error('[SCHEMA_MIGRATE] comm timestamps:', err.message);
   }
