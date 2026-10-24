@@ -22,16 +22,17 @@ function extractPincode(text) {
 /**
  * Get all active technicians in a zone, sorted by home_zone priority + rating
  */
-async function getTechniciansInZone(zoneId) {
+async function getTechniciansInZone(zoneId, pincode = null) {
   const result = await db.query(
-    `SELECT t.*, tz.is_home
+    `SELECT t.*, COALESCE(tz.is_home, false) AS is_home
      FROM technicians t
-     JOIN technician_zones tz ON tz.technician_id = t.id
-     WHERE tz.zone_id = $1
+     LEFT JOIN technician_zones tz ON tz.technician_id = t.id AND tz.zone_id = $1
+     WHERE ((cardinality(t.coverage_pincodes) = 0 AND tz.zone_id = $1)
+         OR $2::text = ANY(t.coverage_pincodes))
        AND t.is_active = true
        AND t.is_verified = true
-     ORDER BY tz.is_home DESC, t.rating DESC`,
-    [zoneId]
+     ORDER BY is_home DESC, t.rating DESC`,
+    [zoneId, pincode]
   );
   return result.rows;
 }

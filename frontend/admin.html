@@ -326,6 +326,7 @@
     <div class="refresh-bar">
       <button class="btn btn-secondary" onclick="loadTechnicians()">🔄 Refresh</button>
       <button class="btn btn-primary" onclick="showAddTechForm('','','','')">➕ Add Technician</button>
+      <a class="btn btn-secondary" href="/technician-register" target="_blank" rel="noopener">Technician signup form ↗</a>
     </div>
     <div class="card">
       <div class="card-header">
@@ -1027,6 +1028,13 @@ async function resolveDispute(jobId) {
 }
 
 // ── Technicians ──
+function safeTechMapLink(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && /^(maps\.app\.goo\.gl|goo\.gl|maps\.google\.(com|co\.in)|(www\.)?google\.(com|co\.in))$/.test(url.hostname) && !url.username && !url.password ? url.href : '';
+  } catch { return ''; }
+}
+
 async function loadTechnicians() {
   try {
     const r = await fetch(`${API}/api/admin/technicians`);
@@ -1035,22 +1043,24 @@ async function loadTechnicians() {
     document.getElementById('techsTable').innerHTML = `
       <table>
         <thead><tr>
-          <th>Name</th><th>Phone</th><th>Home Zone</th><th>Status</th><th>Rating</th><th>Jobs</th><th>Disputes</th><th>UPI</th><th>Actions</th>
+          <th>Name</th><th>Phone</th><th>Coverage / Location</th><th>Status</th><th>Rating</th><th>Jobs</th><th>Disputes</th><th>UPI</th><th>Actions</th>
         </tr></thead>
         <tbody>${techs.map(t => `
           <tr>
-            <td><strong>${t.name || 'Unknown'}</strong></td>
-            <td>${t.phone}</td>
-            <td>${t.home_zone_name || '–'}</td>
+            <td><strong>${_esc(t.name || 'Unknown')}</strong>${t.registration_source === 'public_form' ? '<br><small>Signup form</small>' : ''}</td>
+            <td>${_esc(t.phone)}</td>
+            <td>${_esc(t.coverage_pincodes?.length ? t.coverage_pincodes.join(', ') : t.home_zone_name || '–')}
+              ${t.address ? `<br><small>${_esc([t.address, t.city, t.state].filter(Boolean).join(', '))}</small>` : ''}
+              ${safeTechMapLink(t.google_maps_link) ? `<br><a href="${_esc(safeTechMapLink(t.google_maps_link))}" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>` : ''}</td>
             <td>
               ${t.is_active && t.is_verified ? '<span class="badge badge-green">Active</span>' :
-                !t.is_verified ? '<span class="badge badge-orange">Pending KYC</span>' :
+                !t.is_verified ? `<span class="badge badge-orange">${t.registration_source === 'public_form' ? 'Pending review' : 'Pending KYC'}</span>` :
                 '<span class="badge badge-red">Inactive</span>'}
             </td>
             <td>⭐ ${t.rating}</td>
             <td>${t.jobs_completed}</td>
             <td>${t.dispute_count > 0 ? `<span class="badge badge-red">${t.dispute_count}</span>` : '0'}</td>
-            <td>${t.bank_upi || '–'}</td>
+            <td>${_esc(t.bank_upi || '–')}</td>
             <td style="display:flex;gap:6px;flex-wrap:wrap">
               ${!t.is_verified ? `<button class="btn btn-primary" onclick="approveTech('${t.id}', true)">✅ Approve</button><button class="btn btn-danger" onclick="approveTech('${t.id}', false)">❌ Reject</button>` : ''}
               ${t.is_active ? `<button class="btn btn-secondary" onclick="toggleTech('${t.id}', false)">Deactivate</button>` : `<button class="btn btn-primary" onclick="toggleTech('${t.id}', true)">Activate</button>`}
@@ -1063,7 +1073,7 @@ async function loadTechnicians() {
     const pending = techs.filter(t => !t.is_verified);
     document.getElementById('pendingApprovals').innerHTML = pending.length > 0 ?
       `<table><thead><tr><th>Name</th><th>Phone</th><th>Zone</th><th>Actions</th></tr></thead><tbody>
-        ${pending.map(t => `<tr><td>${t.name || '?'}</td><td>${t.phone}</td><td>${t.home_zone_name||'–'}</td>
+        ${pending.map(t => `<tr><td>${_esc(t.name || '?')}</td><td>${_esc(t.phone)}</td><td>${_esc(t.coverage_pincodes?.length ? t.coverage_pincodes.join(', ') : t.home_zone_name || '–')}</td>
           <td><button class="btn btn-primary" onclick="approveTech('${t.id}', true)">✅ Approve</button>
               <button class="btn btn-danger" onclick="approveTech('${t.id}', false)">❌ Reject</button></td></tr>`).join('')}
       </tbody></table>` :
@@ -2188,7 +2198,7 @@ async function loadInstallations() {
                     ? `<a href="${l.maps_link}" target="_blank" style="color:#64b5f6">📍 Link</a>`
                     : `<button onclick="geocodeInstall('${l.id}')" style="padding:3px 7px;background:#1a2a3a;border:1px solid #2a4a6a;border-radius:6px;color:#64b5f6;font-size:10px;cursor:pointer;white-space:nowrap" title="Derive approximate coordinates from the typed address">📍 Locate</button>`)}</td>
               <td><select onchange="updateInstallation('${l.id}', this.value)" title="Change status" style="padding:3px 10px;background:#0d1f2d;border:1px solid ${INST_STATUS_COLORS[l.status] || '#888'};border-radius:50px;color:${INST_STATUS_COLORS[l.status] || '#e0e0e0'};font-size:11px;font-weight:600;text-transform:uppercase;cursor:pointer">${['new','contacted','scheduled','installed','cancelled'].map(s => `<option value="${s}"${l.status === s ? ' selected' : ''}>${s}</option>`).join('')}</select></td>
-              <td style="font-size:11px">${l.assigned_tech_name ? `<div style="color:#4caf50;font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.assigned_tech_name||'').replace(/"/g,'&quot;')}">${l.assigned_tech_name}</div>${l.assigned_tech_phone ? `<a href="tel:+${(l.assigned_tech_phone||'').replace(/[^0-9]/g,'')}" style="color:#4caf50;font-size:10px">${l.assigned_tech_phone}</a> ` : ''}<div style="color:#888;font-size:10px">${l.assigned_at ? new Date(l.assigned_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.assigned_by ? ' · '+l.assigned_by : ''}</div>` : '<span style="color:#4a6a8c">–</span>'}</td>
+              <td style="font-size:11px">${l.assigned_tech_name ? `<div style="color:#4caf50;font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(l.assigned_tech_name || '')}">${_esc(l.assigned_tech_name)}</div>${l.assigned_tech_phone ? `<a href="tel:+${(l.assigned_tech_phone||'').replace(/[^0-9]/g,'')}" style="color:#4caf50;font-size:10px">${l.assigned_tech_phone}</a> ` : ''}<div style="color:#888;font-size:10px">${l.assigned_at ? new Date(l.assigned_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}${l.assigned_by ? ' · '+l.assigned_by : ''}</div>` : '<span style="color:#4a6a8c">–</span>'}</td>
               <td>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <button onclick="viewInstallTechnicians('${l.id}','${l.ref}','${l.pincode||''}','${l.zone_id||''}')" style="padding:4px 8px;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:6px;color:#4caf50;font-size:11px;cursor:pointer;white-space:nowrap">🔧 Find Techs</button>
@@ -2511,7 +2521,7 @@ async function viewInstallTechnicians(id, ref, pincode, zoneId) {
         ${techs.map((t, i) => `
           <div style="padding:10px 12px;border-bottom:1px solid #16304a;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
             <div style="min-width:0">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#e0e0e0">${t.name || 'Technician'}</span>${matchBadge(t.match)}${t.is_home ? '<span style="font-size:10px;color:#8b5cf6">🏠 home</span>' : ''}</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#e0e0e0">${_esc(t.name || 'Technician')}</span>${matchBadge(t.match)}${t.is_home ? '<span style="font-size:10px;color:#8b5cf6">🏠 home</span>' : ''}</div>
               <div style="font-size:11px;color:#888;margin-top:3px">⭐ ${t.rating ?? '–'} · ${t.jobs_completed || 0} jobs · zones: ${(t.zones||[]).join(', ')}</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${phoneBtns(t.phone)}<button onclick="assignFromModal('tech', ${i})" style="padding:3px 10px;background:#0d3320;border:1px solid #25d366;border-radius:6px;color:#25d366;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">📲 WhatsApp</button></div>
