@@ -2,6 +2,10 @@
 
 WhatsApp-native zero-touch RO installation, support & maintenance platform.
 
+## Current project context
+
+Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the current workflows, deployment guidance, open items, and team activity log. Update it alongside relevant changes and investigations. The sections below describe the initial MVP; the current implementation is on `master`, while the GitHub default `main` branch is older.
+
 ## Architecture
 
 ```
