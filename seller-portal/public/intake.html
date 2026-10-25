@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Raise a request</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563eb'/><text x='50' y='68' font-size='54' font-family='Arial' fill='white' text-anchor='middle'>S</text></svg>" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="auth">
+    <div class="auth-card" style="max-width:480px">
+      <div class="brand brand-lg">
+        <span class="logo">S</span>
+        <div><b id="biz">Loading…</b><small id="sub">Raise a request</small></div>
+      </div>
+      <div id="formWrap" style="margin-top:22px"></div>
+      <p class="muted" style="margin-top:18px;font-size:12px;text-align:center">Powered by Seller Service Portal</p>
+    </div>
+  </div>
+
+  <script>
+    const parts = location.pathname.split('/').filter(Boolean); // ['r', <token>, <type>]
+    const token = parts[1] || '';
+    let type = parts[2] === 'install' ? 'install' : 'support';
+    let PRODUCTS = [];
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+    async function init() {
+      try {
+        const r = await fetch('/api/public/' + encodeURIComponent(token));
+        if (!r.ok) throw new Error('invalid');
+        const d = await r.json();
+        $('#biz').textContent = d.business_name;
+        $('#sub').textContent = type === 'install' ? 'Installation request' : 'Support request';
+        if (type === 'install') {
+          try { PRODUCTS = await (await fetch('/api/public/' + encodeURIComponent(token) + '/products')).json(); }
+          catch (e) { PRODUCTS = []; }
+        }
+        render();
+      } catch (e) {
+        $('#biz').textContent = 'Link not found';
+        $('#sub').textContent = '';
+        $('#formWrap').innerHTML = '<p class="err">This request link is invalid or has expired. Please contact the seller for a current link.</p>';
+      }
+    }
+
+    function field(label, name, opts = {}) {
+      const { type = 'text', required = false, as = 'input', options = [], placeholder = '' } = opts;
+      const req = required ? ' required' : '';
+      const star = required ? ' *' : '';
+      if (as === 'textarea') return `<label>${esc(label)}${star}<textarea name="${name}" rows="3"${req}></textarea></label>`;
+      if (as === 'select')  return `<label>${esc(label)}${star}<select name="${name}"${req}><option value="">—</option>${options.map(o => `<option>${esc(o)}</option>`).join('')}</select></label>`;
+      return `<label>${esc(label)}${star}<input type="${type}" name="${name}" placeholder="${esc(placeholder)}"${req}></label>`;
+    }
+
+    function render() {
+      let body;
+      if (type === 'install') {
+        body = `
+          ${field('Your name', 'customer_name', { required: true })}
+          ${field('Mobile number', 'customer_phone', { required: true, type: 'tel' })}
+          ${field('Email', 'customer_email', { type: 'email' })}
+          ${productField()}
+          ${field('Where did you buy it?', 'purchased_from', { as: 'select', options: ['amazon', 'flipkart', 'website', 'offline dealer', 'other'] })}
+          ${field('Order ID', 'order_id')}
+          ${field('Installation address', 'address', { as: 'textarea', required: true })}
+          ${field('City', 'city')}
+          ${field('Pincode', 'pincode')}
+          <label>📍 Share your location (optional)
+            ${window.isSecureContext ? '<button type="button" id="useLoc" class="btn" style="margin:6px 0;align-self:flex-start">Use my current location</button><span id="locMsg" class="muted" style="font-size:12px;min-height:16px"></span>' : ''}
+            <input type="text" name="maps_link" id="mapsLink" placeholder="Paste a Google Maps link">
+            <small style="color:var(--muted);font-size:12px;margin-top:4px">In Google Maps: find the location → Share → Copy link → paste here. Helps the technician reach you faster.</small>
+          </label>
+          <input type="hidden" name="latitude" id="lat"><input type="hidden" name="longitude" id="lng">
+          ${field('Notes', 'notes', { as: 'textarea' })}
+        `;
+      } else {
+        body = `
+          ${field('Your name', 'customer_name', { required: true })}
+          ${field('Mobile number', 'customer_contact', { type: 'tel' })}
+          ${field('Email', 'customer_email', { type: 'email' })}
+          ${field('Subject', 'subject', { required: true })}
+          ${field('Category', 'category', { as: 'select', options: ['return', 'refund', 'replacement', 'complaint', 'query', 'other'] })}
+          ${field('Order ID', 'order_id')}
+          ${field('City', 'city')}
+          ${field('Pincode', 'pincode')}
+          ${field('Describe your issue', 'description', { as: 'textarea' })}
+        `;
+      }
+      $('#formWrap').innerHTML = `<form id="f" class="authform">
+        ${body}
+        <input type="text" name="hp" style="display:none" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn primary" type="submit">Submit ${type === 'install' ? 'installation request' : 'support request'}</button>
+        <p class="err" id="err"></p>
+      </form>`;
+      $('#f').onsubmit = submit;
+      if (type === 'install') attachInstallExtras();
+    }
+
+    function setLocMsg(t) { const e = document.getElementById('locMsg'); if (e) e.textContent = t; }
+    function attachInstallExtras() {
+      const btn = document.getElementById('useLoc');
+      if (btn) btn.onclick = () => {
+        if (!navigator.geolocation) return setLocMsg('Geolocation not available — paste a Google Maps link instead.');
+        setLocMsg('Getting your location…');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            document.getElementById('lat').value = latitude;
+            document.getElementById('lng').value = longitude;
+            document.getElementById('mapsLink').value = 'https://www.google.com/maps?q=' + latitude + ',' + longitude;
+            setLocMsg('✓ Location captured');
+          },
+          (err) => setLocMsg('Could not get location (' + err.message + '). Paste a Google Maps link instead.'),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      };
+      const ml = document.getElementById('mapsLink');
+      if (ml) ml.oninput = () => {
+        const m = ml.value.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || ml.value.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (m) { document.getElementById('lat').value = m[1]; document.getElementById('lng').value = m[2]; }
+      };
+    }
+
+    function productField() {
+      if (Array.isArray(PRODUCTS) && PRODUCTS.length) {
+        return `<label>Product / model
+          <select name="product_name" id="prodSel" onchange="onProdChange()">
+            <option value="">Select a product…</option>
+            ${PRODUCTS.map(p => `<option value="${esc(p.name)}">${esc(p.name)}${p.sku ? ' (' + esc(p.sku) + ')' : ''}</option>`).join('')}
+            <option value="__other">Other / not listed</option>
+          </select>
+          <input type="text" id="prodOther" name="product_other" placeholder="Type your product / model" style="display:none;margin-top:8px">
+        </label>`;
+      }
+      return field('Product / model', 'product_name');
+    }
+    function onProdChange() {
+      const sel = document.getElementById('prodSel'), other = document.getElementById('prodOther');
+      if (sel && other) other.style.display = (sel.value === '__other') ? 'block' : 'none';
+    }
+
+    async function submit(e) {
+      e.preventDefault();
+      const f = e.target, btn = f.querySelector('button'); btn.disabled = true;
+      $('#err').textContent = '';
+      const payload = {};
+      new FormData(f).forEach((v, k) => { if (v) payload[k] = v; });
+      if (payload.product_name === '__other') payload.product_name = payload.product_other || '';
+      delete payload.product_other;
+      try {
+        const r = await fetch('/api/public/' + encodeURIComponent(token) + '/' + type, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Could not submit your request.');
+        $('#formWrap').innerHTML = `<div style="text-align:center;padding:12px 0">
+          <div style="font-size:42px">✅</div>
+          <h3 style="margin:10px 0 6px">Request received</h3>
+          <p class="muted">Thank you! <b>${esc($('#biz').textContent)}</b> has received your ${type === 'install' ? 'installation' : 'support'} request and will get back to you soon.</p>
+          <button class="btn" style="margin-top:14px" onclick="render()">Submit another</button>
+        </div>`;
+      } catch (err) { $('#err').textContent = err.message; btn.disabled = false; }
+    }
+
+    init();
+  </script>
+</body>
+</html>

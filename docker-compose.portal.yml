@@ -1,0 +1,19 @@
+# Seller Service Portal — standalone stack, independent of Knite.
+# Deploy on the VM with:
+#   docker compose -f docker-compose.portal.yml up -d --build
+# It shares NOTHING with the Knite containers except the host and the Cloud SQL
+# instance (reached over its own DATABASE_URL in seller-portal/.env).
+services:
+  ssp-backend:
+    build: ./seller-portal
+    container_name: ssp-backend
+    restart: unless-stopped
+    env_file:
+      - ./seller-portal/.env
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./seller-portal:/app        # bind-mount → nodemon picks up changes
+      - /app/node_modules
+      - ./seller-portal/data:/app/data   # persistent safety-claim images
+    command: npm run dev
