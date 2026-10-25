@@ -449,16 +449,17 @@ async function handleSlot(phone, text, ctx) {
  * Broadcast job to eligible technicians in zone
  */
 async function broadcastJob(job, zoneId) {
-  const techs = await zone.getTechniciansInZone(zoneId);
+  // Explicit coverage must match the job's pincode, not just another pincode
+  // somewhere in the same zone. Legacy technicians still use zone membership.
+  const unitResult = await db.query(`SELECT * FROM units WHERE id = $1`, [job.unit_id]);
+  const unit = unitResult.rows[0];
+  if (!unit) return;
+  const address = unit.install_address || {};
+  const techs = await zone.getTechniciansInZone(zoneId, address.pincode || null);
   if (techs.length === 0) {
     console.log(`[BROADCAST] No techs in zone ${zoneId} for job ${job.id}`);
     return;
   }
-
-  // Get unit details for message
-  const unitResult = await db.query(`SELECT * FROM units WHERE id = $1`, [job.unit_id]);
-  const unit = unitResult.rows[0];
-  const address = unit.install_address || {};
 
   const slotText = job.scheduled_start
     ? new Date(job.scheduled_start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })

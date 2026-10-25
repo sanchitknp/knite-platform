@@ -470,17 +470,22 @@ async function getInstallationTechnicians(req, res) {
     // 1) Registered technicians — exact zone or nearby (same 3-digit prefix)
     const t = await db.query(
       `SELECT t.id, t.name, t.phone, t.rating, t.jobs_completed,
-              bool_or($1 = ANY(z.pincodes)) AS serves_exact,
-              array_agg(DISTINCT z.name) AS zones,
-              bool_or(tz.is_home) AS is_home
+              CASE WHEN cardinality(t.coverage_pincodes) > 0
+                THEN $1 = ANY(t.coverage_pincodes)
+                ELSE bool_or($1 = ANY(z.pincodes)) END AS serves_exact,
+              CASE WHEN cardinality(t.coverage_pincodes) > 0
+                THEN t.coverage_pincodes ELSE array_agg(DISTINCT z.name) END AS zones,
+              COALESCE(bool_or(tz.is_home), false) AS is_home
          FROM technicians t
-         JOIN technician_zones tz ON tz.technician_id = t.id
-         JOIN zones z ON z.id = tz.zone_id AND z.is_active = true
+         LEFT JOIN technician_zones tz ON tz.technician_id = t.id
+         LEFT JOIN zones z ON z.id = tz.zone_id AND z.is_active = true
         WHERE t.is_active = true AND t.is_verified = true
         GROUP BY t.id
-       HAVING bool_or($1 = ANY(z.pincodes))
-           OR bool_or(EXISTS (SELECT 1 FROM unnest(z.pincodes) p WHERE left(p, 3) = $2))
-        ORDER BY bool_or($1 = ANY(z.pincodes)) DESC, bool_or(tz.is_home) DESC, t.rating DESC NULLS LAST`,
+       HAVING CASE WHEN cardinality(t.coverage_pincodes) > 0
+         THEN $1 = ANY(t.coverage_pincodes)
+         ELSE bool_or($1 = ANY(z.pincodes))
+           OR bool_or(EXISTS (SELECT 1 FROM unnest(z.pincodes) p WHERE left(p, 3) = $2)) END
+        ORDER BY serves_exact DESC, is_home DESC, t.rating DESC NULLS LAST`,
       [pincode, prefix]
     );
     technicians = t.rows.map(r => ({

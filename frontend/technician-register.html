@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Join the Knite technician network. Share your contact details, location and service pincodes.">
+  <title>Join our technician network — Knite</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: light; --ink:#0a1628; --muted:#526174; --line:#d5dde5; --accent:#96592f; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:16px/1.6 system-ui,sans-serif; color:var(--ink); background:#f5f7fa; }
+    header { padding:20px max(24px,calc((100% - 1040px)/2)); background:white; border-bottom:1px solid var(--line); }
+    header a { color:var(--ink); font-size:22px; letter-spacing:4px; font-weight:800; text-decoration:none; }
+    main { max-width:1040px; margin:48px auto; padding:0 24px; display:grid; grid-template-columns: .8fr 1.2fr; gap:48px; align-items:start; }
+    .eyebrow { font-size:12px; letter-spacing:2px; font-weight:700; text-transform:uppercase; color:var(--accent); }
+    h1 { font-size:38px; line-height:1.18; letter-spacing:-1px; margin:12px 0 20px; }
+    h2 { font-size:21px; margin:0 0 6px; }
+    p { color:var(--muted); }
+    aside ol { padding-left:22px; color:var(--muted); }
+    aside li { padding:8px 0; }
+    aside a { color:var(--accent); }
+    .panel { padding:30px; background:white; border:1px solid var(--line); border-radius:16px; }
+    .intro { margin:0 0 24px; font-size:14px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .wide { grid-column:1/-1; }
+    label { display:block; font-size:14px; font-weight:650; margin-bottom:6px; }
+    input,textarea { width:100%; border:1px solid #a5b2c0; border-radius:7px; padding:11px 12px; font:inherit; color:var(--ink); background:white; }
+    textarea { resize:vertical; min-height:84px; }
+    input:focus,textarea:focus,button:focus-visible,a:focus-visible { outline:3px solid #c07a4a; outline-offset:3px; }
+    [aria-invalid="true"] { border-color:#b42318; }
+    .hint { display:block; font-size:12px; color:var(--muted); margin-top:5px; }
+    .error { display:block; color:#a32118; font-size:13px; margin-top:4px; }
+    .consent { display:flex; align-items:start; gap:10px; font-weight:400; margin:22px 0 0; }
+    .consent input { width:18px; height:18px; flex-shrink:0; margin-top:4px; accent-color:var(--ink); }
+    button { width:100%; margin-top:22px; padding:13px 16px; background:var(--ink); color:white; border:0; border-radius:8px; font:inherit; font-weight:650; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    #formError { margin-top:16px; }
+    [hidden] { display:none !important; }
+    .success-mark { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--accent); }
+    footer { padding:20px 24px; text-align:center; color:var(--muted); font-size:12px; }
+    @media(max-width:760px) { main { margin:28px auto; grid-template-columns:1fr; gap:24px; } h1 { font-size:32px; } aside ol { display:none; } .panel { padding:22px; } }
+    @media(max-width:420px) { .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header><a href="/" aria-label="Knite home">KNITE</a></header>
+  <main>
+    <aside>
+      <span class="eyebrow">Service partner registration</span>
+      <h1>Put your skills<br>to work with Knite.</h1>
+      <p>Install and service RO water purifiers in the areas you know best. Tell us how to reach you and which pincodes you cover.</p>
+      <ol><li>Share your contact and service location.</li><li>Add every pincode where you can take work.</li><li>Our team reviews your details and contacts you.</li></ol>
+      <p>Need help? <a href="mailto:support@knite.in">support@knite.in</a></p>
+    </aside>
+    <section class="panel" aria-labelledby="formTitle">
+      <form id="signup">
+        <h2 id="formTitle">Your technician profile</h2>
+        <p class="intro">All fields are required. Registration is free. Work assignment begins after team approval.</p>
+        <div class="grid">
+          <div class="wide"><label for="name">Full name</label><input id="name" name="name" autocomplete="name" minlength="2" maxlength="120" required><span class="error" id="name-error"></span></div>
+          <div class="wide"><label for="phone">WhatsApp mobile number</label><input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="10-digit number or +91…" required aria-describedby="phone-hint phone-error"><small class="hint" id="phone-hint">Use the number where our team can contact you.</small><span class="error" id="phone-error"></span></div>
+          <div class="wide"><label for="address">Business / service address</label><input id="address" name="address" autocomplete="street-address" minlength="10" maxlength="500" required><span class="error" id="address-error"></span></div>
+          <div><label for="city">City / town</label><input id="city" name="city" autocomplete="address-level2" minlength="2" maxlength="100" required><span class="error" id="city-error"></span></div>
+          <div><label for="state">State / union territory</label><input id="state" name="state" autocomplete="address-level1" minlength="2" maxlength="100" required><span class="error" id="state-error"></span></div>
+          <div class="wide"><label for="google_maps_link">Google Maps location link</label><input id="google_maps_link" name="google_maps_link" type="url" maxlength="2048" placeholder="https://maps.app.goo.gl/…" required aria-describedby="maps-hint google_maps_link-error"><small class="hint" id="maps-hint">In Google Maps, select your business or drop a pin at your service base. Tap Share → Copy link and paste it here.</small><span class="error" id="google_maps_link-error"></span></div>
+          <div class="wide"><label for="coverage_pincodes">Service coverage pincodes</label><textarea id="coverage_pincodes" name="coverage_pincodes" maxlength="4000" placeholder="For example: 110001, 110002, 110003" required aria-describedby="coverage-hint coverage_pincodes-error"></textarea><small class="hint" id="coverage-hint">Enter six-digit pincodes separated by commas or spaces. Add up to 100 pincodes where you can provide service.</small><span class="error" id="coverage_pincodes-error"></span></div>
+        </div>
+        <label class="consent" for="consent"><input id="consent" name="consent" type="checkbox" required aria-describedby="consent-error"><span>I allow Knite to store these details and contact me about technician onboarding and service work.</span></label>
+        <span class="error" id="consent-error"></span>
+        <div id="formError" class="error" role="alert" tabindex="-1"></div>
+        <button id="submit" type="submit">Submit registration</button>
+      </form>
+      <div id="success" hidden tabindex="-1" role="status">
+        <div class="success-mark">Registration received</div>
+        <h2>Thank you for joining us.</h2>
+        <p>Your application is waiting for review. The Knite team will contact you on the mobile number you provided.</p>
+        <p>You can close this page. Please contact <a href="mailto:support@knite.in">support@knite.in</a> if you need to correct your details.</p>
+      </div>
+    </section>
+  </main>
+  <footer>Knite · Axios Enterprise LLP</footer>
+  <script>
+    const form = document.getElementById('signup');
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = document.getElementById('submit');
+      if (button.disabled) return;
+      const errorBox = document.getElementById('formError');
+      errorBox.textContent = '';
+      form.querySelectorAll('.error').forEach(el => el.textContent = '');
+      form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
+      const payload = Object.fromEntries(new FormData(form));
+      payload.consent = document.getElementById('consent').checked;
+      button.disabled = true;
+      button.textContent = 'Submitting…';
+      const abort = new AbortController();
+      const timeout = setTimeout(() => abort.abort(), 20000);
+      try {
+        const response = await fetch('/api/technicians/register', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:abort.signal
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          Object.entries(data.fields || {}).forEach(([key, message]) => {
+            const field = document.getElementById(key);
+            const hint = document.getElementById(key + '-error');
+            if (field && hint) { field.setAttribute('aria-invalid', 'true'); hint.textContent = message; }
+          });
+          throw new Error(data.error || 'Could not submit your registration. Please try again.');
+        }
+        if (!data.ok) throw new Error('Could not confirm registration. Please contact Knite before trying again.');
+        form.hidden = true;
+        document.getElementById('success').hidden = false;
+        document.getElementById('success').focus();
+      } catch (err) {
+        errorBox.textContent = err.name === 'AbortError'
+          ? 'The request took too long. It may have been received. Contact Knite or retry with the same mobile number.'
+          : err instanceof TypeError ? 'Connection failed. Your details are still here; check your connection and try again.' : err.message;
+        (form.querySelector('[aria-invalid="true"]') || errorBox).focus();
+      } finally {
+        clearTimeout(timeout);
+        button.disabled = false;
+        button.textContent = 'Submit registration';
+      }
+    });
+  </script>
+</body>
+</html>

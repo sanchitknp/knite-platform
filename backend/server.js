@@ -14,6 +14,7 @@ const shop  = require('./src/controllers/shopController');
 const shopAuth = require('./src/controllers/shopAuthController');
 const reviews = require('./src/controllers/reviewsController');
 const support = require('./src/controllers/supportController');
+const technicianOnboarding = require('./src/controllers/technicianOnboardingController');
 const safetyClaims = require('./src/controllers/safetyClaimsController');
 const payment = require('./src/controllers/paymentController');
 const adminAuth = require('./src/controllers/adminAuthController');
@@ -267,6 +268,9 @@ app.post('/api/website/lead', async (req, res) => {
 app.get ('/api/support/check-pincode', support.checkPincode);
 app.post('/api/support/installation',  support.createInstallation);
 app.post('/api/support/ticket',        support.createTicket);
+
+// Share /technician-register with prospective service partners.
+app.post('/api/technicians/register', technicianOnboarding.createSubmissionLimiter(), technicianOnboarding.registerTechnician);
 
 // ─────────────────────────────────────────────
 // SHOP / E-COMMERCE — public endpoints (no auth)
@@ -647,6 +651,8 @@ async function start() {
     }
   }
 
+  // Fail startup if this required additive migration cannot be applied.
+  await db.query(fs.readFileSync(path.join(__dirname, 'src/db/technician_onboarding_schema.sql'), 'utf8'));
   // Seed default admin user if admin_users is empty (idempotent)
   await adminAuth.ensureDefaultAdmin();
 

@@ -54,6 +54,10 @@ The team's frequently used workflows are installation service, technician assign
 - The inspected workflow does not automatically file claims or track Amazon adjudication.
 - Metadata is stored in PostgreSQL; images are stored on the VM filesystem and served through authenticated endpoints. Configured image retention is 60 days as of the deployment inspection below.
 
+## Technician signup — implemented, pending deployment
+
+A public form at `/technician-register` submits to `POST /api/technicians/register`. It collects name, Indian mobile number, address, city/state, Google Maps link, exact coverage pincodes, and contact consent. Applications use the existing technician table and remain inactive/unverified until admin review. Duplicate phones cannot overwrite profiles. Approved applications participate in exact-pincode installation discovery and job broadcasting; existing zone-based technicians retain their matching behavior. See [technician onboarding](docs/technician-onboarding.md) for the API contract, migration, validation and rollout checks. This feature has not yet been deployed.
+
 ## Other platform areas
 
 Units, Jobs, Technicians, Customers, Maintenance, Ledger, Zones, Website Leads, Support Tickets, Coverage Map, Shop Products, Shop Orders, and Admin Users are also available.
@@ -99,3 +103,11 @@ An authorized deployment inspection was completed on 25 October 2026. This publi
 - Added this document as the canonical team handoff and linked it from the README.
 - Defined the ongoing update convention above so investigations and changes travel with the repository.
 - Validation: documentation diff and whitespace checks; no runtime changes or deployment required.
+
+### 25 October 2026 — Technician self-registration
+
+- Added a shareable signup form and public registration API, with validation, Google Maps URL checks, normalized mobile numbers, deduplicated pincodes, and basic throttling.
+- Added an idempotent startup migration to extend the existing technician table; public applicants remain pending admin review.
+- Updated the admin technician list and coverage matching so approved applicants can be found without broadening shared service zones.
+- Validation: eight automated tests; isolated PostgreSQL/Express checks for migration repeatability, registration/duplicates, approval gating, exact coverage, and legacy compatibility; desktop browser checks for field errors and success. Responsive layout still needs a physical mobile check before rollout.
+- Deployment: not deployed; no production schema or technician records changed. API details and rollout guidance are in `docs/technician-onboarding.md`.
